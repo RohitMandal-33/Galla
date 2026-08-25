@@ -20,10 +20,6 @@ class Money {
     return withSymbol ? '$symbol $formatted' : formatted;
   }
 
-  Money operator +(Money other) => Money(minor + other.minor, currency: currency);
-  Money operator -(Money other) => Money(minor - other.minor, currency: currency);
-  Money abs() => Money(minor.abs(), currency: currency);
-
   static int parseToMinor(String raw) {
     final cleaned = raw.replaceAll(',', '').replaceAll(' ', '').trim();
     if (cleaned.isEmpty) return 0;
@@ -40,8 +36,4 @@ class Money {
     final value = double.tryParse(numberPart) ?? 0;
     return (value * multiplier * 100).round();
   }
-}
-
-class MoneyParse {
-  static int parse(String raw) => Money.parseToMinor(raw);
 }

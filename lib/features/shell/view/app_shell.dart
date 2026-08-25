@@ -1,55 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/l10n/strings.dart';
-import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../entry/view/entry_sheet.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(stringsLocaleProvider);
-    final s = S(locale);
-
+  Widget build(BuildContext context) {
+    // Keyboard-aware action container: while the IME is open the quick-add
+    // button animates out of the way so it can never overlap the keyboard or
+    // cover the entry form behind it. Placement/appearance are untouched
+    // whenever the keyboard is closed.
+    final imeVisible = MediaQuery.viewInsetsOf(context).bottom > 0;
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: _ImeAwareFabSlot(
+        imeVisible: imeVisible,
+        child: _QuickAddFab(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            showQuickAddSheet(context);
+          },
+        ),
+      ),
       bottomNavigationBar: _GallaBottomBar(
         currentIndex: navigationShell.currentIndex,
-        s: s,
         onDestinationSelected: (i) {
-          if (i == 2) {
-            HapticFeedback.lightImpact();
-            _showAddEntrySheet(context);
-            return;
-          }
           HapticFeedback.selectionClick();
           navigationShell.goBranch(
-            _branchIndex(i),
-            initialLocation: i == _visualIndex(navigationShell.currentIndex),
+            i,
+            initialLocation: i == navigationShell.currentIndex,
           );
         },
       ),
     );
   }
+}
 
-  void _showAddEntrySheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const EntrySheet(),
+// ── Keyboard-aware FAB slot ───────────────────────────────────────────────────
+
+class _ImeAwareFabSlot extends StatelessWidget {
+  const _ImeAwareFabSlot({required this.imeVisible, required this.child});
+  final bool imeVisible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      ignoring: imeVisible,
+      child: AnimatedOpacity(
+        opacity: imeVisible ? 0 : 1,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+        child: AnimatedScale(
+          scale: imeVisible ? 0.6 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: child,
+        ),
+      ),
     );
   }
-
-  int _visualIndex(int branch) => branch >= 2 ? branch + 1 : branch;
-  int _branchIndex(int visual) => visual > 2 ? visual - 1 : visual;
 }
 
 // ── Bottom Navigation Bar ──────────────────────────────────────────────────────
@@ -57,23 +74,22 @@ class AppShell extends ConsumerWidget {
 class _GallaBottomBar extends StatelessWidget {
   const _GallaBottomBar({
     required this.currentIndex,
-    required this.s,
     required this.onDestinationSelected,
   });
 
   final int currentIndex;
-  final S s;
   final ValueChanged<int> onDestinationSelected;
 
   @override
   Widget build(BuildContext context) {
-    final visualIndex = currentIndex >= 2 ? currentIndex + 1 : currentIndex;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: GallaColors.surface,
-        border: Border(top: BorderSide(color: GallaColors.line, width: 1)),
-      ),
+    return BottomAppBar(
+      color: GallaColors.surface,
+      elevation: 12,
+      shadowColor: GallaColors.brand.withValues(alpha: 0.12),
+      surfaceTintColor: Colors.transparent,
+      padding: EdgeInsets.zero,
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8,
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -81,46 +97,33 @@ class _GallaBottomBar extends StatelessWidget {
           child: Row(
             children: [
               _NavItem(
-                icon: Icons.home_outlined,
-                selectedIcon: Icons.home_rounded,
-                label: s.gallaTab,
-                selected: visualIndex == 0,
+                icon: Icons.insights_outlined,
+                selectedIcon: Icons.insights_rounded,
+                label: 'Pulse',
+                selected: currentIndex == 0,
                 onTap: () => onDestinationSelected(0),
               ),
               _NavItem(
                 icon: Icons.menu_book_outlined,
                 selectedIcon: Icons.menu_book_rounded,
-                label: s.ledgerTab,
-                selected: visualIndex == 1,
+                label: 'Khata',
+                selected: currentIndex == 1,
                 onTap: () => onDestinationSelected(1),
               ),
-
-              // ── Center FAB ─────────────────────────────────────────────
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onDestinationSelected(2),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _CenterFab(),
-                    ],
-                  ),
-                ),
+              const SizedBox(width: 72),
+              _NavItem(
+                icon: Icons.inventory_2_outlined,
+                selectedIcon: Icons.inventory_2_rounded,
+                label: 'Stock',
+                selected: currentIndex == 2,
+                onTap: () => onDestinationSelected(2),
               ),
-
               _NavItem(
                 icon: Icons.bar_chart_outlined,
                 selectedIcon: Icons.bar_chart_rounded,
-                label: s.reportsTab,
-                selected: visualIndex == 3,
+                label: 'Reports',
+                selected: currentIndex == 3,
                 onTap: () => onDestinationSelected(3),
-              ),
-              _NavItem(
-                icon: Icons.more_horiz_rounded,
-                selectedIcon: Icons.more_horiz_rounded,
-                label: s.businessTab,
-                selected: visualIndex == 4,
-                onTap: () => onDestinationSelected(4),
               ),
             ],
           ),
@@ -130,57 +133,108 @@ class _GallaBottomBar extends StatelessWidget {
   }
 }
 
-// ── Center FAB ─────────────────────────────────────────────────────────────────
+// ── Quick Add FAB ──────────────────────────────────────────────────────────────
 
-class _CenterFab extends StatefulWidget {
+class _QuickAddFab extends StatefulWidget {
+  const _QuickAddFab({required this.onTap});
+  final VoidCallback onTap;
+
   @override
-  State<_CenterFab> createState() => _CenterFabState();
+  State<_QuickAddFab> createState() => _QuickAddFabState();
 }
 
-class _CenterFabState extends State<_CenterFab> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
+class _QuickAddFabState extends State<_QuickAddFab> with TickerProviderStateMixin {
+  late final AnimationController _press;
+  late final AnimationController _pulse;
   late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
+    _press = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
     _scale = Tween<double>(begin: 1.0, end: 0.90).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+      CurvedAnimation(parent: _press, curve: Curves.easeOut),
     );
+    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
+      ..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _press.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) => _ctrl.reverse(),
-      onTapCancel: () => _ctrl.reverse(),
+      onTapDown: (_) => _press.forward(),
+      onTapUp: (_) {
+        _press.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _press.reverse(),
       child: AnimatedBuilder(
-        animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
-        child: Container(
-          width: GallaSpacing.fabSize,
-          height: GallaSpacing.fabSize,
-          decoration: BoxDecoration(
-            color: GallaColors.brand,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: GallaColors.brand.withValues(alpha: 0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+        animation: Listenable.merge([_scale, _pulse]),
+        builder: (_, _) {
+          final glow = 0.28 + (_pulse.value * 0.18);
+          return Transform.scale(
+            scale: _scale.value,
+            child: SizedBox(
+              width: 68,
+              height: 68,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: GallaColors.gold.withValues(alpha: glow),
+                          blurRadius: 18,
+                          spreadRadius: 1,
+                        ),
+                        BoxShadow(
+                          color: GallaColors.brand.withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFE8C547), Color(0xFFB8962E), Color(0xFF8C7018)],
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(3),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF2D5A40), Color(0xFF1A3B2E)],
+                        ),
+                      ),
+                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -210,39 +264,34 @@ class _NavItem extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: Icon(
-                selected ? selectedIcon : icon,
-                key: ValueKey(selected),
-                color: color,
-                size: 22,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                child: Icon(
+                  selected ? selectedIcon : icon,
+                  key: ValueKey(selected),
+                  color: color,
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: color,
+              const SizedBox(height: 3),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: color,
+                ),
               ),
-            ),
-            const SizedBox(height: 2),
-            // Active indicator dot
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: selected ? 4 : 0,
-              height: selected ? 4 : 0,
-              decoration: BoxDecoration(
-                color: GallaColors.brand,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

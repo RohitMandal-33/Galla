@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/l10n/strings.dart';
 import '../../../core/money/money.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
-import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
+import '../viewmodel/inventory_analytics_provider.dart';
 import 'add_edit_item_dialog.dart';
 import 'stock_adjustment_dialog.dart';
+
+enum InventoryFilter { all, lowStock, fastMoving, slowMoving }
 
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
@@ -19,22 +21,23 @@ class InventoryScreen extends ConsumerStatefulWidget {
 
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   String _searchQuery = '';
-  bool _filterLowStockOnly = false;
+  InventoryFilter _currentFilter = InventoryFilter.all;
 
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
-    final s = S(settings.locale);
     final currency = settings.currency;
     final inventoryAsync = ref.watch(inventoryProvider);
+    final insights = ref.watch(inventoryAnalyticsProvider);
 
     return Scaffold(
+      backgroundColor: GallaColors.canvas,
       appBar: AppBar(
-        title: Text(s.inventory),
+        title: const Text('Smart Inventory'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: s.addItemStock,
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            tooltip: 'Add Product',
             onPressed: () {
               showDialog(
                 context: context,
@@ -52,7 +55,11 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           final totalValueMinor = allItems.fold<int>(0, (sum, i) => sum + i.inventoryValueMinor);
 
           final filtered = allItems.where((item) {
-            if (_filterLowStockOnly && !item.isLowStock) return false;
+            final insight = insights[item.id];
+            if (_currentFilter == InventoryFilter.lowStock && !item.isLowStock) return false;
+            if (_currentFilter == InventoryFilter.fastMoving && insight?.movement != ItemMovement.fastMoving) return false;
+            if (_currentFilter == InventoryFilter.slowMoving && insight?.movement != ItemMovement.slowMoving) return false;
+
             if (_searchQuery.isNotEmpty) {
               final q = _searchQuery.toLowerCase();
               final nameMatch = item.name.toLowerCase().contains(q);
@@ -76,18 +83,22 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           color: GallaColors.surface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: GallaColors.line),
+                          boxShadow: GallaElevation.card,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(s.totalInventoryValue, style: const TextStyle(fontSize: 11, color: GallaColors.muted)),
+                            const Text('Total Stock Value', style: TextStyle(fontSize: 11, color: GallaColors.muted)),
                             const SizedBox(height: 2),
                             Text(
                               Money(totalValueMinor, currency: currency).format(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                                 color: GallaColors.brand,
+                                letterSpacing: -0.3,
                               ),
                             ),
                           ],
@@ -96,45 +107,45 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          setState(() => _filterLowStockOnly = !_filterLowStockOnly);
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: _filterLowStockOnly
-                                ? GallaColors.moneyOutSoft
-                                : GallaColors.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.line,
-                            ),
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: lowStockItems.isNotEmpty ? GallaColors.moneyOutSoft : GallaColors.surface,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.line,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(s.lowStockAlert, style: const TextStyle(fontSize: 11, color: GallaColors.muted)),
-                                  if (lowStockItems.isNotEmpty) ...[
-                                    const SizedBox(width: 4),
-                                    const Icon(Icons.warning_amber_rounded, size: 14, color: GallaColors.moneyOut),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${lowStockItems.length} items',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.ink,
+                          boxShadow: GallaElevation.card,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Low Stock Items',
+                                    style: TextStyle(fontSize: 11, color: GallaColors.muted),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
+                                if (lowStockItems.isNotEmpty) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(Icons.warning_amber_rounded, size: 14, color: GallaColors.moneyOut),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${lowStockItems.length} items',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.ink,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -147,193 +158,100 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search items by name or SKU...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    filled: true,
-                    fillColor: GallaColors.surface,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    hintText: 'Search products by name or SKU...',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () => setState(() => _searchQuery = ''),
+                          )
+                        : null,
                   ),
-                  onChanged: (v) => setState(() => _searchQuery = v),
+                  onChanged: (val) => setState(() => _searchQuery = val.trim()),
                 ),
               ),
 
-              // Item List
+              // Filter Chips Row
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                child: Row(
+                  children: [
+                    _FilterChip(
+                      label: 'All Items (${allItems.length})',
+                      selected: _currentFilter == InventoryFilter.all,
+                      onTap: () => setState(() => _currentFilter = InventoryFilter.all),
+                    ),
+                    const SizedBox(width: 6),
+                    _FilterChip(
+                      label: 'Low Stock (${lowStockItems.length})',
+                      selected: _currentFilter == InventoryFilter.lowStock,
+                      color: GallaColors.moneyOut,
+                      onTap: () => setState(() => _currentFilter = InventoryFilter.lowStock),
+                    ),
+                    const SizedBox(width: 6),
+                    _FilterChip(
+                      label: 'Fast Moving',
+                      selected: _currentFilter == InventoryFilter.fastMoving,
+                      color: GallaColors.moneyIn,
+                      onTap: () => setState(() => _currentFilter = InventoryFilter.fastMoving),
+                    ),
+                    const SizedBox(width: 6),
+                    _FilterChip(
+                      label: 'Slow Moving',
+                      selected: _currentFilter == InventoryFilter.slowMoving,
+                      color: GallaColors.muted,
+                      onTap: () => setState(() => _currentFilter = InventoryFilter.slowMoving),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Product List
               Expanded(
                 child: filtered.isEmpty
                     ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.inventory_2_outlined, size: 48, color: GallaColors.muted),
-                              const SizedBox(height: 12),
-                              Text(
-                                s.emptyInventory,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: GallaColors.muted),
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: () {
-                                  showDialog(
-                                    context: context,
-                                    builder: (_) => const AddEditItemDialog(),
-                                  );
-                                },
-                                icon: const Icon(Icons.add),
-                                label: Text(s.addItemStock),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: GallaColors.brand,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+                        child: GallaEmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          headline: 'No Products Found',
+                          body: 'Add your store products to track stock, profit margins, and automated reorder alerts.',
+                          actionLabel: 'Add Product',
+                          onAction: () {
+                            showDialog(
+                              context: context,
+                              builder: (_) => const AddEditItemDialog(),
+                            );
+                          },
                         ),
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    : ListView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          4,
+                          16,
+                          MediaQuery.paddingOf(context).bottom +
+                              GallaSpacing.shellBottomClearance,
+                        ),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, idx) {
-                          final item = filtered[idx];
-                          final isLow = item.isLowStock;
-
-                          return Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: GallaColors.surface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isLow ? GallaColors.moneyOut.withValues(alpha: 0.5) : GallaColors.line,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: isLow ? GallaColors.moneyOutSoft : GallaColors.brandSoft,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Icon(
-                                    Icons.inventory_2_outlined,
-                                    color: isLow ? GallaColors.moneyOut : GallaColors.brand,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              item.name,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 15,
-                                                color: GallaColors.ink,
-                                              ),
-                                            ),
-                                          ),
-                                          if (isLow)
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: GallaColors.moneyOutSoft,
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                s.lowStockAlert,
-                                                style: const TextStyle(
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: GallaColors.moneyOut,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'Stock: ${item.currentQuantity == item.currentQuantity.toInt() ? item.currentQuantity.toInt() : item.currentQuantity} ${item.unit}',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w600,
-                                              color: isLow ? GallaColors.moneyOut : GallaColors.ink,
-                                            ),
-                                          ),
-                                          if (item.salePriceMinor > 0) ...[
-                                            const Text(' · ', style: TextStyle(color: GallaColors.muted)),
-                                            Text(
-                                              'Sale: ${Money(item.salePriceMinor, currency: currency).format()}',
-                                              style: const TextStyle(fontSize: 12, color: GallaColors.muted),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert, color: GallaColors.muted),
-                                  onSelected: (action) async {
-                                    if (action == 'adjust') {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => StockAdjustmentDialog(item: item),
-                                      );
-                                    } else if (action == 'edit') {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => AddEditItemDialog(item: item),
-                                      );
-                                    } else if (action == 'delete') {
-                                      await ref.read(repositoryProvider).deleteInventoryItem(item.id);
-                                    }
-                                  },
-                                  itemBuilder: (ctx) => [
-                                    PopupMenuItem(
-                                      value: 'adjust',
-                                      child: Row(
-                                        children: [
-                                          const Icon(Icons.tune, size: 18),
-                                          const SizedBox(width: 8),
-                                          Text(s.adjustStock),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit_outlined, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Edit Item'),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                                          SizedBox(width: 8),
-                                          Text('Delete', style: TextStyle(color: Colors.red)),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                        itemBuilder: (context, i) {
+                          final item = filtered[i];
+                          final insight = insights[item.id];
+                          return _ProductCard(
+                            item: item,
+                            insight: insight,
+                            currency: currency,
+                            onEdit: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AddEditItemDialog(item: item),
+                              );
+                            },
+                            onAdjust: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => StockAdjustmentDialog(item: item),
+                              );
+                            },
                           );
                         },
                       ),
@@ -342,17 +260,206 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (_) => const AddEditItemDialog(),
-          );
-        },
-        backgroundColor: GallaColors.brand,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: Text(s.addItemStock),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({
+    required this.item,
+    required this.insight,
+    required this.currency,
+    required this.onEdit,
+    required this.onAdjust,
+  });
+
+  final InventoryItem item;
+  final InventoryInsight? insight;
+  final String currency;
+  final VoidCallback onEdit;
+  final VoidCallback onAdjust;
+
+  @override
+  Widget build(BuildContext context) {
+    final marginPct = insight?.grossMarginPct ?? 0.0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: GallaColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: item.isLowStock ? GallaColors.moneyOut.withValues(alpha: 0.4) : GallaColors.line,
+        ),
+        boxShadow: GallaElevation.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Name + Status Badge + Actions
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: item.isLowStock ? GallaColors.moneyOutSoft : GallaColors.brandSoft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.shopping_bag_outlined,
+                  color: item.isLowStock ? GallaColors.moneyOut : GallaColors.brand,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            item.name,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (item.isLowStock) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: GallaColors.moneyOutSoft,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Low Stock',
+                              style: TextStyle(color: GallaColors.moneyOut, fontSize: 10, fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${item.currentQuantity.toStringAsFixed(0)} ${item.unit} available',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: item.isLowStock ? GallaColors.moneyOut : GallaColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                onPressed: onEdit,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(),
+          const SizedBox(height: 6),
+
+          // Row 2: Financials & Smart Forecasts
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Sale Price', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                  Text(
+                    Money(item.salePriceMinor, currency: currency).format(),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Margin', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                  Text(
+                    '${marginPct.toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: marginPct >= 15 ? GallaColors.moneyIn : GallaColors.ink,
+                    ),
+                  ),
+                ],
+              ),
+              if (insight?.daysUntilStockout != null && insight!.daysUntilStockout! < 7)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Runout in', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                    Text(
+                      '~${insight!.daysUntilStockout!.toStringAsFixed(1)} days',
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: GallaColors.udhaar),
+                    ),
+                  ],
+                ),
+              FilledButton.tonal(
+                onPressed: onAdjust,
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: const Size(60, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Restock', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.color = GallaColors.brand,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color : GallaColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? color : GallaColors.line),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : GallaColors.ink,
+          ),
+        ),
       ),
     );
   }

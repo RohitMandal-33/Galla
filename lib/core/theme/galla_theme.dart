@@ -5,9 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 class GallaColors {
   // Background layers
-  static const canvas = Color(0xFFF7F4EF); // Warm cream background (slightly cooler)
+  static const canvas = Color(0xFFF7F4EF); // Warm cream background
   static const surface = Color(0xFFFFFFFF); // Card / sheet surface
   static const surfaceAlt = Color(0xFFF3EEE6); // Subtle alternative surface
+  static const surface2 = Color(0xFFF8F5EE); // Nested card / container surface
   static const surfaceElevated = Color(0xFFFAF8F4); // Slightly elevated surface
 
   // Text
@@ -21,12 +22,18 @@ class GallaColors {
   static const lineSoft = Color(0xFFF0EBE2);
   static const lineFocus = Color(0xFF1A3B2E);
 
-  // Brand — Forest Green (unchanged)
+  // Brand — Deep Forest Green
   static const brand = Color(0xFF1A3B2E); // Dark forest green (main)
   static const brandMid = Color(0xFF2D5A40); // Medium brand for buttons
   static const brandLight = Color(0xFF3D7A57); // Lighter brand for accents
   static const brandSoft = Color(0xFFE6F0EA); // Soft brand background
   static const brandSofter = Color(0xFFF0F7F2); // Very soft brand background
+
+  // Accent — Warm Gold (Trust & Prosperity)
+  static const gold = Color(0xFFB8962E);
+  static const goldMid = Color(0xFFD4AF37);
+  static const goldSoft = Color(0xFFFDF8EB);
+  static const goldSofter = Color(0xFFFFFDF5);
 
   // Income — Green (semantic)
   static const moneyIn = Color(0xFF1B7A3E);
@@ -34,7 +41,7 @@ class GallaColors {
   static const moneyInSoft = Color(0xFFEAF5ED);
   static const moneyInTag = Color(0xFF1B7A3E);
 
-  // Expense — Red (semantic)
+  // Expense — Muted Red (semantic)
   static const moneyOut = Color(0xFFC0392B);
   static const moneyOutMid = Color(0xFFD44333);
   static const moneyOutSoft = Color(0xFFFDEBEA);
@@ -50,10 +57,61 @@ class GallaColors {
   static const amber = Color(0xFFB45309);
   static const amberSoft = Color(0xFFFEF3E2);
 
-  // Blue — Party / Add Party
+  // Blue — Informational / Secondary
   static const blue = Color(0xFF1D4ED8);
   static const blueMid = Color(0xFF2563EB);
   static const blueSoft = Color(0xFFEFF4FF);
+
+  // Nepal Payment Methods
+  static const fonepay = Color(0xFFE51A24);
+  static const fonepaySoft = Color(0xFFFDECEE);
+  static const esewa = Color(0xFF60BB46);
+  static const esewaSoft = Color(0xFFEFF8EC);
+  static const khalti = Color(0xFF5C2D91);
+  static const khaltiSoft = Color(0xFFF3EDFA);
+}
+
+// ── Animations Scale ───────────────────────────────────────────────────────────
+
+class GallaAnimations {
+  static const fast = Duration(milliseconds: 150);
+  static const base = Duration(milliseconds: 250);
+  static const slow = Duration(milliseconds: 400);
+  static const spring = Cubic(0.175, 0.885, 0.32, 1.275);
+  static const easeOut = Curves.easeOutCubic;
+}
+
+// ── Elevation & Shadows ────────────────────────────────────────────────────────
+
+class GallaElevation {
+  static List<BoxShadow> card = [
+    BoxShadow(
+      color: const Color(0xFF1A3B2E).withValues(alpha: 0.04),
+      blurRadius: 10,
+      offset: const Offset(0, 3),
+    ),
+    BoxShadow(
+      color: const Color(0xFF1A3B2E).withValues(alpha: 0.02),
+      blurRadius: 2,
+      offset: const Offset(0, 1),
+    ),
+  ];
+
+  static List<BoxShadow> hero = [
+    BoxShadow(
+      color: const Color(0xFF1A3B2E).withValues(alpha: 0.22),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  static List<BoxShadow> sheet = [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.12),
+      blurRadius: 30,
+      offset: const Offset(0, -6),
+    ),
+  ];
 }
 
 // ── Spacing Scale ──────────────────────────────────────────────────────────────
@@ -74,8 +132,13 @@ class GallaSpacing {
   static const double cardPadding = 18;
   static const double tileVertical = 10;
   static const double pageHorizontal = 16;
-  static const double bottomNavHeight = 68;
-  static const double fabSize = 52;
+  static const double bottomNavHeight = 64;
+  static const double fabSize = 62;
+
+  /// Vertical clearance tab content must keep from the screen bottom so the
+  /// last items never sit under the center-docked FAB, its protrusion above
+  /// the bottom bar, or its glow. Combine with MediaQuery bottom padding.
+  static const double shellBottomClearance = bottomNavHeight + 56;
 }
 
 // ── Radius Scale ───────────────────────────────────────────────────────────────

@@ -3,35 +3,596 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 import '../../../core/money/money.dart';
+import '../../../core/parser/nl_parser.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
+import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
-import '../../../shared/widgets/galla_components.dart';
 import '../viewmodel/entry_viewmodel.dart';
 
-Future<void> showAddEntrySheet(BuildContext context, {Direction initialDirection = Direction.moneyIn}) {
+// ── Master Launcher ────────────────────────────────────────────────────────────
+
+Future<void> showQuickAddSheet(BuildContext context) {
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => EntrySheet(initialDirection: initialDirection),
+    builder: (_) => const QuickAddSheet(),
   );
 }
 
-// Global backward-compatible shim
-Future<void> showEntrySheet(BuildContext context) => showAddEntrySheet(context);
+Future<void> showAddEntrySheet(
+  BuildContext context, {
+  Direction initialDirection = Direction.moneyIn,
+  bool isCredit = false,
+  Party? seedParty,
+  String? seedPartyName,
+  String? seedCategory,
+  int? seedAmountMinor,
+}) {
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => EntrySheet(
+      initialDirection: initialDirection,
+      isCredit: isCredit,
+      seedParty: seedParty,
+      seedPartyName: seedPartyName,
+      seedCategory: seedCategory,
+      seedAmountMinor: seedAmountMinor,
+    ),
+  );
+}
+
+Future<void> showVoiceEntryModal(BuildContext context) {
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const VoiceEntrySheet(),
+  );
+}
+
+// ── Quick Add Hub ─────────────────────────────────────────────────────────────
+
+class QuickAddSheet extends ConsumerWidget {
+  const QuickAddSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
+    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: GallaColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+      ),
+      padding: const EdgeInsets.fromLTRB(GallaSpacing.lg, GallaSpacing.sm, GallaSpacing.lg, GallaSpacing.xxl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Drag Handle
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: GallaColors.line,
+                borderRadius: BorderRadius.circular(GallaRadius.pill),
+              ),
+            ),
+          ),
+          const SizedBox(height: GallaSpacing.base),
+
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Record Transaction',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: GallaColors.ink,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 20, color: GallaColors.muted),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: GallaSpacing.sm),
+
+          // 8-Option Grid
+          GridView.count(
+            crossAxisCount: 4,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            children: [
+              _ActionTile(
+                icon: Icons.add_circle_outline_rounded,
+                label: 'Sale',
+                color: GallaColors.moneyIn,
+                bg: GallaColors.moneyInSoft,
+                onTap: () {
+                  // Launch from the navigator's context: this sheet's own
+                  // context dies at pop() and can't open the next route.
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showAddEntrySheet(
+                    nav.context,
+                    initialDirection: Direction.moneyIn,
+                    seedCategory: 'Sales',
+                  );
+                },
+              ),
+              _ActionTile(
+                icon: Icons.remove_circle_outline_rounded,
+                label: 'Expense',
+                color: GallaColors.moneyOut,
+                bg: GallaColors.moneyOutSoft,
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showAddEntrySheet(
+                      nav.context, initialDirection: Direction.moneyOut);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.call_received_rounded,
+                label: 'Received',
+                color: GallaColors.moneyIn,
+                bg: GallaColors.moneyInSoft,
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showAddEntrySheet(
+                    nav.context,
+                    initialDirection: Direction.moneyIn,
+                    seedCategory: 'Customer Payment',
+                  );
+                },
+              ),
+              _ActionTile(
+                icon: Icons.call_made_rounded,
+                label: 'Paid',
+                color: GallaColors.moneyOut,
+                bg: GallaColors.moneyOutSoft,
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showAddEntrySheet(
+                      nav.context, initialDirection: Direction.moneyOut);
+                },
+              ),
+              _ActionTile(
+                icon: Icons.pending_actions_rounded,
+                label: 'Credit',
+                color: GallaColors.udhaar,
+                bg: GallaColors.udhaarSoft,
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showAddEntrySheet(
+                    nav.context,
+                    initialDirection: Direction.moneyIn,
+                    isCredit: true,
+                  );
+                },
+              ),
+              _ActionTile(
+                icon: Icons.receipt_long_rounded,
+                label: 'Invoice',
+                color: GallaColors.blue,
+                bg: GallaColors.blueSoft,
+                onTap: () {
+                  // Resolve the router before popping so we never touch a
+                  // deactivated context after the sheet closes.
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  router.push('/invoices/create');
+                },
+              ),
+              _ActionTile(
+                icon: Icons.inventory_2_outlined,
+                label: 'Stock',
+                color: GallaColors.gold,
+                bg: GallaColors.goldSoft,
+                onTap: () {
+                  final router = GoRouter.of(context);
+                  Navigator.of(context).pop();
+                  router.go('/inventory');
+                },
+              ),
+              _ActionTile(
+                icon: Icons.mic_rounded,
+                label: 'Voice',
+                color: GallaColors.brand,
+                bg: GallaColors.brandSoft,
+                onTap: () {
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  showVoiceEntryModal(nav.context);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: GallaSpacing.base),
+
+          // Recent / Repeat Actions
+          if (txns.isNotEmpty) ...[
+            const Divider(),
+            const SizedBox(height: GallaSpacing.xs),
+            const Text(
+              'Recent Actions',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: GallaColors.muted,
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.xs),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: txns.take(3).map((t) {
+                final isInc = t.direction == Direction.moneyIn;
+                final amt = Money(t.amountMinor, currency: settings.currency).format();
+                final title = t.partyName ?? t.category ?? 'Sale';
+                return ActionChip(
+                  avatar: Icon(
+                    isInc ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                    size: 12,
+                    color: isInc ? GallaColors.moneyIn : GallaColors.moneyOut,
+                  ),
+                  label: Text(
+                    'Repeat $title ($amt)',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  onPressed: () {
+                    final nav = Navigator.of(context);
+                    nav.pop();
+                    showAddEntrySheet(
+                      nav.context,
+                      initialDirection: t.direction,
+                      isCredit: t.isCredit,
+                      seedPartyName: t.partyName,
+                      seedCategory: t.category,
+                      seedAmountMinor: t.amountMinor,
+                    );
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.bg,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color bg;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(GallaRadius.lg),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: GallaColors.ink,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Voice Entry Modal ─────────────────────────────────────────────────────────
+
+class VoiceEntrySheet extends ConsumerStatefulWidget {
+  const VoiceEntrySheet({super.key});
+
+  @override
+  ConsumerState<VoiceEntrySheet> createState() => _VoiceEntrySheetState();
+}
+
+class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTickerProviderStateMixin {
+  final _speech = SpeechToText();
+  final _parser = NlParser();
+  bool _isListening = false;
+  String _transcript = '';
+  ParsedEntry? _parsed;
+  late AnimationController _animCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _startListening();
+  }
+
+  @override
+  void dispose() {
+    _speech.stop();
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startListening() async {
+    final available = await _speech.initialize();
+    if (!available) return;
+    HapticFeedback.mediumImpact();
+    setState(() => _isListening = true);
+
+    await _speech.listen(
+      localeId: 'ne_NP', // Defaults to Nepali if supported, falls back automatically
+      onResult: (result) {
+        setState(() {
+          _transcript = result.recognizedWords;
+          if (_transcript.trim().isNotEmpty) {
+            _parsed = _parser.parse(_transcript);
+          }
+        });
+        if (result.finalResult) {
+          setState(() => _isListening = false);
+        }
+      },
+    );
+  }
+
+  Future<void> _confirmAndSave() async {
+    if (_parsed == null || _parsed!.amountMinor == null) return;
+    final repo = ref.read(repositoryProvider);
+    final settings = ref.read(settingsProvider).valueOrNull;
+
+    await repo.addEntry(
+      direction: _parsed!.direction ?? Direction.moneyIn,
+      amountMinor: _parsed!.amountMinor!,
+      partyName: _parsed!.partyName,
+      category: _parsed!.category,
+      note: _transcript,
+      isCredit: _parsed!.isCredit,
+      nlRaw: _transcript,
+      aiInferred: true,
+      branchId: settings?.activeBranchId,
+    );
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaction recorded via Voice!')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: GallaColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+      ),
+      padding: const EdgeInsets.all(GallaSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: GallaColors.line,
+              borderRadius: BorderRadius.circular(GallaRadius.pill),
+            ),
+          ),
+          const SizedBox(height: GallaSpacing.lg),
+
+          // Animated Voice Circle
+          AnimatedBuilder(
+            animation: _animCtrl,
+            builder: (context, child) {
+              final scale = _isListening ? 1.0 + (_animCtrl.value * 0.15) : 1.0;
+              return Transform.scale(
+                scale: scale,
+                child: Container(
+                  width: 76,
+                  height: 76,
+                  decoration: BoxDecoration(
+                    color: _isListening ? GallaColors.brand : GallaColors.brandSoft,
+                    shape: BoxShape.circle,
+                    boxShadow: _isListening ? GallaElevation.hero : null,
+                  ),
+                  child: Icon(
+                    _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                    size: 36,
+                    color: _isListening ? Colors.white : GallaColors.brand,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: GallaSpacing.base),
+
+          Text(
+            _isListening ? 'Listening...' : 'Tap to speak',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: GallaColors.ink,
+            ),
+          ),
+          const SizedBox(height: GallaSpacing.xs),
+          Text(
+            _transcript.isEmpty
+                ? 'Try saying: "Hari lai 500 ko saman udhar diye"'
+                : '"$_transcript"',
+            style: TextStyle(
+              fontSize: 13,
+              fontStyle: _transcript.isEmpty ? FontStyle.italic : FontStyle.normal,
+              color: _transcript.isEmpty ? GallaColors.muted : GallaColors.ink,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: GallaSpacing.lg),
+
+          // Parsed Confirmation Card
+          if (_parsed != null && _parsed!.amountMinor != null) ...[
+            Container(
+              padding: const EdgeInsets.all(GallaSpacing.base),
+              decoration: BoxDecoration(
+                color: GallaColors.surface2,
+                borderRadius: BorderRadius.circular(GallaRadius.lg),
+                border: Border.all(color: GallaColors.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 16, color: GallaColors.gold),
+                      SizedBox(width: 6),
+                      Text(
+                        'Understood Transaction',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.gold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Type', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
+                      Text(
+                        _parsed!.isCredit ? 'Credit (Udhaar)' : (_parsed!.direction == Direction.moneyIn ? 'Cash In' : 'Cash Out'),
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Amount', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
+                      Text(
+                        Money(_parsed!.amountMinor!, currency: settings.currency).format(),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: GallaColors.brand),
+                      ),
+                    ],
+                  ),
+                  if (_parsed!.partyName != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Party', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
+                        Text(_parsed!.partyName!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.base),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _startListening,
+                    child: const Text('Try Again'),
+                  ),
+                ),
+                const SizedBox(width: GallaSpacing.md),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _confirmAndSave,
+                    child: const Text('Confirm & Save'),
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            OutlinedButton.icon(
+              onPressed: _startListening,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Speak Again'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Standard Entry Form ───────────────────────────────────────────────────────
 
 class EntrySheet extends ConsumerStatefulWidget {
-  const EntrySheet({super.key, this.initialDirection = Direction.moneyIn, this.seedParty});
+  const EntrySheet({
+    super.key,
+    this.initialDirection = Direction.moneyIn,
+    this.isCredit = false,
+    this.seedParty,
+    this.seedPartyName,
+    this.seedCategory,
+    this.seedAmountMinor,
+  });
+
   final Direction initialDirection;
+  final bool isCredit;
   final Party? seedParty;
+  final String? seedPartyName;
+  final String? seedCategory;
+  final int? seedAmountMinor;
 
   @override
   ConsumerState<EntrySheet> createState() => _EntrySheetState();
@@ -41,18 +602,16 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   final _amountController = TextEditingController();
   final _partyController = TextEditingController();
   final _noteController = TextEditingController();
-  final _speech = SpeechToText();
-  bool _listening = false;
-  bool _showMore = false;
-  bool _savedSuccess = false;
+  final _formScroll = ScrollController();
+  final _chipKeys = <String, GlobalKey>{};
 
   static const _incomeCategories = [
-    'Sales', 'Services', 'Customer Payment', 'Commission', 'Interest', 'Other Income',
+    'Sales', 'Services', 'Customer Payment', 'Commission', 'Other Income',
   ];
 
   static const _expenseCategories = [
     'Purchase / Stock', 'Rent', 'Staff / Salary', 'Electricity / Utility',
-    'Transport', 'Personal / Drawings', 'Other Expense',
+    'Transport', 'Other Expense',
   ];
 
   @override
@@ -60,30 +619,51 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     super.initState();
     if (widget.seedParty != null) {
       _partyController.text = widget.seedParty!.name;
+    } else if (widget.seedPartyName != null) {
+      _partyController.text = widget.seedPartyName!;
+    }
+    final seedMinor = widget.seedAmountMinor ?? 0;
+    if (seedMinor > 0) {
+      final whole = seedMinor ~/ 100;
+      final cents = seedMinor % 100;
+      _amountController.text =
+          cents == 0 ? '$whole' : (seedMinor / 100).toString();
+    }
+    // Make a seeded category visible as soon as the sheet lays out.
+    if (widget.seedCategory != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _revealChip(widget.seedCategory!);
+      });
     }
   }
+
+  void _revealChip(String category) {
+    final keyContext = _chipKeys[category]?.currentContext;
+    if (keyContext != null && keyContext.mounted) {
+      Scrollable.ensureVisible(
+        keyContext,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  EntrySeed get _seed => EntrySeed(
+        direction: widget.initialDirection,
+        isCredit: widget.isCredit,
+        partyName: widget.seedParty?.name ?? widget.seedPartyName,
+        category: widget.seedCategory,
+        amountMinor: widget.seedAmountMinor ?? 0,
+      );
 
   @override
   void dispose() {
     _amountController.dispose();
     _partyController.dispose();
     _noteController.dispose();
+    _formScroll.dispose();
     super.dispose();
-  }
-
-  Future<void> _listen(EntryViewModel vm) async {
-    final ok = await _speech.initialize();
-    if (!ok) return;
-    HapticFeedback.mediumImpact();
-    setState(() => _listening = true);
-    await _speech.listen(
-      onResult: (r) {
-        if (r.finalResult) {
-          vm.applyNl(r.recognizedWords);
-          setState(() => _listening = false);
-        }
-      },
-    );
   }
 
   Future<void> _pickPhoto(EntryViewModel vm) async {
@@ -97,49 +677,40 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(entryViewModelProvider(widget.initialDirection));
-    final vm = ref.read(entryViewModelProvider(widget.initialDirection).notifier);
+    final state = ref.watch(entryViewModelProvider(_seed));
+    final vm = ref.read(entryViewModelProvider(_seed).notifier);
     final parties = ref.watch(partiesProvider).valueOrNull ?? const <Party>[];
-    final inventory = ref.watch(inventoryProvider).valueOrNull ?? const <InventoryItem>[];
     final isIncome = state.direction == Direction.moneyIn;
     final categories = isIncome ? _incomeCategories : _expenseCategories;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    // Sync controller with state
-    if (_amountController.text.isNotEmpty) {
-      final parsedMinor = Money.parseToMinor(_amountController.text);
-      if (parsedMinor != state.amountMinor && state.amountMinor > 0) {
-        _amountController.text = (state.amountMinor / 100).toStringAsFixed(
-          state.amountMinor % 100 == 0 ? 0 : 2,
-        );
-      }
-    } else if (state.amountMinor > 0) {
-      _amountController.text = (state.amountMinor / 100).toStringAsFixed(
-        state.amountMinor % 100 == 0 ? 0 : 2,
-      );
-    }
-
-    if (state.partyName != null && _partyController.text != state.partyName) {
-      _partyController.text = state.partyName!;
-    }
-    if (state.note != null && _noteController.text != state.note) {
-      _noteController.text = state.note!;
-    }
-
     final activeColor = isIncome ? GallaColors.moneyIn : GallaColors.moneyOut;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
-      ),
-      padding: EdgeInsets.fromLTRB(GallaSpacing.lg, 0, GallaSpacing.lg, GallaSpacing.lg + bottomInset),
-      child: SingleChildScrollView(
+    // ── IME / window-inset strategy ────────────────────────────────────────
+    // The activity runs with windowSoftInputMode=adjustResize, so the IME inset
+    // arrives here via MediaQuery. The SHEET ROOT owns that inset (Flutter's
+    // equivalent of imePadding at the correct level): everything, including
+    // the pinned Save action, rides above the keyboard. The form scrolls in a
+    // height-capped region so nothing is ever clipped or pushed off-screen,
+    // and no space is wasted when the keyboard is hidden.
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: GallaColors.surface,
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+        ),
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.92,
+        ),
+        padding:
+            const EdgeInsets.fromLTRB(GallaSpacing.lg, 0, GallaSpacing.lg, GallaSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Handle ──────────────────────────────────────────────────
+            // Handle
             Center(
               child: Container(
                 margin: const EdgeInsets.symmetric(vertical: GallaSpacing.md),
@@ -152,424 +723,241 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
               ),
             ),
 
-            // ── Header ──────────────────────────────────────────────────
+            // Direction Selector
             Row(
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: GallaColors.canvas,
-                      borderRadius: BorderRadius.circular(GallaRadius.sm),
-                      border: Border.all(color: GallaColors.line),
-                    ),
-                    child: const Icon(Icons.close_rounded, size: 18, color: GallaColors.ink),
-                  ),
-                ),
-                const SizedBox(width: GallaSpacing.md),
-                const Text(
-                  'New Entry',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: GallaColors.ink),
-                ),
-                const Spacer(),
-                // Voice input button
-                GestureDetector(
-                  onTap: _listening ? () => _speech.stop() : () => _listen(vm),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _listening ? GallaColors.moneyOutSoft : GallaColors.brandSoft,
-                      borderRadius: BorderRadius.circular(GallaRadius.sm),
-                    ),
-                    child: Icon(
-                      _listening ? Icons.stop_rounded : Icons.mic_none_rounded,
-                      color: _listening ? GallaColors.moneyOut : GallaColors.brand,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: GallaSpacing.base),
-
-            // ── Income / Expense Toggle ──────────────────────────────────
-            Container(
-              height: 48,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: GallaColors.canvas,
-                borderRadius: BorderRadius.circular(GallaRadius.md),
-                border: Border.all(color: GallaColors.line),
-              ),
-              child: Row(
-                children: [
-                  _DirectionTab(
-                    label: '+ Income',
-                    isSelected: isIncome,
-                    selectedColor: GallaColors.moneyIn,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      vm.setDirection(Direction.moneyIn);
-                      vm.setCategory(null);
-                    },
-                  ),
-                  _DirectionTab(
-                    label: '− Expense',
-                    isSelected: !isIncome,
-                    selectedColor: GallaColors.moneyOut,
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      vm.setDirection(Direction.moneyOut);
-                      vm.setCategory(null);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: GallaSpacing.xl),
-
-            // ── Amount Input ─────────────────────────────────────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  'Rs.',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: activeColor.withValues(alpha: 0.7),
-                    height: 1.0,
-                  ),
-                ),
-                const SizedBox(width: GallaSpacing.sm),
                 Expanded(
-                  child: TextField(
-                    controller: _amountController,
-                    autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
-                    style: TextStyle(
-                      fontSize: 44,
-                      fontWeight: FontWeight.w800,
-                      color: activeColor,
-                      letterSpacing: -1.5,
-                      height: 1.0,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '0',
-                      hintStyle: TextStyle(
-                        fontSize: 44,
-                        fontWeight: FontWeight.w800,
-                        color: GallaColors.line,
-                        letterSpacing: -1.5,
-                      ),
-                      filled: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                    ),
-                    onChanged: (v) {
-                      final minor = Money.parseToMinor(v);
-                      vm.setAmount(minor);
-                    },
+                  child: _DirectionTab(
+                    label: 'Cash In (+)',
+                    selected: isIncome,
+                    color: GallaColors.moneyIn,
+                    onTap: () => vm.setDirection(Direction.moneyIn),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _DirectionTab(
+                    label: 'Cash Out (-)',
+                    selected: !isIncome,
+                    color: GallaColors.moneyOut,
+                    onTap: () => vm.setDirection(Direction.moneyOut),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: GallaSpacing.md),
-
-            // ── Quick amount chips ──────────────────────────────────────
-            Row(
-              children: [100, 500, 1000, 5000].map((amt) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        final next = state.amountMinor + (amt * 100);
-                        vm.setAmount(next);
-                        _amountController.text = (next / 100).toStringAsFixed(0);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: GallaColors.canvas,
-                          borderRadius: BorderRadius.circular(GallaRadius.sm),
-                          border: Border.all(color: GallaColors.line),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          '+$amt',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: GallaColors.ink,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
             const SizedBox(height: GallaSpacing.base),
 
-            // ── Party Field ─────────────────────────────────────────────
-            TextField(
-              controller: _partyController,
-              decoration: InputDecoration(
-                labelText: 'Customer / Party',
-                hintText: isIncome ? 'e.g. Hari, Sita Store' : 'e.g. Vegetable supplier',
-                prefixIcon: const Icon(Icons.person_outline_rounded, size: 20),
-              ),
-              onChanged: (v) => vm.setParty(v.trim().isEmpty ? null : v.trim()),
-            ),
-            if (parties.isNotEmpty) ...[
-              const SizedBox(height: GallaSpacing.sm),
-              SizedBox(
-                height: 32,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: parties.take(6).length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 6),
-                  itemBuilder: (_, i) {
-                    final pp = parties[i];
-                    return GestureDetector(
-                      onTap: () {
-                        _partyController.text = pp.name;
-                        vm.setParty(pp.name);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: GallaColors.canvas,
-                          borderRadius: BorderRadius.circular(GallaRadius.pill),
-                          border: Border.all(color: GallaColors.line),
-                        ),
-                        child: Text(
-                          pp.name,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
+            // Scrollable form region — grows only when space allows, scrolls
+            // under small viewports/keyboards. TextFields reveal their caret
+            // via Scrollable.ensureVisible into this controller automatically
+            // (e.g. focusing Note scrolls it into view).
+            Flexible(
+              child: SingleChildScrollView(
+                controller: _formScroll,
+                padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Amount Field
+                    TextField(
+                      controller: _amountController,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      textInputAction: TextInputAction.next,
+                      autofocus: true,
+                      cursorColor: activeColor,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: activeColor,
+                        letterSpacing: -1.0,
                       ),
-                    );
-                  },
-                ),
-              ),
-            ],
-            const SizedBox(height: GallaSpacing.md),
-
-            // ── Payment Method (Cash / Udhaar) ──────────────────────────
-            GallaPaymentMethodSelector(
-              isUdhaar: state.isUdhaar,
-              onChanged: (v) {
-                HapticFeedback.selectionClick();
-                vm.setUdhaar(v);
-              },
-            ),
-            const SizedBox(height: GallaSpacing.md),
-
-            // ── Category (horizontal scroll) ────────────────────────────
-            Text(
-              'Category',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: GallaColors.inkSecondary,
-                  ),
-            ),
-            const SizedBox(height: GallaSpacing.sm),
-            SizedBox(
-              height: 34,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: categories.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 6),
-                itemBuilder: (_, i) {
-                  final cat = categories[i];
-                  final isSelected = state.category == cat;
-                  final bg = isSelected
-                      ? (isIncome ? GallaColors.moneyIn : GallaColors.moneyOut)
-                      : GallaColors.canvas;
-                  final fg = isSelected ? Colors.white : GallaColors.ink;
-                  final border = isSelected ? Colors.transparent : GallaColors.line;
-                  return GestureDetector(
-                    onTap: () => vm.setCategory(isSelected ? null : cat),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: bg,
-                        borderRadius: BorderRadius.circular(GallaRadius.pill),
-                        border: Border.all(color: border),
-                      ),
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: fg,
+                      decoration: InputDecoration(
+                        prefixText: 'Rs. ',
+                        prefixStyle: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: activeColor.withValues(alpha: 0.7),
                         ),
+                        hintText: '0',
+                        hintStyle: TextStyle(color: GallaColors.line),
+                        border: InputBorder.none,
+                        filled: false,
                       ),
+                      onChanged: (v) => vm.setAmount(Money.parseToMinor(v)),
                     ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: GallaSpacing.base),
+                    const Divider(),
+                    const SizedBox(height: GallaSpacing.sm),
 
-            // ── More details (collapsible) ───────────────────────────────
-            GestureDetector(
-              onTap: () => setState(() => _showMore = !_showMore),
-              child: Row(
-                children: [
-                  Icon(
-                    _showMore ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                    size: 18,
-                    color: GallaColors.muted,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _showMore ? 'Less details' : 'More details',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: GallaColors.muted,
+                    // Party Input
+                    TextField(
+                      controller: _partyController,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Party / Customer / Supplier (Optional)',
+                        prefixIcon:
+                            const Icon(Icons.person_outline_rounded, size: 20),
+                        suffixIcon: parties.isNotEmpty
+                            ? PopupMenuButton<String>(
+                                icon:
+                                    const Icon(Icons.arrow_drop_down_rounded),
+                                onSelected: (name) {
+                                  _partyController.text = name;
+                                  vm.setParty(name);
+                                },
+                                itemBuilder: (_) => parties
+                                    .take(5)
+                                    .map((p) => PopupMenuItem(
+                                        value: p.name, child: Text(p.name)))
+                                    .toList(),
+                              )
+                            : null,
+                      ),
+                      onChanged: vm.setParty,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              child: _showMore
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: GallaSpacing.md),
+                    const SizedBox(height: GallaSpacing.sm),
 
-                        // Note field
-                        TextField(
-                          controller: _noteController,
-                          decoration: const InputDecoration(
-                            labelText: 'Note (Optional)',
-                            hintText: 'e.g. Sold groceries and snacks',
-                            prefixIcon: Icon(Icons.edit_note_rounded, size: 20),
-                          ),
-                          onChanged: (v) => vm.setNote(v.trim().isEmpty ? null : v.trim()),
-                        ),
-                        const SizedBox(height: GallaSpacing.md),
-
-                        // Inventory item link
-                        if (inventory.isNotEmpty) ...[
-                          DropdownButtonFormField<String?>(
-                            initialValue: state.inventoryItemId,
-                            decoration: const InputDecoration(
-                              labelText: 'Stock Item (Optional)',
-                              prefixIcon: Icon(Icons.inventory_2_outlined, size: 20),
-                            ),
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('None')),
-                              ...inventory.map(
-                                (item) => DropdownMenuItem(
-                                  value: item.id,
-                                  child: Text('${item.name} (${item.currentQuantity} ${item.unit})'),
+                    // Category Chips — horizontally scrollable (LazyRow
+                    // equivalent); selected chip always scrolled into view and
+                    // trailing spacing keeps the last chip clear of the edge.
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ...categories.map((cat) {
+                            final selected = state.category == cat;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: ChoiceChip(
+                                key: _chipKeys.putIfAbsent(
+                                    cat, () => GlobalKey(debugLabel: cat)),
+                                label: Text(cat),
+                                selected: selected,
+                                selectedColor:
+                                    activeColor.withValues(alpha: 0.15),
+                                labelStyle: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: selected
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                  color:
+                                      selected ? activeColor : GallaColors.ink,
                                 ),
+                                onSelected: (val) {
+                                  vm.setCategory(val ? cat : null);
+                                  if (val) _revealChip(cat);
+                                },
                               ),
-                            ],
-                            onChanged: (val) {
-                              vm.setInventoryItem(val);
-                              if (val != null) {
-                                final item = inventory.firstWhere((i) => i.id == val);
-                                final price = isIncome ? item.salePriceMinor : item.costPriceMinor;
-                                if (state.amountMinor == 0 && price > 0) {
-                                  vm.setAmount(price);
-                                  _amountController.text = (price / 100).toStringAsFixed(0);
-                                }
-                                if (_noteController.text.isEmpty) {
-                                  _noteController.text = item.name;
-                                  vm.setNote(item.name);
-                                }
-                              }
-                            },
-                          ),
-                          const SizedBox(height: GallaSpacing.md),
+                            );
+                          }),
+                          const SizedBox(width: GallaSpacing.base),
                         ],
+                      ),
+                    ),
+                    const SizedBox(height: GallaSpacing.sm),
 
-                        // Attach photo + repeat last
-                        Row(
-                          children: [
-                            TextButton.icon(
-                              onPressed: () => _pickPhoto(vm),
-                              icon: Icon(
-                                state.photoPath != null ? Icons.check_circle_outline_rounded : Icons.camera_alt_outlined,
-                                size: 16,
-                              ),
-                              label: Text(state.photoPath != null ? 'Photo Attached ✓' : 'Attach Bill Photo'),
+                    // Udhaar (Credit) Toggle — no cash movement until settled
+                    Container(
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: state.isUdhaar
+                            ? GallaColors.udhaarSoft
+                            : GallaColors.surface2,
+                        borderRadius: BorderRadius.circular(GallaRadius.md),
+                        border: Border.all(
+                          color: state.isUdhaar
+                              ? GallaColors.udhaar
+                              : GallaColors.line,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: SwitchListTile(
+                          dense: true,
+                          value: state.isUdhaar,
+                          activeThumbColor: GallaColors.udhaar,
+                          onChanged: (v) => vm.setUdhaar(v),
+                          secondary: Icon(
+                            Icons.hourglass_top_rounded,
+                            size: 20,
+                            color: state.isUdhaar
+                                ? GallaColors.udhaar
+                                : GallaColors.muted,
+                          ),
+                          title: const Text(
+                            'Udhaar (Credit)',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          subtitle: Text(
+                            'No cash moved yet',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: state.isUdhaar
+                                  ? GallaColors.udhaar
+                                  : GallaColors.muted,
                             ),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () {
-                                final txns = ref.read(transactionsProvider).valueOrNull ?? [];
-                                vm.repeatLast(txns);
-                              },
-                              child: const Text('Repeat Last'),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: GallaSpacing.sm),
+
+                    // Note + Photo Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _noteController,
+                            textInputAction: TextInputAction.done,
+                            decoration: const InputDecoration(
+                              labelText: 'Note (Optional)',
+                              prefixIcon: Icon(Icons.notes_rounded, size: 20),
                             ),
-                          ],
+                            onChanged: vm.setNote,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          icon: Icon(
+                            state.photoPath != null
+                                ? Icons.check_circle_rounded
+                                : Icons.camera_alt_outlined,
+                            color: state.photoPath != null
+                                ? GallaColors.moneyIn
+                                : GallaColors.ink,
+                          ),
+                          onPressed: () => _pickPhoto(vm),
                         ),
                       ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-            const SizedBox(height: GallaSpacing.base),
-
-            // ── Save Button ──────────────────────────────────────────────
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: _savedSuccess
-                  ? Center(
-                      key: const ValueKey('success'),
-                      child: GallaSuccessCheck(color: activeColor),
-                    )
-                  : FilledButton(
-                      key: const ValueKey('save'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: activeColor,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(GallaRadius.lg),
-                        ),
-                      ),
-                      onPressed: state.isValid && !state.saving
-                          ? () async {
-                              HapticFeedback.mediumImpact();
-                              final nav = Navigator.of(context);
-                              final ok = await vm.save();
-                              if (ok && mounted) {
-                                setState(() => _savedSuccess = true);
-                                await Future.delayed(const Duration(milliseconds: 500));
-                                nav.pop();
-                              }
-                            }
-                          : null,
-                      child: state.saving
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                            )
-                          : Text(
-                              isIncome ? 'Save Income' : 'Save Expense',
-                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                            ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.sm),
+
+            // Pinned primary action — lives OUTSIDE the scroll region so it
+            // stays visible and tappable above the keyboard at all times.
+            FilledButton(
+              onPressed: state.isValid && !state.saving
+                  ? () async {
+                      final ok = await vm.save();
+                      if (ok && context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    }
+                  : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: activeColor,
+                minimumSize: const Size.fromHeight(52),
+              ),
+              child: state.saving
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Save Entry',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -578,40 +966,37 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   }
 }
 
-// ── Direction Tab ──────────────────────────────────────────────────────────────
-
 class _DirectionTab extends StatelessWidget {
   const _DirectionTab({
     required this.label,
-    required this.isSelected,
-    required this.selectedColor,
+    required this.selected,
+    required this.color,
     required this.onTap,
   });
 
   final String label;
-  final bool isSelected;
-  final Color selectedColor;
+  final bool selected;
+  final Color color;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: isSelected ? selectedColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(GallaRadius.sm),
-          ),
-          alignment: Alignment.center,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.12) : GallaColors.surface2,
+          borderRadius: BorderRadius.circular(GallaRadius.md),
+          border: Border.all(color: selected ? color : GallaColors.line),
+        ),
+        child: Center(
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: isSelected ? Colors.white : GallaColors.muted,
+              color: selected ? color : GallaColors.muted,
             ),
           ),
         ),

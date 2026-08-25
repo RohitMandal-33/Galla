@@ -34,7 +34,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final parties = ref.watch(partiesProvider).valueOrNull ?? [];
 
     return reportsAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => Scaffold(
+        backgroundColor: GallaColors.canvas,
+        appBar: AppBar(backgroundColor: GallaColors.canvas, title: Text(s.reportsTab)),
+        body: const Padding(
+          padding: EdgeInsets.all(GallaSpacing.base),
+          child: Column(
+            children: [
+              GallaSkeletonBlock(width: double.infinity, height: 180, radius: GallaRadius.xl),
+              SizedBox(height: 12),
+              GallaSkeletonBlock(width: double.infinity, height: 140, radius: GallaRadius.lg),
+              SizedBox(height: 12),
+              GallaSkeletonBlock(width: double.infinity, height: 160, radius: GallaRadius.lg),
+            ],
+          ),
+        ),
+      ),
       error: (e, _) => Scaffold(body: Center(child: Text('$e'))),
       data: (state) {
         final report = state.report;
@@ -68,11 +83,11 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           ),
           body: ListView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               GallaSpacing.base,
               GallaSpacing.xs,
               GallaSpacing.base,
-              120,
+              MediaQuery.paddingOf(context).bottom + GallaSpacing.shellBottomClearance,
             ),
             children: [
               // ── Period filter chips ─────────────────────────────────────
@@ -153,11 +168,17 @@ class _PeriodSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _PeriodChip(label: 'This Week', range: ReportRange.week, current: current, onTap: () => onChanged(ReportRange.week)),
+        Expanded(
+          child: _PeriodChip(label: 'This Week', range: ReportRange.week, current: current, onTap: () => onChanged(ReportRange.week)),
+        ),
         const SizedBox(width: GallaSpacing.sm),
-        _PeriodChip(label: 'This Month', range: ReportRange.month, current: current, onTap: () => onChanged(ReportRange.month)),
+        Expanded(
+          child: _PeriodChip(label: 'This Month', range: ReportRange.month, current: current, onTap: () => onChanged(ReportRange.month)),
+        ),
         const SizedBox(width: GallaSpacing.sm),
-        _PeriodChip(label: 'This Year', range: ReportRange.year, current: current, onTap: () => onChanged(ReportRange.year)),
+        Expanded(
+          child: _PeriodChip(label: 'This Year', range: ReportRange.year, current: current, onTap: () => onChanged(ReportRange.year)),
+        ),
       ],
     );
   }
@@ -177,7 +198,9 @@ class _PeriodChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        width: double.infinity,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? GallaColors.brand : GallaColors.surface,
           borderRadius: BorderRadius.circular(GallaRadius.sm),
@@ -185,6 +208,8 @@ class _PeriodChip extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -231,16 +256,24 @@ class _BusinessSummaryCard extends StatelessWidget {
         children: [
           // Header
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Business Summary',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: GallaColors.ink),
+              const Expanded(
+                child: Text(
+                  'Business Summary',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: GallaColors.ink),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (periodLabel.isNotEmpty)
-                Text(
-                  periodLabel,
-                  style: const TextStyle(fontSize: 11, color: GallaColors.muted, fontWeight: FontWeight.w500),
+                Flexible(
+                  child: Text(
+                    periodLabel,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: GallaColors.muted, fontWeight: FontWeight.w500),
+                  ),
                 ),
             ],
           ),
@@ -278,24 +311,28 @@ class _BusinessSummaryCard extends StatelessWidget {
 
           // Net profit / loss
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Net Profit', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
-                  const SizedBox(height: 3),
-                  Text(
-                    m(netProfitMinor.abs()),
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: isProfit ? GallaColors.moneyIn : GallaColors.moneyOut,
-                      letterSpacing: -0.8,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Net Profit', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
+                    const SizedBox(height: 3),
+                    Text(
+                      m(netProfitMinor.abs()),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: isProfit ? GallaColors.moneyIn : GallaColors.moneyOut,
+                        letterSpacing: -0.8,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -303,6 +340,7 @@ class _BusinessSummaryCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(GallaRadius.sm),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
@@ -400,18 +438,28 @@ class _IncomeExpenseChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Income vs Expense',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              const Expanded(
+                child: Text(
+                  'Income vs Expense',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Row(
-                children: [
-                  _ChartLegend(color: GallaColors.moneyIn, label: 'Income'),
-                  const SizedBox(width: GallaSpacing.sm),
-                  _ChartLegend(color: GallaColors.moneyOut, label: 'Expense'),
-                ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ChartLegend(color: GallaColors.moneyIn, label: 'Income'),
+                      const SizedBox(width: GallaSpacing.sm),
+                      _ChartLegend(color: GallaColors.moneyOut, label: 'Expense'),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),

@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/l10n/strings.dart';
+import '../../core/money/money.dart';
 import '../../core/providers.dart';
 import '../../core/theme/galla_theme.dart';
+import '../../data/demo_seeder.dart';
 import '../../data/galla_repository.dart';
 import '../../domain/models.dart';
 
@@ -16,189 +17,386 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 }
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
-  final _page = PageController();
-  int _index = 0;
+  final _pageCtrl = PageController();
+  int _step = 0;
 
-  Future<void> _finish({required bool skipBalance}) async {
-    final repo = ref.read(repositoryProvider);
-    final current = await repo.loadSettings();
-    await repo.saveSettings(current.copyWith(onboardingDone: true));
-    if (!mounted) return;
-    if (skipBalance) {
-      context.go('/galla');
-    } else {
-      context.go('/onboarding/balance');
-    }
-  }
+  // Form State
+  final _nameCtrl = TextEditingController(text: 'My Business');
+  String _businessType = 'Kirana / Grocery';
+  final String _currency = 'NPR';
+  final String _locale = 'ne';
+  final _balanceCtrl = TextEditingController(text: '15000');
+  bool _loading = false;
 
-  @override
-  Widget build(BuildContext context) {
-    final locale = ref.watch(stringsLocaleProvider);
-    final s = S(locale);
-    final pages = [
-      (s.welcome1Title, s.welcome1Body, Icons.edit_note_rounded),
-      (s.welcome2Title, s.welcome2Body, Icons.account_balance_wallet_outlined),
-      (s.welcome3Title, s.welcome3Body, Icons.people_alt_outlined),
-    ];
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => _finish(skipBalance: true),
-                  child: Text(s.skip),
-                ),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _page,
-                  onPageChanged: (i) => setState(() => _index = i),
-                  itemCount: 3,
-                  itemBuilder: (context, i) {
-                    final p = pages[i];
-                    return Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: GallaColors.brandSoft,
-                          child: Icon(p.$3, size: 40, color: GallaColors.brand),
-                        ),
-                        const SizedBox(height: 28),
-                        Text(p.$1, style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        Text(p.$2, style: Theme.of(context).textTheme.bodyLarge, textAlign: TextAlign.center),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  3,
-                  (i) => Container(
-                    width: _index == i ? 18 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      color: _index == i ? GallaColors.brand : GallaColors.line,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    if (_index < 2) {
-                      _page.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      );
-                    } else {
-                      _finish(skipBalance: false);
-                    }
-                  },
-                  child: Text(_index < 2 ? s.continueLabel : s.getStarted),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class StartingBalanceScreen extends ConsumerStatefulWidget {
-  const StartingBalanceScreen({super.key});
-
-  @override
-  ConsumerState<StartingBalanceScreen> createState() => _StartingBalanceScreenState();
-}
-
-class _StartingBalanceScreenState extends ConsumerState<StartingBalanceScreen> {
-  final _amount = TextEditingController();
+  static const _businessTypes = [
+    ('Kirana / Retail', Icons.storefront_outlined),
+    ('Wholesale', Icons.inventory_2_outlined),
+    ('Restaurant / Cafe', Icons.restaurant_outlined),
+    ('Hardware', Icons.build_outlined),
+    ('Clothing / Apparel', Icons.checkroom_outlined),
+    ('Electronics', Icons.devices_outlined),
+    ('Pharmacy', Icons.local_pharmacy_outlined),
+    ('Service / Other', Icons.business_center_outlined),
+  ];
 
   @override
   void dispose() {
-    _amount.dispose();
+    _pageCtrl.dispose();
+    _nameCtrl.dispose();
+    _balanceCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _save(bool skip) async {
+  Future<void> _completeOnboarding({bool loadDemo = false}) async {
+    setState(() => _loading = true);
     final repo = ref.read(repositoryProvider);
-    if (!skip) {
-      final minor = MoneyParse.parse(_amount.text);
-      if (minor > 0) {
+
+    if (loadDemo) {
+      await DemoSeeder.seedNepaliKirana(repo);
+    } else {
+      final current = await repo.loadSettings();
+      await repo.saveSettings(
+        current.copyWith(
+          businessName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'My Store',
+          currency: _currency,
+          locale: _locale,
+          onboardingDone: true,
+        ),
+      );
+
+      final startingMinor = Money.parseToMinor(_balanceCtrl.text);
+      if (startingMinor > 0) {
         await repo.addEntry(
           direction: Direction.moneyIn,
-          amountMinor: minor,
+          amountMinor: startingMinor,
           isAdjustment: true,
-          note: 'Starting cash',
-          category: 'Opening',
+          note: 'Opening drawer cash',
+          category: 'Starting Balance',
         );
       }
     }
-    if (mounted) context.go('/galla');
+
+    ref.invalidate(settingsProvider);
+    ref.invalidate(transactionsProvider);
+    ref.invalidate(partiesProvider);
+    ref.invalidate(inventoryProvider);
+
+    if (mounted) {
+      context.go('/galla');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final s = S(ref.watch(stringsLocaleProvider));
     return Scaffold(
+      backgroundColor: GallaColors.canvas,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(s.startingBalance, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              Text(s.optionalSetup),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _amount,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: s.amount,
-                  filled: true,
-                  fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                ),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // Progress indicator dots
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: List.generate(4, (i) {
+                            return AnimatedContainer(
+                              duration: GallaAnimations.fast,
+                              margin: const EdgeInsets.only(right: 6),
+                              width: _step == i ? 24 : 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _step == i ? GallaColors.brand : GallaColors.line,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            );
+                          }),
+                        ),
+                        if (_step < 3)
+                          TextButton(
+                            onPressed: () => _completeOnboarding(loadDemo: false),
+                            child: const Text('Skip'),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Step Pages
+                  Expanded(
+                    child: PageView(
+                      controller: _pageCtrl,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: (i) => setState(() => _step = i),
+                      children: [
+                        _buildWelcomeStep(),
+                        _buildBusinessTypeStep(),
+                        _buildStartingBalanceStep(),
+                        _buildReadyStep(),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom Button Row
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () {
+                          if (_step < 3) {
+                            _pageCtrl.nextPage(
+                              duration: GallaAnimations.base,
+                              curve: Curves.easeInOut,
+                            );
+                          } else {
+                            _completeOnboarding(loadDemo: false);
+                          }
+                        },
+                        child: Text(
+                          _step == 0
+                              ? 'Get Started'
+                              : (_step == 3 ? 'Launch My Galla' : 'Continue'),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => _save(false),
-                  child: Text(s.save),
-                ),
-              ),
-              TextButton(
-                onPressed: () => _save(true),
-                child: Center(child: Text(s.setLater)),
-              ),
-            ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              color: GallaColors.brandSoft,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: GallaElevation.card,
+            ),
+            child: const Icon(Icons.point_of_sale_rounded, size: 44, color: GallaColors.brand),
           ),
-        ),
+          const SizedBox(height: 28),
+          const Text(
+            'Your Business Operating System',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: GallaColors.ink),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Simple digital khata, cash pulse, and smart inventory crafted for South Asian retail and small businesses.',
+            style: TextStyle(fontSize: 14, color: GallaColors.muted, height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: GallaColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: GallaColors.line),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline_rounded, size: 16, color: GallaColors.brand),
+                SizedBox(width: 8),
+                Text(
+                  '100% Offline-first & Private on device',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: GallaColors.brand),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBusinessTypeStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tell us about your store',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Enter your shop name and select your category.',
+            style: TextStyle(fontSize: 13, color: GallaColors.muted),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            controller: _nameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Business / Shop Name',
+              prefixIcon: Icon(Icons.storefront_outlined),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Store Category',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: GallaColors.ink),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 2.3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _businessTypes.length,
+              itemBuilder: (context, i) {
+                final item = _businessTypes[i];
+                final isSelected = _businessType == item.$1;
+                return GestureDetector(
+                  onTap: () => setState(() => _businessType = item.$1),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected ? GallaColors.brandSoft : GallaColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? GallaColors.brand : GallaColors.line,
+                        width: isSelected ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(item.$2, size: 20, color: isSelected ? GallaColors.brand : GallaColors.muted),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.$1,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected ? GallaColors.brand : GallaColors.ink,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStartingBalanceStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Starting Cash in Drawer',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'How much cash do you have in your physical cash till today?',
+            style: TextStyle(fontSize: 13, color: GallaColors.muted),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _balanceCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: GallaColors.brand),
+            decoration: const InputDecoration(
+              prefixText: 'Rs. ',
+              prefixStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: GallaColors.brand),
+              labelText: 'Opening Cash Balance',
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Quick Presets:',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.muted),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: ['5000', '15000', '35000', '50000'].map((preset) {
+              return ActionChip(
+                label: Text('Rs. $preset'),
+                onPressed: () => setState(() => _balanceCtrl.text = preset),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReadyStep() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: GallaColors.moneyInSoft,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_outline_rounded, size: 40, color: GallaColors.moneyIn),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Ready to take off!',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Your business configuration is set. You can also load realistic demo data right now to explore all features.',
+            style: TextStyle(fontSize: 13, color: GallaColors.muted, height: 1.4),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: () => _completeOnboarding(loadDemo: true),
+            icon: const Icon(Icons.auto_fix_high_rounded, color: GallaColors.gold),
+            label: const Text('Load Demo Store (Explore features)'),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: GallaColors.gold),
+              foregroundColor: GallaColors.gold,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              minimumSize: const Size.fromHeight(50),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class MoneyParse {
-  static int parse(String raw) {
-    final cleaned = raw.replaceAll(',', '').trim();
-    if (cleaned.isEmpty) return 0;
-    final v = double.tryParse(cleaned) ?? 0;
-    return (v * 100).round();
-  }
+class StartingBalanceScreen extends StatelessWidget {
+  const StartingBalanceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const OnboardingScreen();
 }

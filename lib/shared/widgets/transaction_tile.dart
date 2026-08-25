@@ -6,7 +6,6 @@ import '../../core/l10n/strings.dart';
 import '../../core/money/money.dart';
 import '../../core/theme/galla_theme.dart';
 import '../../domain/models.dart';
-import 'ui.dart';
 
 // ── TransactionTile ─────────────────────────────────────────────────────────────
 
@@ -48,7 +47,7 @@ class TransactionTile extends StatelessWidget {
       child: Row(
         children: [
           // ── Leading badge ──────────────────────────────────────────────
-          DirectionBadge(direction: txn.direction, category: txn.category),
+          _DirectionBadge(direction: txn.direction, category: txn.category),
           const SizedBox(width: GallaSpacing.md),
 
           // ── Title + meta ───────────────────────────────────────────────
@@ -230,6 +229,51 @@ class DateGroupHeader extends StatelessWidget {
           Expanded(child: Container(height: 1, color: GallaColors.line)),
         ],
       ),
+    );
+  }
+}
+
+// ── Leading category/direction badge (only used by TransactionTile) ────────────
+
+class _DirectionBadge extends StatelessWidget {
+  const _DirectionBadge({required this.direction, this.category});
+  final Direction direction;
+  final String? category;
+
+  static IconData _categoryIcon(String cat) {
+    return switch (cat.toLowerCase()) {
+      'sales' || 'sale' => Icons.storefront_outlined,
+      'services' || 'service' => Icons.miscellaneous_services_outlined,
+      'customer payment' => Icons.person_outline_rounded,
+      'commission' => Icons.percent_rounded,
+      'interest' => Icons.account_balance_outlined,
+      'purchase / stock' || 'purchase' || 'stock' => Icons.inventory_2_outlined,
+      'rent' => Icons.home_outlined,
+      'staff / salary' || 'salary' => Icons.badge_outlined,
+      'electricity / utility' || 'electricity' || 'utility' => Icons.bolt_outlined,
+      'transport' => Icons.local_shipping_outlined,
+      'personal / drawings' || 'personal' => Icons.person_outlined,
+      _ => Icons.receipt_long_outlined,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isIn = direction == Direction.moneyIn;
+    final bgColor = isIn ? GallaColors.moneyInSoft : GallaColors.moneyOutSoft;
+    final fgColor = isIn ? GallaColors.moneyIn : GallaColors.moneyOut;
+    final icon = category != null
+        ? _categoryIcon(category!)
+        : (isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(GallaRadius.md),
+      ),
+      child: Icon(icon, color: fgColor, size: 19),
     );
   }
 }

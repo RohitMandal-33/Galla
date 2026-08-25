@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/business/view/branches_screen.dart';
+import '../../features/business/view/business_profile_screen.dart';
 import '../../features/business/view/staff_screen.dart';
 import '../../features/business/view/more_screen.dart';
 import '../../features/galla/view/galla_screen.dart';
@@ -40,6 +41,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/onboarding/balance', builder: (_, _) => const StartingBalanceScreen()),
 
+      // Business Profile & Settings Route
+      GoRoute(path: '/profile', builder: (_, _) => const BusinessProfileScreen()),
+
       // V2 & Secondary Full-Page Routes
       GoRoute(
         path: '/invoices',
@@ -55,9 +59,37 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+
+      // Detail pages pushed OUTSIDE the shell so the floating add button and
+      // bottom bar never overlap their content or forms. URLs are unchanged,
+      // only their position in the tree moved from inside shell branches.
       GoRoute(
-        path: '/inventory',
-        builder: (_, _) => const InventoryScreen(),
+        path: '/ledger/search',
+        builder: (_, _) => const SearchScreen(),
+      ),
+      GoRoute(
+        path: '/ledger/parties/:id',
+        builder: (_, state) =>
+            PartyDetailScreen(partyId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/ledger/transaction/:id',
+        builder: (_, state) =>
+            TransactionDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/reports/pnl',
+        builder: (_, state) => ReportViewScreen(
+          kind: 'pnl',
+          range: state.uri.queryParameters['range'] ?? 'month',
+        ),
+      ),
+      GoRoute(
+        path: '/reports/cashflow',
+        builder: (_, state) => ReportViewScreen(
+          kind: 'cashflow',
+          range: state.uri.queryParameters['range'] ?? 'month',
+        ),
       ),
       GoRoute(
         path: '/reconciliation',
@@ -67,14 +99,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/ai-assistant',
         builder: (_, _) => const AiAssistantScreen(),
       ),
+      GoRoute(
+        path: '/business',
+        builder: (_, _) => const MoreScreen(),
+        routes: [
+          GoRoute(
+            path: 'branches',
+            builder: (_, _) => const BranchesScreen(),
+          ),
+          GoRoute(
+            path: 'staff',
+            builder: (_, _) => const StaffScreen(),
+          ),
+        ],
+      ),
 
-      // Main App Shell with Bottom Tabs (Home, Ledger, +, Reports, More)
+      // Main App Shell with Bottom Tabs (Pulse, Khata, +, Inventory, Reports)
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) {
           return AppShell(navigationShell: shell);
         },
         branches: [
-          // 0: Home / Galla
+          // 0: Pulse / Galla
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -90,74 +136,32 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
 
-          // 1: Ledger / Parties
+          // 1: Khata / Ledger
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/ledger',
                 builder: (_, _) => const LedgerScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'search',
-                    builder: (_, _) => const SearchScreen(),
-                  ),
-                  GoRoute(
-                    path: 'parties/:id',
-                    builder: (_, state) =>
-                        PartyDetailScreen(partyId: state.pathParameters['id']!),
-                  ),
-                  GoRoute(
-                    path: 'transaction/:id',
-                    builder: (_, state) =>
-                        TransactionDetailScreen(id: state.pathParameters['id']!),
-                  ),
-                ],
               ),
             ],
           ),
 
-          // 2: Reports
+          // 2: Inventory
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/inventory',
+                builder: (_, _) => const InventoryScreen(),
+              ),
+            ],
+          ),
+
+          // 3: Reports
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: '/reports',
                 builder: (_, _) => const ReportsScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'pnl',
-                    builder: (_, state) => ReportViewScreen(
-                      kind: 'pnl',
-                      range: state.uri.queryParameters['range'] ?? 'month',
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'cashflow',
-                    builder: (_, state) => ReportViewScreen(
-                      kind: 'cashflow',
-                      range: state.uri.queryParameters['range'] ?? 'month',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // 3: More (Business & Settings)
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/business',
-                builder: (_, _) => const MoreScreen(),
-                routes: [
-                  GoRoute(
-                    path: 'branches',
-                    builder: (_, _) => const BranchesScreen(),
-                  ),
-                  GoRoute(
-                    path: 'staff',
-                    builder: (_, _) => const StaffScreen(),
-                  ),
-                ],
               ),
             ],
           ),

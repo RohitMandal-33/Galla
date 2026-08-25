@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/parser/nl_parser.dart';
 import '../../../core/providers.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
@@ -15,12 +14,8 @@ class EntryState {
     this.category,
     this.note,
     this.isUdhaar = false,
-    this.paymentMethod = 'Cash',
     this.photoPath,
-    this.inventoryItemId,
-    this.nlRaw,
     this.saving = false,
-    this.saved = false,
   });
 
   final Direction direction;
@@ -29,12 +24,8 @@ class EntryState {
   final String? category;
   final String? note;
   final bool isUdhaar;
-  final String paymentMethod;
   final String? photoPath;
-  final String? inventoryItemId;
-  final String? nlRaw;
   final bool saving;
-  final bool saved;
 
   EntryState copyWith({
     Direction? direction,
@@ -43,12 +34,8 @@ class EntryState {
     String? category,
     String? note,
     bool? isUdhaar,
-    String? paymentMethod,
     String? photoPath,
-    String? inventoryItemId,
-    String? nlRaw,
     bool? saving,
-    bool? saved,
   }) {
     return EntryState(
       direction: direction ?? this.direction,
@@ -57,12 +44,8 @@ class EntryState {
       category: category ?? this.category,
       note: note ?? this.note,
       isUdhaar: isUdhaar ?? this.isUdhaar,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
       photoPath: photoPath ?? this.photoPath,
-      inventoryItemId: inventoryItemId ?? this.inventoryItemId,
-      nlRaw: nlRaw ?? this.nlRaw,
       saving: saving ?? this.saving,
-      saved: saved ?? this.saved,
     );
   }
 
@@ -71,21 +54,55 @@ class EntryState {
 
 // ─── ViewModel ────────────────────────────────────────────────────────────────
 
+/// Immutable seed applied when the entry view model is created. Seeding here
+/// (instead of mutating after creation) keeps Riverpod happy — providers must
+/// not be modified while the widget tree is building.
+class EntrySeed {
+  const EntrySeed({
+    this.direction = Direction.moneyIn,
+    this.isCredit = false,
+    this.partyName,
+    this.category,
+    this.amountMinor = 0,
+  });
+
+  final Direction direction;
+  final bool isCredit;
+  final String? partyName;
+  final String? category;
+  final int amountMinor;
+
+  @override
+  bool operator ==(Object other) =>
+      other is EntrySeed &&
+      other.direction == direction &&
+      other.isCredit == isCredit &&
+      other.partyName == partyName &&
+      other.category == category &&
+      other.amountMinor == amountMinor;
+
+  @override
+  int get hashCode =>
+      Object.hash(direction, isCredit, partyName, category, amountMinor);
+}
+
 class EntryViewModel extends StateNotifier<EntryState> {
-  EntryViewModel(this._repo, this._ref, {Direction? initialDirection})
-      : super(EntryState(direction: initialDirection ?? Direction.moneyIn));
+  EntryViewModel(this._repo, this._ref, {EntrySeed seed = const EntrySeed()})
+      : super(EntryState(
+          direction: seed.direction,
+          isUdhaar: seed.isCredit,
+          partyName: seed.partyName,
+          category: seed.category,
+          amountMinor: seed.amountMinor,
+        ));
 
   final GallaRepository _repo;
   final Ref _ref;
-  final _parser = NlParser();
 
   void setDirection(Direction direction) =>
       state = state.copyWith(direction: direction);
 
   void setAmount(int minor) => state = state.copyWith(amountMinor: minor);
-
-  void addToAmount(int delta) =>
-      state = state.copyWith(amountMinor: state.amountMinor + delta);
 
   void setParty(String? name) => state = state.copyWith(partyName: name);
 
@@ -95,40 +112,7 @@ class EntryViewModel extends StateNotifier<EntryState> {
 
   void setUdhaar(bool val) => state = state.copyWith(isUdhaar: val);
 
-  void setPaymentMethod(String method) =>
-      state = state.copyWith(paymentMethod: method);
-
   void setPhoto(String path) => state = state.copyWith(photoPath: path);
-
-  void setInventoryItem(String? id) =>
-      state = state.copyWith(inventoryItemId: id);
-
-  void applyNl(String raw) {
-    final parsed = _parser.parse(raw);
-    state = state.copyWith(
-      direction: parsed.direction ?? state.direction,
-      amountMinor: parsed.amountMinor ?? state.amountMinor,
-      partyName: parsed.partyName ?? state.partyName,
-      category: parsed.category ?? state.category,
-      note: parsed.note ?? state.note,
-      isUdhaar: parsed.isCredit,
-      nlRaw: raw,
-    );
-  }
-
-  void repeatLast(List<Txn> txns) {
-    if (txns.isEmpty) return;
-    final last = txns.first;
-    state = state.copyWith(
-      direction: last.direction,
-      amountMinor: last.amountMinor,
-      partyName: last.partyName,
-      category: last.category,
-      note: last.note,
-      isUdhaar: last.isCredit,
-      inventoryItemId: last.inventoryItemId,
-    );
-  }
 
   Future<bool> save() async {
     if (!state.isValid) return false;
@@ -146,33 +130,26 @@ class EntryViewModel extends StateNotifier<EntryState> {
         note: state.note,
         isCredit: state.isUdhaar,
         photoPath: state.photoPath,
-        nlRaw: state.nlRaw,
-        aiInferred: state.nlRaw != null,
         branchId: branchId,
         staffId: settings?.activeStaffId,
         staffName: settings?.activeStaffName,
-        inventoryItemId: state.inventoryItemId,
       );
-      state = state.copyWith(saving: false, saved: true);
+      state = state.copyWith(saving: false);
       return true;
     } catch (_) {
       state = state.copyWith(saving: false);
       return false;
     }
   }
-
-  void reset({Direction? direction}) {
-    state = EntryState(direction: direction ?? state.direction);
-  }
 }
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
 final entryViewModelProvider = StateNotifierProvider.autoDispose
-    .family<EntryViewModel, EntryState, Direction>((ref, initialDirection) {
+    .family<EntryViewModel, EntryState, EntrySeed>((ref, seed) {
   return EntryViewModel(
     ref.read(repositoryProvider),
     ref,
-    initialDirection: initialDirection,
+    seed: seed,
   );
 });

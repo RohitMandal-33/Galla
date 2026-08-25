@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
@@ -19,6 +20,9 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
   bool _locked = false;
   final _pin = TextEditingController();
   String? _error;
+  int _failedAttempts = 0;
+  int _cooldownSeconds = 0;
+  Timer? _cooldownTimer;
 
   @override
   void initState() {
@@ -30,6 +34,7 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _cooldownTimer?.cancel();
     _pin.dispose();
     super.dispose();
   }
@@ -56,44 +61,112 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
         localizedReason: 'Unlock Galla',
         options: const AuthenticationOptions(biometricOnly: false),
       );
-      if (ok && mounted) setState(() => _locked = false);
+      if (ok && mounted) {
+        setState(() {
+          _locked = false;
+          _failedAttempts = 0;
+        });
+      }
     } catch (_) {}
   }
 
   Future<void> _submitPin() async {
+    if (_cooldownSeconds > 0) return;
+
     final settings = await ref.read(repositoryProvider).loadSettings();
-    if (GallaRepository.hashPin(_pin.text) == settings.pinHash) {
+    if (settings.pinHash == null) {
+      setState(() => _locked = false);
+      return;
+    }
+
+    final isValid = GallaRepository.verifyPinSalted(_pin.text, settings.pinHash!);
+    if (isValid) {
       _pin.clear();
       setState(() {
         _locked = false;
         _error = null;
+        _failedAttempts = 0;
       });
     } else {
-      setState(() => _error = 'PIN did not match');
+      _failedAttempts++;
+      if (_failedAttempts >= 5) {
+        _startCooldown(30);
+        setState(() {
+          _error = 'Too many failed attempts. Locked for 30 seconds.';
+        });
+      } else {
+        setState(() {
+          _error = 'Incorrect PIN (${5 - _failedAttempts} attempts left)';
+        });
+      }
     }
+  }
+
+  void _startCooldown(int seconds) {
+    _cooldownSeconds = seconds;
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_cooldownSeconds <= 1) {
+        timer.cancel();
+        setState(() {
+          _cooldownSeconds = 0;
+          _error = null;
+        });
+      } else {
+        setState(() {
+          _cooldownSeconds--;
+          _error = 'Too many failed attempts. Locked for $_cooldownSeconds s.';
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     if (!_locked) return widget.child;
     final s = S(ref.watch(stringsLocaleProvider));
+
     return Scaffold(
       backgroundColor: GallaColors.canvas,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Spacer(),
-              Text('Galla', style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              const Text('Your cash book is locked.'),
-              const SizedBox(height: 24),
+              Center(
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: GallaColors.brandSoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.lock_rounded, size: 36, color: GallaColors.brand),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Galla is Locked',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: GallaColors.ink),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Enter your 4-digit security PIN to access your business ledger.',
+                style: TextStyle(fontSize: 13, color: GallaColors.muted),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
               TextField(
                 controller: _pin,
                 obscureText: true,
                 keyboardType: TextInputType.number,
+                autofocus: true,
+                enabled: _cooldownSeconds == 0,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.w700),
                 decoration: InputDecoration(
                   labelText: s.pin,
                   errorText: _error,
@@ -103,10 +176,29 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
                 ),
                 onSubmitted: (_) => _submitPin(),
               ),
-              const SizedBox(height: 12),
-              FilledButton(onPressed: _submitPin, child: Text(s.unlock)),
-              TextButton(onPressed: _tryBiometric, child: const Text('Use Face ID / fingerprint')),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _cooldownSeconds > 0 ? null : _submitPin,
+                child: Text(_cooldownSeconds > 0 ? 'Locked ($_cooldownSeconds s)' : s.unlock),
+              ),
+              const SizedBox(height: 10),
+              TextButton.icon(
+                onPressed: _tryBiometric,
+                icon: const Icon(Icons.fingerprint_rounded, size: 18),
+                label: const Text('Use Face ID / Fingerprint'),
+              ),
               const Spacer(),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shield_outlined, size: 14, color: GallaColors.muted),
+                  SizedBox(width: 6),
+                  Text(
+                    'Stored locally on this device',
+                    style: TextStyle(fontSize: 11, color: GallaColors.muted),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

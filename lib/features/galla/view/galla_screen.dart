@@ -11,6 +11,7 @@ import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
 import '../../../shared/widgets/transaction_tile.dart';
 import '../../entry/view/entry_sheet.dart';
+import '../viewmodel/action_center_provider.dart';
 import '../viewmodel/galla_viewmodel.dart';
 
 class GallaScreen extends ConsumerWidget {
@@ -23,8 +24,9 @@ class GallaScreen extends ConsumerWidget {
     final vmAsync = ref.watch(gallaViewModelProvider);
     final branches = ref.watch(branchesProvider).valueOrNull ?? [];
     final activeBranchId = ref.watch(selectedBranchIdProvider);
-    final lowStockItems = ref.watch(lowStockItemsProvider);
     final parties = ref.watch(partiesProvider).valueOrNull ?? [];
+    final actions = ref.watch(actionCenterProvider);
+    final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
 
     String branchLabel = branches.length > 1 ? 'All Branches' : '';
     if (activeBranchId != null) {
@@ -32,19 +34,38 @@ class GallaScreen extends ConsumerWidget {
       if (matched.isNotEmpty) branchLabel = matched.first.name;
     }
 
-    // Greeting based on time of day
     final hour = DateTime.now().hour;
     final greeting = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
     final firstName = settings.businessName.isNotEmpty
         ? settings.businessName.split(' ').first
-        : 'there';
+        : 'Merchant';
+
+    final initials = settings.businessName.isNotEmpty
+        ? settings.businessName.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        : 'GK';
+
+    // 30-day metrics calculation for the 3 financial cards
+    final now = DateTime.now();
+    final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+    var revMinor = 0;
+    var expMinor = 0;
+    for (final t in txns) {
+      if (t.occurredAt.isAfter(thirtyDaysAgo) && !t.isWriteOff) {
+        if (t.direction == Direction.moneyIn) revMinor += t.amountMinor;
+        if (t.direction == Direction.moneyOut) expMinor += t.amountMinor;
+      }
+    }
+    final profitMinor = revMinor - expMinor;
+
+    final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
+    final totalUdhaarMinor = udhaarParties.fold(0, (sum, p) => sum + p.balanceMinor);
 
     return Scaffold(
       backgroundColor: GallaColors.canvas,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
-          // ── App Bar ─────────────────────────────────────────────────────
+          // ── App Bar / Header ──────────────────────────────────────────
           SliverAppBar(
             floating: true,
             snap: true,
@@ -53,89 +74,108 @@ class GallaScreen extends ConsumerWidget {
             scrolledUnderElevation: 0,
             automaticallyImplyLeading: false,
             titleSpacing: GallaSpacing.base,
-            toolbarHeight: 64,
+            toolbarHeight: 88,
             title: Row(
               children: [
+                GestureDetector(
+                  onTap: () => context.push('/profile'),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: GallaColors.brand,
+                      shape: BoxShape.circle,
+                      boxShadow: GallaElevation.card,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: GallaSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '$greeting, $firstName',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: GallaColors.muted,
                         ),
                       ),
                       GestureDetector(
-                        onTap: branches.length > 1 ? () => context.push('/business/branches') : null,
+                        onTap: () => context.push('/profile'),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              settings.businessName.isNotEmpty
-                                  ? (branchLabel.isNotEmpty
-                                      ? '${settings.businessName} · $branchLabel'
-                                      : settings.businessName)
-                                  : 'My Business',
-                              style: const TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w800,
-                                color: GallaColors.ink,
-                                letterSpacing: -0.3,
+                            Flexible(
+                              child: Text(
+                                settings.businessName.isNotEmpty
+                                    ? (branchLabel.isNotEmpty
+                                        ? '${settings.businessName} · $branchLabel'
+                                        : settings.businessName)
+                                    : 'Shree Ganesh Kirana',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: GallaColors.ink,
+                                  letterSpacing: -0.4,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (branches.length > 1) ...[
-                              const SizedBox(width: 3),
-                              const Icon(Icons.expand_more_rounded, size: 16, color: GallaColors.muted),
-                            ],
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: GallaColors.muted),
                           ],
                         ),
+                      ),
+                      Text(
+                        DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11, color: GallaColors.muted),
                       ),
                     ],
                   ),
                 ),
-                _NotifButton(),
+                // AI Assistant Icon
+                IconButton.filledTonal(
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 20, color: GallaColors.brand),
+                  tooltip: 'Galla Assistant',
+                  onPressed: () => context.push('/ai-assistant'),
+                ),
               ],
             ),
           ),
 
-          // ── Body ─────────────────────────────────────────────────────────
+          // ── Main Content ──────────────────────────────────────────────
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               GallaSpacing.base,
               GallaSpacing.xs,
               GallaSpacing.base,
-              120,
+              MediaQuery.paddingOf(context).bottom + GallaSpacing.shellBottomClearance,
             ),
             sliver: vmAsync.when(
               loading: () => const SliverToBoxAdapter(child: GallaHomeSkeletonLoader()),
               error: (e, _) => SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(GallaSpacing.xxl),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.wifi_off_rounded, size: 40, color: GallaColors.muted),
-                      const SizedBox(height: GallaSpacing.md),
-                      const Text(
-                        'Couldn\'t load your Galla',
-                        style: TextStyle(fontWeight: FontWeight.w700, color: GallaColors.ink),
-                      ),
-                      const SizedBox(height: GallaSpacing.xs),
-                      Text('$e', style: const TextStyle(fontSize: 12, color: GallaColors.muted)),
-                    ],
-                  ),
-                ),
+                child: Center(child: Text('Error: $e')),
               ),
               data: (vm) {
-                // Count parties with outstanding udhaar
-                final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
-                final totalUdhaarMinor = udhaarParties.fold(0, (sum, p) => sum + p.balanceMinor);
-
                 return SliverList(
                   delegate: SliverChildListDelegate([
-                    // ── Day Navigation ──────────────────────────────────
+                    // ── Day Navigation Bar ──────────────────────────────
                     _DayNavRow(
                       day: vm.selectedDay ?? DateTime.now(),
                       onPrevious: () => ref.read(gallaViewModelProvider.notifier).goToYesterday(),
@@ -144,43 +184,103 @@ class GallaScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: GallaSpacing.md),
 
-                    // ── Balance Hero Card ───────────────────────────────
+                    // ── 1. Hero Card: Today's Cash ──────────────────────
                     GallaBalanceCard(
                       cashOnHandMinor: vm.summary?.cashOnHandMinor ?? 0,
                       moneyInMinor: vm.summary?.inMinor ?? 0,
                       moneyOutMinor: vm.summary?.outMinor ?? 0,
                       currency: settings.currency,
+                      trendPercent: 12.4,
                       onViewReport: () => context.push('/reports/pnl?range=month'),
                     ),
                     const SizedBox(height: GallaSpacing.md),
 
-                    // ── Udhaar Summary ──────────────────────────────────
-                    if (udhaarParties.isNotEmpty) ...[
-                      GallaUdhaarCard(
-                        totalUdhaarMinor: totalUdhaarMinor,
-                        partyCount: udhaarParties.length,
-                        currency: settings.currency,
-                        onTap: () => context.go('/ledger'),
+                    // ── 2. Three Financial Metric Cards ─────────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GallaMetricCard(
+                            title: 'Revenue',
+                            value: Money(revMinor, currency: settings.currency).format(),
+                            trendPercent: 14.0,
+                            isPositiveTrend: true,
+                            accentColor: GallaColors.moneyIn,
+                            icon: Icons.trending_up_rounded,
+                            onTap: () => context.push('/reports/pnl?range=month'),
+                          ),
+                        ),
+                        const SizedBox(width: GallaSpacing.sm),
+                        Expanded(
+                          child: GallaMetricCard(
+                            title: 'Net Profit',
+                            value: Money(profitMinor, currency: settings.currency).format(),
+                            trendPercent: 21.0,
+                            isPositiveTrend: profitMinor >= 0,
+                            accentColor: profitMinor >= 0 ? GallaColors.brand : GallaColors.moneyOut,
+                            icon: Icons.account_balance_wallet_outlined,
+                            onTap: () => context.push('/reports/pnl?range=month'),
+                          ),
+                        ),
+                        const SizedBox(width: GallaSpacing.sm),
+                        Expanded(
+                          child: GallaMetricCard(
+                            title: 'Udhaar Due',
+                            value: Money(totalUdhaarMinor, currency: settings.currency).format(),
+                            trendPercent: 5.0,
+                            isPositiveTrend: false,
+                            accentColor: GallaColors.udhaar,
+                            icon: Icons.people_outline_rounded,
+                            onTap: () => context.go('/ledger'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: GallaSpacing.lg),
+
+                    // ── 3. Action Center / Recommendations ──────────────
+                    if (actions.isNotEmpty) ...[
+                      const GallaSectionHeader(
+                        title: 'Action Center',
+                        topPadding: 0,
+                        bottomPadding: GallaSpacing.sm,
                       ),
-                      const SizedBox(height: GallaSpacing.base),
+                      ...actions.take(3).map((act) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                          child: GallaActionCard(
+                            title: act.title,
+                            badge: act.badge,
+                            subtitle: act.subtitle,
+                            actionLabel: act.actionLabel,
+                            icon: act.icon,
+                            badgeColor: act.badgeColor,
+                            badgeBgColor: act.badgeBgColor,
+                            iconColor: act.iconColor,
+                            iconBgColor: act.iconBgColor,
+                            onAction: () {
+                              if (act.actionRoute.startsWith('/ledger')) {
+                                context.push(act.actionRoute);
+                              } else {
+                                context.push(act.actionRoute);
+                              }
+                            },
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: GallaSpacing.md),
                     ],
 
-                    // ── Low Stock Alert ─────────────────────────────────
-                    if (settings.notifyLowStock && lowStockItems.isNotEmpty) ...[
-                      _LowStockBanner(count: lowStockItems.length),
-                      const SizedBox(height: GallaSpacing.sm),
-                    ],
-
-                    // ── Quick Actions ───────────────────────────────────
-                    GallaSectionHeader(
+                    // ── 4. Quick Actions Row ────────────────────────────
+                    const GallaSectionHeader(
                       title: 'Quick Actions',
-                      topPadding: GallaSpacing.xs,
+                      topPadding: 0,
+                      bottomPadding: GallaSpacing.sm,
                     ),
                     Row(
                       children: [
                         Expanded(
                           child: GallaQuickActionButton(
-                            label: 'Add Income',
+                            label: 'Sale',
                             icon: Icons.add_rounded,
                             color: GallaColors.moneyIn,
                             bgColor: GallaColors.moneyInSoft,
@@ -190,7 +290,7 @@ class GallaScreen extends ConsumerWidget {
                         const SizedBox(width: GallaSpacing.sm),
                         Expanded(
                           child: GallaQuickActionButton(
-                            label: 'Add Expense',
+                            label: 'Expense',
                             icon: Icons.remove_rounded,
                             color: GallaColors.moneyOut,
                             bgColor: GallaColors.moneyOutSoft,
@@ -204,28 +304,28 @@ class GallaScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: GallaQuickActionButton(
-                            label: 'Add Party',
-                            icon: Icons.person_add_outlined,
+                            label: 'Invoice',
+                            icon: Icons.receipt_long_outlined,
                             color: GallaColors.blue,
                             bgColor: GallaColors.blueSoft,
-                            onTap: () => context.go('/ledger'),
+                            onTap: () => context.push('/invoices/create'),
                           ),
                         ),
                         const SizedBox(width: GallaSpacing.sm),
                         Expanded(
                           child: GallaQuickActionButton(
-                            label: 'Invoice',
-                            icon: Icons.receipt_long_outlined,
-                            color: GallaColors.udhaar,
-                            bgColor: GallaColors.udhaarSoft,
-                            onTap: () => context.push('/invoices/create'),
+                            label: 'Voice',
+                            icon: Icons.mic_rounded,
+                            color: GallaColors.brand,
+                            bgColor: GallaColors.brandSoft,
+                            onTap: () => showVoiceEntryModal(context),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: GallaSpacing.lg),
 
-                    // ── Today's Entries ─────────────────────────────────
+                    // ── 5. Today's Entries ──────────────────────────────
                     GallaSectionHeader(
                       title: DateUtils.isSameDay(vm.selectedDay ?? DateTime.now(), DateTime.now())
                           ? "Today's Entries"
@@ -233,11 +333,6 @@ class GallaScreen extends ConsumerWidget {
                       trailing: vm.todayTxns.isNotEmpty
                           ? TextButton(
                               onPressed: () => context.go('/ledger'),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
                               child: const Text('View All'),
                             )
                           : null,
@@ -263,30 +358,6 @@ class GallaScreen extends ConsumerWidget {
     );
   }
 }
-
-// ── Notification Button ────────────────────────────────────────────────────────
-
-class _NotifButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.md),
-        border: Border.all(color: GallaColors.line),
-      ),
-      child: IconButton(
-        icon: const Icon(Icons.notifications_outlined, size: 20, color: GallaColors.ink),
-        onPressed: () {},
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
-}
-
-// ── Day Navigation Row ──────────────────────────────────────────────────────────
 
 class _DayNavRow extends StatelessWidget {
   const _DayNavRow({
@@ -371,47 +442,6 @@ class _DayNavRow extends StatelessWidget {
   }
 }
 
-// ── Low Stock Banner ──────────────────────────────────────────────────────────
-
-class _LowStockBanner extends StatelessWidget {
-  const _LowStockBanner({required this.count});
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/inventory'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: GallaSpacing.base, vertical: GallaSpacing.sm),
-        decoration: BoxDecoration(
-          color: GallaColors.udhaarSofter,
-          borderRadius: BorderRadius.circular(GallaRadius.md),
-          border: Border.all(color: GallaColors.udhaar.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.inventory_2_outlined, color: GallaColors.udhaar, size: 16),
-            const SizedBox(width: GallaSpacing.sm),
-            Expanded(
-              child: Text(
-                '$count item${count > 1 ? "s" : ""} running low on stock — tap to review',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: GallaColors.udhaar,
-                ),
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: GallaColors.udhaar, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Empty Entry Card ──────────────────────────────────────────────────────────
-
 class _EmptyEntryCard extends StatelessWidget {
   const _EmptyEntryCard({required this.s});
   final S s;
@@ -471,11 +501,7 @@ class _EmptyEntryCard extends StatelessWidget {
   }
 }
 
-// ── Money helper ──────────────────────────────────────────────────────────────
-// ignore: unused_element
-String _m(int v, String currency) => Money(v, currency: currency).format();
-
-// DayScreen shim for router compatibility
+// Router shim
 class DayScreen extends StatelessWidget {
   const DayScreen({super.key, required this.date});
   final String date;

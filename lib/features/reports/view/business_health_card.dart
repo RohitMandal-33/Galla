@@ -43,47 +43,42 @@ class BusinessHealthCard extends ConsumerWidget {
             children: [
               // Header Row
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: GallaColors.brandSoft,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.analytics_outlined, color: GallaColors.brand, size: 20),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        s.businessHealth,
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                      ),
-                    ],
-                  ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: gradeColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      color: GallaColors.brandSoft,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${s.healthGrade} ${report.grade.name}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: gradeColor,
-                          ),
+                    child: const Icon(Icons.analytics_outlined, color: GallaColors.brand, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      s.businessHealth,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: gradeColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${s.healthGrade} ${report.grade.name} (${report.overallScore})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          color: gradeColor,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${report.overallScore}/100)',
-                          style: TextStyle(fontSize: 11, color: gradeColor, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

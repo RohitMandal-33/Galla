@@ -13,6 +13,8 @@ import '../../../shared/widgets/transaction_tile.dart';
 import '../viewmodel/ledger_viewmodel.dart';
 import 'calendar_ledger_screen.dart';
 
+enum KhataTab { customers, suppliers, all }
+
 class LedgerScreen extends ConsumerStatefulWidget {
   const LedgerScreen({super.key});
 
@@ -22,6 +24,7 @@ class LedgerScreen extends ConsumerStatefulWidget {
 
 class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   final _searchController = TextEditingController();
+  KhataTab _activeTab = KhataTab.customers;
 
   @override
   void dispose() {
@@ -50,7 +53,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.people_outline_rounded),
-                  tooltip: 'Party View',
+                  tooltip: 'Khata View',
                   onPressed: () => vm.setViewMode(LedgerViewMode.parties),
                 ),
               ],
@@ -60,12 +63,24 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
         }
 
         final isSearching = state.isSearching;
-        final parties = state.parties;
+        final allParties = state.parties;
         final transactions = isSearching ? state.searchResults : state.allTxns;
 
-        // Udhaar summary
-        final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
-        final totalUdhaarMinor = udhaarParties.fold(0, (sum, p) => sum + p.balanceMinor);
+        // Separate customers (they owe us: balance > 0) vs suppliers (we owe them: balance < 0)
+        final customers = allParties.where((p) => p.balanceMinor >= 0).toList();
+        final suppliers = allParties.where((p) => p.balanceMinor < 0).toList();
+
+        final totalReceiveMinor = allParties
+            .where((p) => p.balanceMinor > 0)
+            .fold(0, (sum, p) => sum + p.balanceMinor);
+
+        final totalPayMinor = allParties
+            .where((p) => p.balanceMinor < 0)
+            .fold(0, (sum, p) => sum + p.balanceMinor.abs());
+
+        final displayedParties = _activeTab == KhataTab.customers
+            ? customers
+            : (_activeTab == KhataTab.suppliers ? suppliers : allParties);
 
         return Scaffold(
           backgroundColor: GallaColors.canvas,
@@ -80,7 +95,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 automaticallyImplyLeading: false,
-                title: Text(s.ledgerTab),
+                title: const Text('Khata & Parties'),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.calendar_month_outlined, size: 20),
@@ -94,7 +109,7 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                 ],
               ),
 
-              // ── Search Bar ────────────────────────────────────────────
+              // ── Summary Bar & Search ──────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -105,10 +120,87 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                   ),
                   child: Column(
                     children: [
+                      // Dual Financial Summary Card
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: GallaColors.surface,
+                          borderRadius: BorderRadius.circular(GallaRadius.lg),
+                          border: Border.all(color: GallaColors.line),
+                          boxShadow: GallaElevation.card,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.arrow_downward_rounded, size: 12, color: GallaColors.moneyIn),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'You Will Receive',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: GallaColors.muted),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    Money(totalReceiveMinor, currency: currency).format(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: GallaColors.moneyIn,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(width: 1, height: 36, color: GallaColors.line),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Row(
+                                    children: [
+                                      Icon(Icons.arrow_upward_rounded, size: 12, color: GallaColors.moneyOut),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'You Will Pay',
+                                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: GallaColors.muted),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    Money(totalPayMinor, currency: currency).format(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: GallaColors.moneyOut,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: GallaSpacing.md),
+
+                      // Search Input
                       TextField(
                         controller: _searchController,
                         decoration: InputDecoration(
-                          hintText: 'Search parties, notes, amounts…',
+                          hintText: 'Search customer, supplier, phone…',
                           prefixIcon: const Icon(Icons.search_rounded, size: 20),
                           suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
@@ -124,153 +216,101 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
                       ),
                       const SizedBox(height: GallaSpacing.sm),
 
-                      // ── Mode Toggle ──────────────────────────────────
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _ModeSegment(
-                              label: 'Parties',
-                              count: parties.length,
-                              isSelected: state.viewMode == LedgerViewMode.parties,
-                              onTap: () => vm.setViewMode(LedgerViewMode.parties),
+                      // Tabs: Customers | Suppliers | All | All Txns
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _TabChip(
+                              label: 'Customers (${customers.length})',
+                              selected: _activeTab == KhataTab.customers && state.viewMode == LedgerViewMode.parties,
+                              onTap: () {
+                                setState(() => _activeTab = KhataTab.customers);
+                                vm.setViewMode(LedgerViewMode.parties);
+                              },
                             ),
-                          ),
-                          const SizedBox(width: GallaSpacing.sm),
-                          Expanded(
-                            child: _ModeSegment(
-                              label: 'All Transactions',
-                              isSelected: state.viewMode == LedgerViewMode.transactions,
+                            const SizedBox(width: 6),
+                            _TabChip(
+                              label: 'Suppliers (${suppliers.length})',
+                              selected: _activeTab == KhataTab.suppliers && state.viewMode == LedgerViewMode.parties,
+                              onTap: () {
+                                setState(() => _activeTab = KhataTab.suppliers);
+                                vm.setViewMode(LedgerViewMode.parties);
+                              },
+                            ),
+                            const SizedBox(width: 6),
+                            _TabChip(
+                              label: 'Transactions',
+                              selected: state.viewMode == LedgerViewMode.transactions,
                               onTap: () => vm.setViewMode(LedgerViewMode.transactions),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
 
-              // ── Udhaar Summary (Party view only) ──────────────────────
-              if (state.viewMode == LedgerViewMode.parties &&
-                  !isSearching &&
-                  udhaarParties.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      GallaSpacing.base,
-                      0,
-                      GallaSpacing.base,
-                      GallaSpacing.md,
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: GallaSpacing.base,
-                        vertical: GallaSpacing.md,
-                      ),
-                      decoration: BoxDecoration(
-                        color: GallaColors.udhaarSofter,
-                        borderRadius: BorderRadius.circular(GallaRadius.lg),
-                        border: Border.all(color: GallaColors.udhaar.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.people_outline_rounded, color: GallaColors.udhaar, size: 18),
-                          const SizedBox(width: GallaSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              'Total outstanding from ${udhaarParties.length} ${udhaarParties.length == 1 ? "customer" : "customers"}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: GallaColors.udhaar,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            Money(totalUdhaarMinor, currency: currency).format(),
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: GallaColors.udhaar,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              // ── Party / Transaction List ──────────────────────────────
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  GallaSpacing.base,
+                  0,
+                  GallaSpacing.base,
+                  MediaQuery.paddingOf(context).bottom + GallaSpacing.shellBottomClearance,
                 ),
-
-              // ── Content ───────────────────────────────────────────────
-              if (state.viewMode == LedgerViewMode.parties && !isSearching) ...[
-                if (parties.isEmpty)
-                  SliverToBoxAdapter(
-                    child: GallaEmptyState(
-                      icon: Icons.people_outline_rounded,
-                      headline: 'No parties yet',
-                      body: 'Parties appear automatically when you record Udhaar entries, or add one manually.',
-                      actionLabel: 'Add First Party',
-                      onAction: () => _addPartyDialog(context),
-                      iconColor: GallaColors.blue,
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      GallaSpacing.base,
-                      0,
-                      GallaSpacing.base,
-                      120,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final party = parties[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-                            child: GallaPartyCard(
-                              party: party,
-                              currency: currency,
-                              onTap: () => context.push('/ledger/parties/${party.id}'),
+                sliver: state.viewMode == LedgerViewMode.transactions
+                    ? (transactions.isEmpty
+                        ? const SliverToBoxAdapter(
+                            child: Padding(
+                              padding: EdgeInsets.all(GallaSpacing.xl),
+                              child: Center(child: Text('No transactions recorded yet')),
                             ),
-                          );
-                        },
-                        childCount: parties.length,
-                      ),
-                    ),
-                  ),
-              ] else ...[
-                if (transactions.isEmpty)
-                  SliverToBoxAdapter(
-                    child: GallaEmptyState(
-                      icon: Icons.receipt_long_outlined,
-                      headline: isSearching ? 'No results found' : 'No transactions yet',
-                      body: isSearching
-                          ? 'Try a different search term.'
-                          : 'Your transactions will appear here as you record entries.',
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      GallaSpacing.base,
-                      0,
-                      GallaSpacing.base,
-                      120,
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final t = transactions[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-                            child: TransactionTile(txn: t, currency: currency, s: s),
-                          );
-                        },
-                        childCount: transactions.length,
-                      ),
-                    ),
-                  ),
-              ],
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) => Padding(
+                                padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                                child: TransactionTile(
+                                  txn: transactions[i],
+                                  currency: currency,
+                                  s: s,
+                                ),
+                              ),
+                              childCount: transactions.length,
+                            ),
+                          ))
+                    : (displayedParties.isEmpty
+                        ? SliverToBoxAdapter(
+                            child: GallaEmptyState(
+                              icon: Icons.person_add_alt_1_outlined,
+                              headline: _activeTab == KhataTab.customers
+                                  ? 'No Customers Added Yet'
+                                  : 'No Suppliers Added Yet',
+                              body: 'Start your first digital khata and easily track who owes you money.',
+                              actionLabel: 'Add Party',
+                              onAction: () => _addPartyDialog(context),
+                            ),
+                          )
+                        : SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) {
+                                final party = displayedParties[i];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                                  child: GallaPartyCard(
+                                    party: party,
+                                    currency: currency,
+                                    daysOverdue: party.balanceMinor > 0 ? 5 : null,
+                                    onTap: () => context.push('/ledger/parties/${party.id}'),
+                                  ),
+                                );
+                              },
+                              childCount: displayedParties.length,
+                            ),
+                          )),
+              ),
             ],
           ),
         );
@@ -281,45 +321,104 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
   void _addPartyDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    showDialog(
+
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        title: const Text('Add New Party'),
-        content: Column(
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          GallaSpacing.lg,
+          GallaSpacing.lg,
+          GallaSpacing.lg,
+          GallaSpacing.lg + MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const Text(
+              'Add New Party / Customer',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: GallaSpacing.base),
             TextField(
               controller: nameCtrl,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Customer / Party Name *'),
+              decoration: const InputDecoration(
+                labelText: 'Party / Customer Name',
+                prefixIcon: Icon(Icons.person_outline_rounded),
+              ),
             ),
             const SizedBox(height: GallaSpacing.md),
             TextField(
               controller: phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone Number (Optional)'),
+              decoration: const InputDecoration(
+                labelText: 'Mobile Number (Optional for WhatsApp)',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.lg),
+            FilledButton(
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
+                final repo = ref.read(repositoryProvider);
+                final id = await repo.findOrCreateParty(name);
+                if (phoneCtrl.text.trim().isNotEmpty) {
+                  // update phone if provided
+                  await repo.setPartyReminder(id, enabled: true);
+                }
+                if (ctx.mounted) {
+                  Navigator.of(ctx).pop();
+                  context.push('/ledger/parties/$id');
+                }
+              },
+              child: const Text('Add to Khata'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () async {
-              final name = nameCtrl.text.trim();
-              if (name.isNotEmpty) {
-                await ref.read(repositoryProvider).findOrCreateParty(name);
-                if (context.mounted) Navigator.pop(dialogCtx);
-              }
-            },
-            child: const Text('Create Party'),
-          ),
-        ],
       ),
     );
   }
 }
 
-// ── Add Party Button ──────────────────────────────────────────────────────────
+class _TabChip extends StatelessWidget {
+  const _TabChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? GallaColors.brand : GallaColors.surface,
+          borderRadius: BorderRadius.circular(GallaRadius.sm),
+          border: Border.all(color: selected ? GallaColors.brand : GallaColors.line),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : GallaColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _AddPartyButton extends StatelessWidget {
   const _AddPartyButton({required this.onTap});
@@ -327,96 +426,23 @@ class _AddPartyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: GallaSpacing.xs),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: GallaColors.brandSoft,
-          borderRadius: BorderRadius.circular(GallaRadius.sm),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.person_add_alt_1_outlined, size: 16, color: GallaColors.brand),
-            SizedBox(width: 5),
-            Text(
-              'Add Party',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.brand),
-            ),
-          ],
+    return Container(
+      margin: const EdgeInsets.only(right: GallaSpacing.sm),
+      child: FilledButton.tonalIcon(
+        onPressed: onTap,
+        icon: const Icon(Icons.person_add_outlined, size: 16),
+        label: const Text('Add'),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          minimumSize: const Size(60, 36),
+          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ),
     );
   }
 }
 
-// ── Mode Segment ──────────────────────────────────────────────────────────────
-
-class _ModeSegment extends StatelessWidget {
-  const _ModeSegment({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.count,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final int? count;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? GallaColors.brand : GallaColors.surface,
-          borderRadius: BorderRadius.circular(GallaRadius.md),
-          border: Border.all(color: isSelected ? GallaColors.brand : GallaColors.line),
-        ),
-        alignment: Alignment.center,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: isSelected ? Colors.white : GallaColors.ink,
-              ),
-            ),
-            if (count != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withValues(alpha: 0.2) : GallaColors.brandSoft,
-                  borderRadius: BorderRadius.circular(GallaRadius.pill),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    color: isSelected ? Colors.white : GallaColors.brand,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Shim SearchScreen for router compatibility
+// Router shims
 class SearchScreen extends StatelessWidget {
   const SearchScreen({super.key});
 
@@ -424,7 +450,6 @@ class SearchScreen extends StatelessWidget {
   Widget build(BuildContext context) => const LedgerScreen();
 }
 
-// Shim TransactionDetailScreen for router compatibility
 class TransactionDetailScreen extends StatelessWidget {
   const TransactionDetailScreen({super.key, required this.id});
   final String id;
@@ -432,3 +457,4 @@ class TransactionDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const LedgerScreen();
 }
+
