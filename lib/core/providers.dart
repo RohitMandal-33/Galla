@@ -53,7 +53,9 @@ final staffMembersProvider = StreamProvider<List<StaffMember>>((ref) {
   return ref.watch(repositoryProvider).watchStaffMembers();
 });
 
-final reconciliationsProvider = StreamProvider<List<ReconciliationRecord>>((ref) {
+final reconciliationsProvider = StreamProvider<List<ReconciliationRecord>>((
+  ref,
+) {
   final branchId = ref.watch(selectedBranchIdProvider);
   return ref.watch(repositoryProvider).watchReconciliations(branchId: branchId);
 });
@@ -61,5 +63,7 @@ final reconciliationsProvider = StreamProvider<List<ReconciliationRecord>>((ref)
 final healthReportProvider = FutureProvider<BusinessHealthReport>((ref) {
   final now = DateTime.now();
   final branchId = ref.watch(selectedBranchIdProvider);
-  return ref.watch(repositoryProvider).computeBusinessHealth(now, branchId: branchId);
+  return ref
+      .watch(repositoryProvider)
+      .computeBusinessHealth(now, branchId: branchId);
 });

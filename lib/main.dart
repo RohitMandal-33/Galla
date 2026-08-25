@@ -39,7 +39,8 @@ class _GallaAppState extends ConsumerState<GallaApp> {
       debugShowCheckedModeBanner: false,
       theme: buildGallaTheme(),
       routerConfig: router,
-      builder: (context, child) => LockGate(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) =>
+          LockGate(child: child ?? const SizedBox.shrink()),
     );
   }
 }

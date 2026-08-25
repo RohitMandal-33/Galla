@@ -99,7 +99,8 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final isEdit = widget.item != null;
 
@@ -117,7 +118,9 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                 hintText: 'e.g. Basmati Rice (25kg)',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -130,7 +133,9 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                       labelText: 'SKU / Code',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -143,7 +148,9 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                       hintText: 'pcs, kg, bag',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -155,12 +162,16 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                 Expanded(
                   child: TextField(
                     controller: _quantity,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: s.stockQuantity,
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -168,12 +179,16 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                 Expanded(
                   child: TextField(
                     controller: _threshold,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Alert Level',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -190,7 +205,9 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                       labelText: '${s.costPrice} (${settings.currency})',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -203,7 +220,9 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
                       labelText: '${s.salePrice} (${settings.currency})',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
@@ -213,13 +232,18 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: _submit,
           style: ElevatedButton.styleFrom(
             backgroundColor: GallaColors.brand,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: Text(s.save),
         ),

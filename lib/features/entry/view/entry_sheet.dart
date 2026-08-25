@@ -72,14 +72,22 @@ class QuickAddSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
 
     return Container(
       decoration: const BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(GallaRadius.bottomSheet),
+        ),
       ),
-      padding: const EdgeInsets.fromLTRB(GallaSpacing.lg, GallaSpacing.sm, GallaSpacing.lg, GallaSpacing.xxl),
+      padding: const EdgeInsets.fromLTRB(
+        GallaSpacing.lg,
+        GallaSpacing.sm,
+        GallaSpacing.lg,
+        GallaSpacing.xxl,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,17 +109,13 @@ class QuickAddSheet extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Record Transaction',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: GallaColors.ink,
-                  letterSpacing: -0.3,
-                ),
-              ),
+              Text('Record Transaction', style: GallaType.numberMd),
               IconButton(
-                icon: const Icon(Icons.close_rounded, size: 20, color: GallaColors.muted),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  size: 20,
+                  color: GallaColors.muted,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -152,7 +156,9 @@ class QuickAddSheet extends ConsumerWidget {
                   final nav = Navigator.of(context);
                   nav.pop();
                   showAddEntrySheet(
-                      nav.context, initialDirection: Direction.moneyOut);
+                    nav.context,
+                    initialDirection: Direction.moneyOut,
+                  );
                 },
               ),
               _ActionTile(
@@ -179,7 +185,9 @@ class QuickAddSheet extends ConsumerWidget {
                   final nav = Navigator.of(context);
                   nav.pop();
                   showAddEntrySheet(
-                      nav.context, initialDirection: Direction.moneyOut);
+                    nav.context,
+                    initialDirection: Direction.moneyOut,
+                  );
                 },
               ),
               _ActionTile(
@@ -240,13 +248,9 @@ class QuickAddSheet extends ConsumerWidget {
           if (txns.isNotEmpty) ...[
             const Divider(),
             const SizedBox(height: GallaSpacing.xs),
-            const Text(
+            Text(
               'Recent Actions',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: GallaColors.muted,
-              ),
+              style: GallaType.chipLabel.copyWith(color: GallaColors.muted),
             ),
             const SizedBox(height: GallaSpacing.xs),
             Wrap(
@@ -254,17 +258,25 @@ class QuickAddSheet extends ConsumerWidget {
               runSpacing: 6,
               children: txns.take(3).map((t) {
                 final isInc = t.direction == Direction.moneyIn;
-                final amt = Money(t.amountMinor, currency: settings.currency).format();
+                final amt = Money(
+                  t.amountMinor,
+                  currency: settings.currency,
+                ).format();
                 final title = t.partyName ?? t.category ?? 'Sale';
                 return ActionChip(
                   avatar: Icon(
-                    isInc ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                    isInc
+                        ? Icons.arrow_downward_rounded
+                        : Icons.arrow_upward_rounded,
                     size: 12,
                     color: isInc ? GallaColors.moneyIn : GallaColors.moneyOut,
                   ),
                   label: Text(
                     'Repeat $title ($amt)',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   onPressed: () {
                     final nav = Navigator.of(context);
@@ -320,14 +332,7 @@ class _ActionTile extends StatelessWidget {
             child: Icon(icon, color: color, size: 24),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: GallaColors.ink,
-            ),
-          ),
+          Text(label, style: GallaType.labelStrong),
         ],
       ),
     );
@@ -343,7 +348,8 @@ class VoiceEntrySheet extends ConsumerStatefulWidget {
   ConsumerState<VoiceEntrySheet> createState() => _VoiceEntrySheetState();
 }
 
-class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTickerProviderStateMixin {
+class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
+    with SingleTickerProviderStateMixin {
   final _speech = SpeechToText();
   final _parser = NlParser();
   bool _isListening = false;
@@ -375,7 +381,8 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
     setState(() => _isListening = true);
 
     await _speech.listen(
-      localeId: 'ne_NP', // Defaults to Nepali if supported, falls back automatically
+      localeId:
+          'ne_NP', // Defaults to Nepali if supported, falls back automatically
       onResult: (result) {
         setState(() {
           _transcript = result.recognizedWords;
@@ -417,12 +424,15 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
 
     return Container(
       decoration: const BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(GallaRadius.bottomSheet),
+        ),
       ),
       padding: const EdgeInsets.all(GallaSpacing.xl),
       child: Column(
@@ -449,7 +459,9 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
                   width: 76,
                   height: 76,
                   decoration: BoxDecoration(
-                    color: _isListening ? GallaColors.brand : GallaColors.brandSoft,
+                    color: _isListening
+                        ? GallaColors.brand
+                        : GallaColors.brandSoft,
                     shape: BoxShape.circle,
                     boxShadow: _isListening ? GallaElevation.hero : null,
                   ),
@@ -466,21 +478,18 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
 
           Text(
             _isListening ? 'Listening...' : 'Tap to speak',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: GallaColors.ink,
-            ),
+            style: GallaType.cardTitle,
           ),
           const SizedBox(height: GallaSpacing.xs),
           Text(
             _transcript.isEmpty
                 ? 'Try saying: "Hari lai 500 ko saman udhar diye"'
                 : '"$_transcript"',
-            style: TextStyle(
-              fontSize: 13,
-              fontStyle: _transcript.isEmpty ? FontStyle.italic : FontStyle.normal,
+            style: GallaType.body.copyWith(
               color: _transcript.isEmpty ? GallaColors.muted : GallaColors.ink,
+              fontStyle: _transcript.isEmpty
+                  ? FontStyle.italic
+                  : FontStyle.normal,
             ),
             textAlign: TextAlign.center,
           ),
@@ -498,13 +507,19 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.auto_awesome_rounded, size: 16, color: GallaColors.gold),
+                      Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 16,
+                        color: GallaColors.gold,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Understood Transaction',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.gold),
+                        style: GallaType.chipLabel.copyWith(
+                          color: GallaColors.gold,
+                        ),
                       ),
                     ],
                   ),
@@ -512,10 +527,19 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Type', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
                       Text(
-                        _parsed!.isCredit ? 'Credit (Udhaar)' : (_parsed!.direction == Direction.moneyIn ? 'Cash In' : 'Cash Out'),
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        'Type',
+                        style: GallaType.body.copyWith(
+                          color: GallaColors.muted,
+                        ),
+                      ),
+                      Text(
+                        _parsed!.isCredit
+                            ? 'Credit (Udhaar)'
+                            : (_parsed!.direction == Direction.moneyIn
+                                  ? 'Cash In'
+                                  : 'Cash Out'),
+                        style: GallaType.subtitleSm,
                       ),
                     ],
                   ),
@@ -523,10 +547,20 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Amount', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
                       Text(
-                        Money(_parsed!.amountMinor!, currency: settings.currency).format(),
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: GallaColors.brand),
+                        'Amount',
+                        style: GallaType.body.copyWith(
+                          color: GallaColors.muted,
+                        ),
+                      ),
+                      Text(
+                        Money(
+                          _parsed!.amountMinor!,
+                          currency: settings.currency,
+                        ).format(),
+                        style: GallaType.numberSm.copyWith(
+                          color: GallaColors.brand,
+                        ),
                       ),
                     ],
                   ),
@@ -535,8 +569,13 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet> with SingleTi
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Party', style: TextStyle(color: GallaColors.muted, fontSize: 13)),
-                        Text(_parsed!.partyName!, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        Text(
+                          'Party',
+                          style: GallaType.body.copyWith(
+                            color: GallaColors.muted,
+                          ),
+                        ),
+                        Text(_parsed!.partyName!, style: GallaType.subtitleSm),
                       ],
                     ),
                   ],
@@ -606,12 +645,20 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   final _chipKeys = <String, GlobalKey>{};
 
   static const _incomeCategories = [
-    'Sales', 'Services', 'Customer Payment', 'Commission', 'Other Income',
+    'Sales',
+    'Services',
+    'Customer Payment',
+    'Commission',
+    'Other Income',
   ];
 
   static const _expenseCategories = [
-    'Purchase / Stock', 'Rent', 'Staff / Salary', 'Electricity / Utility',
-    'Transport', 'Other Expense',
+    'Purchase / Stock',
+    'Rent',
+    'Staff / Salary',
+    'Electricity / Utility',
+    'Transport',
+    'Other Expense',
   ];
 
   @override
@@ -626,8 +673,9 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     if (seedMinor > 0) {
       final whole = seedMinor ~/ 100;
       final cents = seedMinor % 100;
-      _amountController.text =
-          cents == 0 ? '$whole' : (seedMinor / 100).toString();
+      _amountController.text = cents == 0
+          ? '$whole'
+          : (seedMinor / 100).toString();
     }
     // Make a seeded category visible as soon as the sheet lays out.
     if (widget.seedCategory != null) {
@@ -650,12 +698,12 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   }
 
   EntrySeed get _seed => EntrySeed(
-        direction: widget.initialDirection,
-        isCredit: widget.isCredit,
-        partyName: widget.seedParty?.name ?? widget.seedPartyName,
-        category: widget.seedCategory,
-        amountMinor: widget.seedAmountMinor ?? 0,
-      );
+    direction: widget.initialDirection,
+    isCredit: widget.isCredit,
+    partyName: widget.seedParty?.name ?? widget.seedPartyName,
+    category: widget.seedCategory,
+    amountMinor: widget.seedAmountMinor ?? 0,
+  );
 
   @override
   void dispose() {
@@ -667,10 +715,15 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   }
 
   Future<void> _pickPhoto(EntryViewModel vm) async {
-    final file = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 70);
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 70,
+    );
     if (file == null) return;
     final dir = await getApplicationDocumentsDirectory();
-    final dest = File(p.join(dir.path, 'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg'));
+    final dest = File(
+      p.join(dir.path, 'receipt_${DateTime.now().millisecondsSinceEpoch}.jpg'),
+    );
     await File(file.path).copy(dest.path);
     vm.setPhoto(dest.path);
   }
@@ -698,14 +751,19 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
       child: Container(
         decoration: const BoxDecoration(
           color: GallaColors.surface,
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(GallaRadius.bottomSheet),
+          ),
         ),
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.92,
         ),
-        padding:
-            const EdgeInsets.fromLTRB(GallaSpacing.lg, 0, GallaSpacing.lg, GallaSpacing.lg),
+        padding: const EdgeInsets.fromLTRB(
+          GallaSpacing.lg,
+          0,
+          GallaSpacing.lg,
+          GallaSpacing.lg,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -762,21 +820,16 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                     // Amount Field
                     TextField(
                       controller: _amountController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       textInputAction: TextInputAction.next,
                       autofocus: true,
                       cursorColor: activeColor,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: activeColor,
-                        letterSpacing: -1.0,
-                      ),
+                      style: GallaType.totalLg.copyWith(color: activeColor),
                       decoration: InputDecoration(
                         prefixText: 'Rs. ',
-                        prefixStyle: TextStyle(
-                          fontSize: 24,
+                        prefixStyle: GallaType.numberXl.copyWith(
                           fontWeight: FontWeight.w700,
                           color: activeColor.withValues(alpha: 0.7),
                         ),
@@ -796,20 +849,25 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                       textInputAction: TextInputAction.next,
                       decoration: InputDecoration(
                         labelText: 'Party / Customer / Supplier (Optional)',
-                        prefixIcon:
-                            const Icon(Icons.person_outline_rounded, size: 20),
+                        prefixIcon: const Icon(
+                          Icons.person_outline_rounded,
+                          size: 20,
+                        ),
                         suffixIcon: parties.isNotEmpty
                             ? PopupMenuButton<String>(
-                                icon:
-                                    const Icon(Icons.arrow_drop_down_rounded),
+                                icon: const Icon(Icons.arrow_drop_down_rounded),
                                 onSelected: (name) {
                                   _partyController.text = name;
                                   vm.setParty(name);
                                 },
                                 itemBuilder: (_) => parties
                                     .take(5)
-                                    .map((p) => PopupMenuItem(
-                                        value: p.name, child: Text(p.name)))
+                                    .map(
+                                      (p) => PopupMenuItem(
+                                        value: p.name,
+                                        child: Text(p.name),
+                                      ),
+                                    )
                                     .toList(),
                               )
                             : null,
@@ -831,18 +889,18 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                               padding: const EdgeInsets.only(right: 6),
                               child: ChoiceChip(
                                 key: _chipKeys.putIfAbsent(
-                                    cat, () => GlobalKey(debugLabel: cat)),
+                                  cat,
+                                  () => GlobalKey(debugLabel: cat),
+                                ),
                                 label: Text(cat),
                                 selected: selected,
-                                selectedColor:
-                                    activeColor.withValues(alpha: 0.15),
-                                labelStyle: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: selected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                  color:
-                                      selected ? activeColor : GallaColors.ink,
+                                selectedColor: activeColor.withValues(
+                                  alpha: 0.15,
+                                ),
+                                labelStyle: GallaType.caption.copyWith(
+                                  color: selected
+                                      ? activeColor
+                                      : GallaColors.ink,
                                 ),
                                 onSelected: (val) {
                                   vm.setCategory(val ? cat : null);
@@ -885,15 +943,13 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                                 ? GallaColors.udhaar
                                 : GallaColors.muted,
                           ),
-                          title: const Text(
+                          title: Text(
                             'Udhaar (Credit)',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w700),
+                            style: GallaType.subtitle,
                           ),
                           subtitle: Text(
                             'No cash moved yet',
-                            style: TextStyle(
-                              fontSize: 11,
+                            style: GallaType.captionSm.copyWith(
                               color: state.isUdhaar
                                   ? GallaColors.udhaar
                                   : GallaColors.muted,
@@ -955,9 +1011,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
               ),
               child: state.saving
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text('Save Entry',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                  : Text('Save Entry', style: GallaType.cardTitle),
             ),
           ],
         ),
@@ -986,16 +1040,16 @@ class _DirectionTab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : GallaColors.surface2,
+          color: selected
+              ? color.withValues(alpha: 0.12)
+              : GallaColors.surface2,
           borderRadius: BorderRadius.circular(GallaRadius.md),
           border: Border.all(color: selected ? color : GallaColors.line),
         ),
         child: Center(
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+            style: GallaType.subtitleSm.copyWith(
               color: selected ? color : GallaColors.muted,
             ),
           ),

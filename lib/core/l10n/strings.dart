@@ -45,7 +45,8 @@ class S {
   String get unpaid => isNe ? 'बाँकी' : 'Unpaid';
   String get paid => isNe ? 'चुक्ता' : 'Paid';
   String get partiallyPaid => isNe ? 'आंशिक चुक्ता' : 'Partially Paid';
-  String get recordInvoicePayment => isNe ? 'बिलको भुक्तानी लिनुहोस्' : 'Record Payment';
+  String get recordInvoicePayment =>
+      isNe ? 'बिलको भुक्तानी लिनुहोस्' : 'Record Payment';
   String get due => isNe ? 'तिर्न बाँकी' : 'Due';
 
   // Inventory Lite
@@ -53,11 +54,13 @@ class S {
   String get stockQuantity => isNe ? 'मौज्दात परिमाण' : 'Current Stock';
   String get costPrice => isNe ? 'खरिद दर' : 'Cost Price';
   String get salePrice => isNe ? 'बिक्री दर' : 'Sale Price';
-  String get lowStockThreshold => isNe ? 'न्यून मौज्दात सूचना सीमा' : 'Low-Stock Alert Level';
+  String get lowStockThreshold =>
+      isNe ? 'न्यून मौज्दात सूचना सीमा' : 'Low-Stock Alert Level';
   String get adjustStock => isNe ? 'स्टक मिलाउनुहोस्' : 'Adjust Stock';
 
   // Guided Reconciliation
-  String get reconciliation => isNe ? 'नगद र बैंक हिसाब मिलान' : 'Cash & Bank Reconciliation';
+  String get reconciliation =>
+      isNe ? 'नगद र बैंक हिसाब मिलान' : 'Cash & Bank Reconciliation';
   String get reconcileIntro => isNe
       ? 'तपाईंको हातमा भएको नगद र बैंक ब्यालेन्स गल्लासँग दाँजेर हिसाब मिलाउनुहोस्।'
       : 'Count your physical cash and enter your bank balance to reconcile with Galla.';
@@ -65,8 +68,10 @@ class S {
   String get bankBalance => isNe ? 'बैंक ब्यालेन्स' : 'Bank Balance';
   String get systemExpected => isNe ? 'गल्लाको हिसाब' : 'Galla System Total';
   String get discrepancy => isNe ? 'फरक / अन्तर' : 'Discrepancy';
-  String get acceptAdjustment => isNe ? 'फरक रकम समायोजन गर्नुहोस्' : 'Create Adjustment Entry';
-  String get noDiscrepancy => isNe ? 'हिसाब ठ्याक्कै मिल्यो!' : 'Perfect Match! No discrepancy.';
+  String get acceptAdjustment =>
+      isNe ? 'फरक रकम समायोजन गर्नुहोस्' : 'Create Adjustment Entry';
+  String get noDiscrepancy =>
+      isNe ? 'हिसाब ठ्याक्कै मिल्यो!' : 'Perfect Match! No discrepancy.';
 
   // Multi-Branch Support
   String get branches => isNe ? 'शाखाहरू' : 'Branches';
@@ -78,15 +83,20 @@ class S {
   String get staffMembers => isNe ? 'कर्मचारीहरू' : 'Staff Members';
   String get addStaff => isNe ? 'कर्मचारी थप्नुहोस्' : 'Add Staff Member';
   String get staffRole => isNe ? 'भूमिका' : 'Role';
-  String get ownerRole => isNe ? 'साहुजी / मालिक (सबै पहुँच)' : 'Owner (Full Access)';
-  String get staffRoleSimple => isNe ? 'कर्मचारी (इन्ट्री मात्र)' : 'Staff (Entry Only)';
-  String get switchStaffMode => isNe ? 'भूमिका बदल्नुहोस्' : 'Switch Role / Mode';
+  String get ownerRole =>
+      isNe ? 'साहुजी / मालिक (सबै पहुँच)' : 'Owner (Full Access)';
+  String get staffRoleSimple =>
+      isNe ? 'कर्मचारी (इन्ट्री मात्र)' : 'Staff (Entry Only)';
+  String get switchStaffMode =>
+      isNe ? 'भूमिका बदल्नुहोस्' : 'Switch Role / Mode';
 
   // Business Health Score & AI Insights
-  String get businessHealth => isNe ? 'व्यापार स्वास्थ्य स्कोर' : 'Business Health Score';
+  String get businessHealth =>
+      isNe ? 'व्यापार स्वास्थ्य स्कोर' : 'Business Health Score';
   String get healthGrade => isNe ? 'ग्रेड' : 'Grade';
   String get actionableInsights => isNe ? 'उपयोगी सुझावहरू' : 'Key AI Insights';
 
   // CSV Exports
-  String get exportTransactionsCsv => isNe ? 'कारोबारको CSV' : 'Transactions CSV';
+  String get exportTransactionsCsv =>
+      isNe ? 'कारोबारको CSV' : 'Transactions CSV';
 }

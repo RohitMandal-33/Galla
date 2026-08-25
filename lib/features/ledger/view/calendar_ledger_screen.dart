@@ -14,7 +14,8 @@ class CalendarLedgerScreen extends ConsumerStatefulWidget {
   const CalendarLedgerScreen({super.key});
 
   @override
-  ConsumerState<CalendarLedgerScreen> createState() => _CalendarLedgerScreenState();
+  ConsumerState<CalendarLedgerScreen> createState() =>
+      _CalendarLedgerScreenState();
 }
 
 class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
@@ -22,10 +23,12 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final currency = settings.currency;
-    final allTxns = ref.watch(transactionsProvider).valueOrNull ?? const <Txn>[];
+    final allTxns =
+        ref.watch(transactionsProvider).valueOrNull ?? const <Txn>[];
 
     // Filter txns for selected day
     final dayTxns = allTxns.where((t) {
@@ -63,19 +66,27 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                         icon: const Icon(Icons.chevron_left_rounded),
                         onPressed: () {
                           setState(() {
-                            _selectedDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+                            _selectedDate = DateTime(
+                              _selectedDate.year,
+                              _selectedDate.month - 1,
+                              1,
+                            );
                           });
                         },
                       ),
                       Text(
                         DateFormat('MMMM yyyy').format(_selectedDate),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                        style: GallaType.cardTitle,
                       ),
                       IconButton(
                         icon: const Icon(Icons.chevron_right_rounded),
                         onPressed: () {
                           setState(() {
-                            _selectedDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+                            _selectedDate = DateTime(
+                              _selectedDate.year,
+                              _selectedDate.month + 1,
+                              1,
+                            );
                           });
                         },
                       ),
@@ -90,9 +101,17 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                       scrollDirection: Axis.horizontal,
                       itemCount: 14,
                       itemBuilder: (context, index) {
-                        final date = DateTime.now().subtract(Duration(days: 7 - index));
-                        final isSelected = DateUtils.isSameDay(date, _selectedDate);
-                        final isToday = DateUtils.isSameDay(date, DateTime.now());
+                        final date = DateTime.now().subtract(
+                          Duration(days: 7 - index),
+                        );
+                        final isSelected = DateUtils.isSameDay(
+                          date,
+                          _selectedDate,
+                        );
+                        final isToday = DateUtils.isSameDay(
+                          date,
+                          DateTime.now(),
+                        );
 
                         return GestureDetector(
                           onTap: () => setState(() => _selectedDate = date),
@@ -102,30 +121,37 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? GallaColors.brand
-                                  : (isToday ? GallaColors.brandSoft : Colors.transparent),
+                                  : (isToday
+                                        ? GallaColors.brandSoft
+                                        : Colors.transparent),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                color: isSelected ? GallaColors.brand : GallaColors.line,
+                                color: isSelected
+                                    ? GallaColors.brand
+                                    : GallaColors.line,
                               ),
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  DateFormat('E').format(date).substring(0, 3).toUpperCase(),
-                                  style: TextStyle(
+                                  DateFormat(
+                                    'E',
+                                  ).format(date).substring(0, 3).toUpperCase(),
+                                  style: GallaType.labelSm.copyWith(
                                     fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: isSelected ? Colors.white70 : GallaColors.muted,
+                                    color: isSelected
+                                        ? Colors.white70
+                                        : GallaColors.muted,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   date.day.toString(),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: isSelected ? Colors.white : GallaColors.ink,
+                                  style: GallaType.number.copyWith(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : GallaColors.ink,
                                   ),
                                 ),
                               ],
@@ -155,7 +181,7 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                 children: [
                   Text(
                     DateFormat('EEEE, MMMM d, yyyy').format(_selectedDate),
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    style: GallaType.subtitle,
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -163,22 +189,33 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                       Expanded(
                         child: _StatMini(
                           label: 'Income',
-                          value: Money(dayIncomeMinor, currency: currency).format(),
+                          value: Money(
+                            dayIncomeMinor,
+                            currency: currency,
+                          ).format(),
                           color: GallaColors.moneyIn,
                         ),
                       ),
                       Expanded(
                         child: _StatMini(
                           label: 'Expense',
-                          value: Money(dayExpenseMinor, currency: currency).format(),
+                          value: Money(
+                            dayExpenseMinor,
+                            currency: currency,
+                          ).format(),
                           color: GallaColors.moneyOut,
                         ),
                       ),
                       Expanded(
                         child: _StatMini(
                           label: 'Net',
-                          value: Money(dayNetMinor, currency: currency).format(),
-                          color: dayNetMinor >= 0 ? GallaColors.brand : GallaColors.moneyOut,
+                          value: Money(
+                            dayNetMinor,
+                            currency: currency,
+                          ).format(),
+                          color: dayNetMinor >= 0
+                              ? GallaColors.brand
+                              : GallaColors.moneyOut,
                         ),
                       ),
                     ],
@@ -204,16 +241,17 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
                     ),
                   )
                 : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final txn = dayTxns[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: TransactionTile(txn: txn, currency: currency, s: s),
-                        );
-                      },
-                      childCount: dayTxns.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final txn = dayTxns[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: TransactionTile(
+                          txn: txn,
+                          currency: currency,
+                          s: s,
+                        ),
+                      );
+                    }, childCount: dayTxns.length),
                   ),
           ),
         ],
@@ -238,7 +276,11 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
 }
 
 class _StatMini extends StatelessWidget {
-  const _StatMini({required this.label, required this.value, required this.color});
+  const _StatMini({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
   final String label;
   final String value;
   final Color color;
@@ -248,12 +290,9 @@ class _StatMini extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: GallaColors.muted)),
+        Text(label, style: GallaType.captionSm),
         const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: color),
-        ),
+        Text(value, style: GallaType.subtitleSm.copyWith(color: color)),
       ],
     );
   }

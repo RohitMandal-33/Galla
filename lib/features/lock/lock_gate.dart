@@ -16,7 +16,8 @@ class LockGate extends ConsumerStatefulWidget {
   ConsumerState<LockGate> createState() => _LockGateState();
 }
 
-class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver {
+class _LockGateState extends ConsumerState<LockGate>
+    with WidgetsBindingObserver {
   bool _locked = false;
   final _pin = TextEditingController();
   String? _error;
@@ -28,7 +29,9 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeLock(initial: true));
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeLock(initial: true),
+    );
   }
 
   @override
@@ -41,7 +44,8 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       final settings = ref.read(settingsProvider).valueOrNull;
       if (settings?.lockEnabled == true) setState(() => _locked = true);
     }
@@ -79,7 +83,10 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
       return;
     }
 
-    final isValid = GallaRepository.verifyPinSalted(_pin.text, settings.pinHash!);
+    final isValid = GallaRepository.verifyPinSalted(
+      _pin.text,
+      settings.pinHash!,
+    );
     if (isValid) {
       _pin.clear();
       setState(() {
@@ -143,19 +150,23 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
                     color: GallaColors.brandSoft,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.lock_rounded, size: 36, color: GallaColors.brand),
+                  child: const Icon(
+                    Icons.lock_rounded,
+                    size: 36,
+                    color: GallaColors.brand,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Galla is Locked',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: GallaColors.ink),
+                style: GallaType.numberXl,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Enter your 4-digit security PIN to access your business ledger.',
-                style: TextStyle(fontSize: 13, color: GallaColors.muted),
+                style: GallaType.body.copyWith(color: GallaColors.muted),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 28),
@@ -166,20 +177,29 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
                 autofocus: true,
                 enabled: _cooldownSeconds == 0,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.w700),
+                style: GallaType.numberXl.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 8,
+                ),
                 decoration: InputDecoration(
                   labelText: s.pin,
                   errorText: _error,
                   filled: true,
                   fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
                 onSubmitted: (_) => _submitPin(),
               ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _cooldownSeconds > 0 ? null : _submitPin,
-                child: Text(_cooldownSeconds > 0 ? 'Locked ($_cooldownSeconds s)' : s.unlock),
+                child: Text(
+                  _cooldownSeconds > 0
+                      ? 'Locked ($_cooldownSeconds s)'
+                      : s.unlock,
+                ),
               ),
               const SizedBox(height: 10),
               TextButton.icon(
@@ -187,15 +207,19 @@ class _LockGateState extends ConsumerState<LockGate> with WidgetsBindingObserver
                 icon: const Icon(Icons.fingerprint_rounded, size: 18),
                 label: const Text('Use Face ID / Fingerprint'),
               ),
-              const Spacer(),
-              const Row(
+              const Divider(),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shield_outlined, size: 14, color: GallaColors.muted),
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 14,
+                    color: GallaColors.muted,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Stored locally on this device',
-                    style: TextStyle(fontSize: 11, color: GallaColors.muted),
+                    style: GallaType.captionSm,
                   ),
                 ],
               ),

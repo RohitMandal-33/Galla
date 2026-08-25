@@ -32,17 +32,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (settings == null) return null;
       final onboardingRoute = state.matchedLocation.startsWith('/onboarding');
       if (!settings.onboardingDone && !onboardingRoute) return '/onboarding';
-      if (settings.onboardingDone && onboardingRoute && state.matchedLocation == '/onboarding') {
+      if (settings.onboardingDone &&
+          onboardingRoute &&
+          state.matchedLocation == '/onboarding') {
         return '/galla';
       }
       return null;
     },
     routes: [
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
-      GoRoute(path: '/onboarding/balance', builder: (_, _) => const StartingBalanceScreen()),
+      GoRoute(
+        path: '/onboarding/balance',
+        builder: (_, _) => const StartingBalanceScreen(),
+      ),
 
       // Business Profile & Settings Route
-      GoRoute(path: '/profile', builder: (_, _) => const BusinessProfileScreen()),
+      GoRoute(
+        path: '/profile',
+        builder: (_, _) => const BusinessProfileScreen(),
+      ),
 
       // V2 & Secondary Full-Page Routes
       GoRoute(
@@ -55,7 +63,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: ':id',
-            builder: (_, state) => InvoiceDetailScreen(invoiceId: state.pathParameters['id']!),
+            builder: (_, state) =>
+                InvoiceDetailScreen(invoiceId: state.pathParameters['id']!),
           ),
         ],
       ),
@@ -63,10 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Detail pages pushed OUTSIDE the shell so the floating add button and
       // bottom bar never overlap their content or forms. URLs are unchanged,
       // only their position in the tree moved from inside shell branches.
-      GoRoute(
-        path: '/ledger/search',
-        builder: (_, _) => const SearchScreen(),
-      ),
+      GoRoute(path: '/ledger/search', builder: (_, _) => const SearchScreen()),
       GoRoute(
         path: '/ledger/parties/:id',
         builder: (_, state) =>
@@ -103,14 +109,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/business',
         builder: (_, _) => const MoreScreen(),
         routes: [
-          GoRoute(
-            path: 'branches',
-            builder: (_, _) => const BranchesScreen(),
-          ),
-          GoRoute(
-            path: 'staff',
-            builder: (_, _) => const StaffScreen(),
-          ),
+          GoRoute(path: 'branches', builder: (_, _) => const BranchesScreen()),
+          GoRoute(path: 'staff', builder: (_, _) => const StaffScreen()),
         ],
       ),
 
@@ -129,7 +129,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'day/:date',
-                    builder: (_, state) => DayScreen(date: state.pathParameters['date']!),
+                    builder: (_, state) =>
+                        DayScreen(date: state.pathParameters['date']!),
                   ),
                 ],
               ),
@@ -139,10 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           // 1: Khata / Ledger
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/ledger',
-                builder: (_, _) => const LedgerScreen(),
-              ),
+              GoRoute(path: '/ledger', builder: (_, _) => const LedgerScreen()),
             ],
           ),
 

@@ -57,7 +57,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       final current = await repo.loadSettings();
       await repo.saveSettings(
         current.copyWith(
-          businessName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : 'My Store',
+          businessName: _nameCtrl.text.trim().isNotEmpty
+              ? _nameCtrl.text.trim()
+              : 'My Store',
           currency: _currency,
           locale: _locale,
           onboardingDone: true,
@@ -97,7 +99,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 children: [
                   // Progress indicator dots
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -109,7 +114,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               width: _step == i ? 24 : 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: _step == i ? GallaColors.brand : GallaColors.line,
+                                color: _step == i
+                                    ? GallaColors.brand
+                                    : GallaColors.line,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                             );
@@ -117,7 +124,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ),
                         if (_step < 3)
                           TextButton(
-                            onPressed: () => _completeOnboarding(loadDemo: false),
+                            onPressed: () =>
+                                _completeOnboarding(loadDemo: false),
                             child: const Text('Skip'),
                           ),
                       ],
@@ -159,7 +167,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           _step == 0
                               ? 'Get Started'
                               : (_step == 3 ? 'Launch My Galla' : 'Continue'),
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                          style: GallaType.cardTitle,
                         ),
                       ),
                     ),
@@ -184,18 +192,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               borderRadius: BorderRadius.circular(28),
               boxShadow: GallaElevation.card,
             ),
-            child: const Icon(Icons.point_of_sale_rounded, size: 44, color: GallaColors.brand),
+            child: const Icon(
+              Icons.point_of_sale_rounded,
+              size: 44,
+              color: GallaColors.brand,
+            ),
           ),
           const SizedBox(height: 28),
-          const Text(
+          Text(
             'Your Business Operating System',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: GallaColors.ink),
+            style: GallaType.numberXl,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Simple digital khata, cash pulse, and smart inventory crafted for South Asian retail and small businesses.',
-            style: TextStyle(fontSize: 14, color: GallaColors.muted, height: 1.5),
+            style: GallaType.body.copyWith(
+              fontSize: 14,
+              height: 1.5,
+              color: GallaColors.muted,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -206,14 +222,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: GallaColors.line),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_outline_rounded, size: 16, color: GallaColors.brand),
+                Icon(
+                  Icons.lock_outline_rounded,
+                  size: 16,
+                  color: GallaColors.brand,
+                ),
                 SizedBox(width: 8),
                 Text(
                   '100% Offline-first & Private on device',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: GallaColors.brand),
+                  style: GallaType.label.copyWith(color: GallaColors.brand),
                 ),
               ],
             ),
@@ -229,14 +249,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Tell us about your store',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
-          ),
+          Text('Tell us about your store', style: GallaType.screenTitle),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Enter your shop name and select your category.',
-            style: TextStyle(fontSize: 13, color: GallaColors.muted),
+            style: GallaType.body.copyWith(color: GallaColors.muted),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -247,10 +264,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Store Category',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: GallaColors.ink),
-          ),
+          Text('Store Category', style: GallaType.subtitleSm),
           const SizedBox(height: 10),
           Expanded(
             child: GridView.builder(
@@ -269,24 +283,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
-                      color: isSelected ? GallaColors.brandSoft : GallaColors.surface,
+                      color: isSelected
+                          ? GallaColors.brandSoft
+                          : GallaColors.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? GallaColors.brand : GallaColors.line,
+                        color: isSelected
+                            ? GallaColors.brand
+                            : GallaColors.line,
                         width: isSelected ? 1.5 : 1.0,
                       ),
                     ),
                     child: Row(
                       children: [
-                        Icon(item.$2, size: 20, color: isSelected ? GallaColors.brand : GallaColors.muted),
+                        Icon(
+                          item.$2,
+                          size: 20,
+                          color: isSelected
+                              ? GallaColors.brand
+                              : GallaColors.muted,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             item.$1,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? GallaColors.brand : GallaColors.ink,
+                            style: GallaType.caption.copyWith(
+                              color: isSelected
+                                  ? GallaColors.brand
+                                  : GallaColors.ink,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -310,30 +334,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Starting Cash in Drawer',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
-          ),
+          Text('Starting Cash in Drawer', style: GallaType.screenTitle),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'How much cash do you have in your physical cash till today?',
-            style: TextStyle(fontSize: 13, color: GallaColors.muted),
+            style: GallaType.body.copyWith(color: GallaColors.muted),
           ),
           const SizedBox(height: 24),
           TextField(
             controller: _balanceCtrl,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: GallaColors.brand),
-            decoration: const InputDecoration(
+            style: GallaType.total.copyWith(color: GallaColors.brand),
+            decoration: InputDecoration(
               prefixText: 'Rs. ',
-              prefixStyle: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: GallaColors.brand),
+              prefixStyle: GallaType.screenTitle.copyWith(
+                fontWeight: FontWeight.w700,
+                color: GallaColors.brand,
+              ),
               labelText: 'Opening Cash Balance',
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Quick Presets:',
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.muted),
+            style: GallaType.chipLabel.copyWith(color: GallaColors.muted),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -363,23 +387,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: GallaColors.moneyInSoft,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check_circle_outline_rounded, size: 40, color: GallaColors.moneyIn),
+            child: const Icon(
+              Icons.check_circle_outline_rounded,
+              size: 40,
+              color: GallaColors.moneyIn,
+            ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Ready to take off!',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: GallaColors.ink),
-          ),
+          Text('Ready to take off!', style: GallaType.screenTitle),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Your business configuration is set. You can also load realistic demo data right now to explore all features.',
-            style: TextStyle(fontSize: 13, color: GallaColors.muted, height: 1.4),
+            style: GallaType.body.copyWith(
+              height: 1.4,
+              color: GallaColors.muted,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: () => _completeOnboarding(loadDemo: true),
-            icon: const Icon(Icons.auto_fix_high_rounded, color: GallaColors.gold),
+            icon: const Icon(
+              Icons.auto_fix_high_rounded,
+              color: GallaColors.gold,
+            ),
             label: const Text('Load Demo Store (Explore features)'),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: GallaColors.gold),

@@ -48,11 +48,9 @@ class InvoicesViewModel extends AsyncNotifier<InvoicesState> {
   void setFilter(InvoiceStatus? status) {
     final s = state.valueOrNull;
     if (s == null) return;
-    state = AsyncData(InvoicesState(
-      invoices: s.invoices,
-      filter: status,
-      loading: false,
-    ));
+    state = AsyncData(
+      InvoicesState(invoices: s.invoices, filter: status, loading: false),
+    );
   }
 
   Future<void> deleteInvoice(String id) async {
@@ -69,4 +67,6 @@ class InvoicesViewModel extends AsyncNotifier<InvoicesState> {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 final invoicesViewModelProvider =
-    AsyncNotifierProvider<InvoicesViewModel, InvoicesState>(InvoicesViewModel.new);
+    AsyncNotifierProvider<InvoicesViewModel, InvoicesState>(
+      InvoicesViewModel.new,
+    );

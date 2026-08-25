@@ -75,9 +75,7 @@ class NlParser {
   }
 
   int? _extractAmount(String lower) {
-    final lakh = RegExp(
-      r'(\d+(?:[.,]\d+)?)\s*(lakh|lac)',
-    ).firstMatch(lower);
+    final lakh = RegExp(r'(\d+(?:[.,]\d+)?)\s*(lakh|lac)').firstMatch(lower);
     if (lakh != null) {
       final n = double.tryParse(lakh.group(1)!.replaceAll(',', '')) ?? 0;
       return (n * 100000 * 100).round();
@@ -96,7 +94,8 @@ class NlParser {
       final frac = m.group(2) ?? '0';
       final value = int.tryParse(whole);
       if (value == null) continue;
-      final minor = value * 100 + int.parse(frac.padRight(2, '0').substring(0, 2));
+      final minor =
+          value * 100 + int.parse(frac.padRight(2, '0').substring(0, 2));
       if (best == null || minor > best) best = minor;
     }
     return best;
@@ -104,9 +103,18 @@ class NlParser {
 
   String? _extractParty(String text) {
     final patterns = [
-      RegExp(r'\bto\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})', caseSensitive: false),
-      RegExp(r'\bfrom\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})', caseSensitive: false),
-      RegExp(r'\blai\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})', caseSensitive: false),
+      RegExp(
+        r'\bto\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'\bfrom\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})',
+        caseSensitive: false,
+      ),
+      RegExp(
+        r'\blai\s+([A-Za-z\u0900-\u097F][A-Za-z\u0900-\u097F\s]{1,40})',
+        caseSensitive: false,
+      ),
     ];
     for (final p in patterns) {
       final m = p.firstMatch(text);

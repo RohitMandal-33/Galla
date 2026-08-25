@@ -174,10 +174,7 @@ class Invoice {
 }
 
 class InvoiceWithItems {
-  const InvoiceWithItems({
-    required this.invoice,
-    required this.items,
-  });
+  const InvoiceWithItems({required this.invoice, required this.items});
 
   final Invoice invoice;
   final List<InvoiceItem> items;
@@ -328,7 +325,11 @@ class DailySummary {
 }
 
 class ReportPeriod {
-  const ReportPeriod({required this.start, required this.end, required this.label});
+  const ReportPeriod({
+    required this.start,
+    required this.end,
+    required this.label,
+  });
   final DateTime start;
   final DateTime end;
   final String label;
@@ -425,7 +426,8 @@ class AppSettings {
       notifyPaymentDue: notifyPaymentDue ?? this.notifyPaymentDue,
       notifyLowCash: notifyLowCash ?? this.notifyLowCash,
       notifyLowStock: notifyLowStock ?? this.notifyLowStock,
-      lowCashThresholdMinor: lowCashThresholdMinor ?? this.lowCashThresholdMinor,
+      lowCashThresholdMinor:
+          lowCashThresholdMinor ?? this.lowCashThresholdMinor,
       lastDirection: lastDirection ?? this.lastDirection,
       activeBranchId: activeBranchId ?? this.activeBranchId,
       activeStaffId: activeStaffId ?? this.activeStaffId,

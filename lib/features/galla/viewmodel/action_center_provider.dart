@@ -48,7 +48,8 @@ class ActionItem {
 
 final actionCenterProvider = Provider<List<ActionItem>>((ref) {
   final items = <ActionItem>[];
-  final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+  final settings =
+      ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
   final parties = ref.watch(partiesProvider).valueOrNull ?? [];
   final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
   final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
@@ -59,7 +60,10 @@ final actionCenterProvider = Provider<List<ActionItem>>((ref) {
 
   if (overdueParties.isNotEmpty) {
     final top = overdueParties.first;
-    final formatted = Money(top.balanceMinor, currency: settings.currency).format();
+    final formatted = Money(
+      top.balanceMinor,
+      currency: settings.currency,
+    ).format();
     items.add(
       ActionItem(
         id: 'udhaar_${top.id}',
@@ -92,7 +96,8 @@ final actionCenterProvider = Provider<List<ActionItem>>((ref) {
         type: ActionType.lowStock,
         title: '${item.name} is running low',
         badge: '${item.currentQuantity.toStringAsFixed(0)} ${item.unit} left',
-        subtitle: 'Threshold is ${item.lowStockThreshold.toStringAsFixed(0)} ${item.unit}',
+        subtitle:
+            'Threshold is ${item.lowStockThreshold.toStringAsFixed(0)} ${item.unit}',
         actionLabel: 'Restock',
         actionRoute: '/inventory',
         icon: Icons.inventory_2_outlined,

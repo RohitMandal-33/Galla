@@ -25,7 +25,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final currency = settings.currency;
     final inventoryAsync = ref.watch(inventoryProvider);
     final insights = ref.watch(inventoryAnalyticsProvider);
@@ -52,13 +53,25 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
         error: (e, _) => Center(child: Text('$e')),
         data: (allItems) {
           final lowStockItems = allItems.where((i) => i.isLowStock).toList();
-          final totalValueMinor = allItems.fold<int>(0, (sum, i) => sum + i.inventoryValueMinor);
+          final totalValueMinor = allItems.fold<int>(
+            0,
+            (sum, i) => sum + i.inventoryValueMinor,
+          );
 
           final filtered = allItems.where((item) {
             final insight = insights[item.id];
-            if (_currentFilter == InventoryFilter.lowStock && !item.isLowStock) return false;
-            if (_currentFilter == InventoryFilter.fastMoving && insight?.movement != ItemMovement.fastMoving) return false;
-            if (_currentFilter == InventoryFilter.slowMoving && insight?.movement != ItemMovement.slowMoving) return false;
+            if (_currentFilter == InventoryFilter.lowStock &&
+                !item.isLowStock) {
+              return false;
+            }
+            if (_currentFilter == InventoryFilter.fastMoving &&
+                insight?.movement != ItemMovement.fastMoving) {
+              return false;
+            }
+            if (_currentFilter == InventoryFilter.slowMoving &&
+                insight?.movement != ItemMovement.slowMoving) {
+              return false;
+            }
 
             if (_searchQuery.isNotEmpty) {
               final q = _searchQuery.toLowerCase();
@@ -73,7 +86,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             children: [
               // Summary Cards
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -88,17 +104,20 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Total Stock Value', style: TextStyle(fontSize: 11, color: GallaColors.muted)),
+                            Text(
+                              'Total Stock Value',
+                              style: GallaType.captionSm,
+                            ),
                             const SizedBox(height: 2),
                             Text(
-                              Money(totalValueMinor, currency: currency).format(),
+                              Money(
+                                totalValueMinor,
+                                currency: currency,
+                              ).format(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
+                              style: GallaType.number.copyWith(
                                 color: GallaColors.brand,
-                                letterSpacing: -0.3,
                               ),
                             ),
                           ],
@@ -110,10 +129,14 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: lowStockItems.isNotEmpty ? GallaColors.moneyOutSoft : GallaColors.surface,
+                          color: lowStockItems.isNotEmpty
+                              ? GallaColors.moneyOutSoft
+                              : GallaColors.surface,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.line,
+                            color: lowStockItems.isNotEmpty
+                                ? GallaColors.moneyOut
+                                : GallaColors.line,
                           ),
                           boxShadow: GallaElevation.card,
                         ),
@@ -122,27 +145,31 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                           children: [
                             Row(
                               children: [
-                                const Expanded(
+                                Expanded(
                                   child: Text(
                                     'Low Stock Items',
-                                    style: TextStyle(fontSize: 11, color: GallaColors.muted),
+                                    style: GallaType.captionSm,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (lowStockItems.isNotEmpty) ...[
                                   const SizedBox(width: 4),
-                                  const Icon(Icons.warning_amber_rounded, size: 14, color: GallaColors.moneyOut),
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 14,
+                                    color: GallaColors.moneyOut,
+                                  ),
                                 ],
                               ],
                             ),
                             const SizedBox(height: 2),
                             Text(
                               '${lowStockItems.length} items',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: lowStockItems.isNotEmpty ? GallaColors.moneyOut : GallaColors.ink,
+                              style: GallaType.number.copyWith(
+                                color: lowStockItems.isNotEmpty
+                                    ? GallaColors.moneyOut
+                                    : GallaColors.ink,
                               ),
                             ),
                           ],
@@ -155,7 +182,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
               // Search Box
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search products by name or SKU...',
@@ -174,34 +204,44 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
               // Filter Chips Row
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 child: Row(
                   children: [
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'All Items (${allItems.length})',
                       selected: _currentFilter == InventoryFilter.all,
-                      onTap: () => setState(() => _currentFilter = InventoryFilter.all),
+                      onTap: () =>
+                          setState(() => _currentFilter = InventoryFilter.all),
                     ),
                     const SizedBox(width: 6),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Low Stock (${lowStockItems.length})',
                       selected: _currentFilter == InventoryFilter.lowStock,
-                      color: GallaColors.moneyOut,
-                      onTap: () => setState(() => _currentFilter = InventoryFilter.lowStock),
+                      selectedColor: GallaColors.moneyOut,
+                      onTap: () => setState(
+                        () => _currentFilter = InventoryFilter.lowStock,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Fast Moving',
                       selected: _currentFilter == InventoryFilter.fastMoving,
-                      color: GallaColors.moneyIn,
-                      onTap: () => setState(() => _currentFilter = InventoryFilter.fastMoving),
+                      selectedColor: GallaColors.moneyIn,
+                      onTap: () => setState(
+                        () => _currentFilter = InventoryFilter.fastMoving,
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Slow Moving',
                       selected: _currentFilter == InventoryFilter.slowMoving,
-                      color: GallaColors.muted,
-                      onTap: () => setState(() => _currentFilter = InventoryFilter.slowMoving),
+                      selectedColor: GallaColors.muted,
+                      onTap: () => setState(
+                        () => _currentFilter = InventoryFilter.slowMoving,
+                      ),
                     ),
                   ],
                 ),
@@ -214,7 +254,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                         child: GallaEmptyState(
                           icon: Icons.inventory_2_outlined,
                           headline: 'No Products Found',
-                          body: 'Add your store products to track stock, profit margins, and automated reorder alerts.',
+                          body:
+                              'Add your store products to track stock, profit margins, and automated reorder alerts.',
                           actionLabel: 'Add Product',
                           onAction: () {
                             showDialog(
@@ -249,7 +290,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                             onAdjust: () {
                               showDialog(
                                 context: context,
-                                builder: (_) => StockAdjustmentDialog(item: item),
+                                builder: (_) =>
+                                    StockAdjustmentDialog(item: item),
                               );
                             },
                           );
@@ -290,7 +332,9 @@ class _ProductCard extends StatelessWidget {
         color: GallaColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: item.isLowStock ? GallaColors.moneyOut.withValues(alpha: 0.4) : GallaColors.line,
+          color: item.isLowStock
+              ? GallaColors.moneyOut.withValues(alpha: 0.4)
+              : GallaColors.line,
         ),
         boxShadow: GallaElevation.card,
       ),
@@ -305,12 +349,16 @@ class _ProductCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: item.isLowStock ? GallaColors.moneyOutSoft : GallaColors.brandSoft,
+                  color: item.isLowStock
+                      ? GallaColors.moneyOutSoft
+                      : GallaColors.brandSoft,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.shopping_bag_outlined,
-                  color: item.isLowStock ? GallaColors.moneyOut : GallaColors.brand,
+                  color: item.isLowStock
+                      ? GallaColors.moneyOut
+                      : GallaColors.brand,
                   size: 22,
                 ),
               ),
@@ -324,7 +372,7 @@ class _ProductCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             item.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            style: GallaType.subtitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -332,14 +380,19 @@ class _ProductCard extends StatelessWidget {
                         if (item.isLowStock) ...[
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: GallaColors.moneyOutSoft,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Low Stock',
-                              style: TextStyle(color: GallaColors.moneyOut, fontSize: 10, fontWeight: FontWeight.w700),
+                              style: GallaType.badge.copyWith(
+                                color: GallaColors.moneyOut,
+                              ),
                             ),
                           ),
                         ],
@@ -348,10 +401,10 @@ class _ProductCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '${item.currentQuantity.toStringAsFixed(0)} ${item.unit} available',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: item.isLowStock ? GallaColors.moneyOut : GallaColors.muted,
+                      style: GallaType.label.copyWith(
+                        color: item.isLowStock
+                            ? GallaColors.moneyOut
+                            : GallaColors.muted,
                       ),
                     ),
                   ],
@@ -379,87 +432,65 @@ class _ProductCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Sale Price', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                  Text(
+                    'Sale Price',
+                    style: GallaType.captionSm.copyWith(fontSize: 10),
+                  ),
                   Text(
                     Money(item.salePriceMinor, currency: currency).format(),
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: GallaType.subtitleSm,
                   ),
                 ],
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Margin', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                  Text(
+                    'Margin',
+                    style: GallaType.captionSm.copyWith(fontSize: 10),
+                  ),
                   Text(
                     '${marginPct.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: marginPct >= 15 ? GallaColors.moneyIn : GallaColors.ink,
+                    style: GallaType.subtitleSm.copyWith(
+                      color: marginPct >= 15
+                          ? GallaColors.moneyIn
+                          : GallaColors.ink,
                     ),
                   ),
                 ],
               ),
-              if (insight?.daysUntilStockout != null && insight!.daysUntilStockout! < 7)
+              if (insight?.daysUntilStockout != null &&
+                  insight!.daysUntilStockout! < 7)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Runout in', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                    Text(
+                      'Runout in',
+                      style: GallaType.captionSm.copyWith(fontSize: 10),
+                    ),
                     Text(
                       '~${insight!.daysUntilStockout!.toStringAsFixed(1)} days',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: GallaColors.udhaar),
+                      style: GallaType.subtitleSm.copyWith(
+                        color: GallaColors.udhaar,
+                      ),
                     ),
                   ],
                 ),
               FilledButton.tonal(
                 onPressed: onAdjust,
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   minimumSize: const Size(60, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('Restock', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text('Restock', style: GallaType.labelStrong),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.color = GallaColors.brand,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? color : GallaColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? color : GallaColors.line),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : GallaColors.ink,
-          ),
-        ),
       ),
     );
   }

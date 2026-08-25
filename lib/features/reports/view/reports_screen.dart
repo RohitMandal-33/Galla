@@ -23,10 +23,10 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final reportsAsync = ref.watch(reportsViewModelProvider);
     final vm = ref.read(reportsViewModelProvider.notifier);
@@ -36,16 +36,31 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return reportsAsync.when(
       loading: () => Scaffold(
         backgroundColor: GallaColors.canvas,
-        appBar: AppBar(backgroundColor: GallaColors.canvas, title: Text(s.reportsTab)),
+        appBar: AppBar(
+          backgroundColor: GallaColors.canvas,
+          title: Text(s.reportsTab),
+        ),
         body: const Padding(
           padding: EdgeInsets.all(GallaSpacing.base),
           child: Column(
             children: [
-              GallaSkeletonBlock(width: double.infinity, height: 180, radius: GallaRadius.xl),
+              GallaSkeletonBlock(
+                width: double.infinity,
+                height: 180,
+                radius: GallaRadius.xl,
+              ),
               SizedBox(height: 12),
-              GallaSkeletonBlock(width: double.infinity, height: 140, radius: GallaRadius.lg),
+              GallaSkeletonBlock(
+                width: double.infinity,
+                height: 140,
+                radius: GallaRadius.lg,
+              ),
               SizedBox(height: 12),
-              GallaSkeletonBlock(width: double.infinity, height: 160, radius: GallaRadius.lg),
+              GallaSkeletonBlock(
+                width: double.infinity,
+                height: 160,
+                radius: GallaRadius.lg,
+              ),
             ],
           ),
         ),
@@ -54,14 +69,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       data: (state) {
         final report = state.report;
         final range = state.range;
-        final empty = report == null || (report.moneyInMinor == 0 && report.moneyOutMinor == 0);
+        final empty =
+            report == null ||
+            (report.moneyInMinor == 0 && report.moneyOutMinor == 0);
 
-        final netProfitMinor = (report?.moneyInMinor ?? 0) - (report?.moneyOutMinor ?? 0);
+        final netProfitMinor =
+            (report?.moneyInMinor ?? 0) - (report?.moneyOutMinor ?? 0);
         final isProfit = netProfitMinor >= 0;
 
         // Udhaar totals
         final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
-        final totalUdhaarMinor = udhaarParties.fold(0, (sum, p) => sum + p.balanceMinor);
+        final totalUdhaarMinor = udhaarParties.fold(
+          0,
+          (sum, p) => sum + p.balanceMinor,
+        );
 
         return Scaffold(
           backgroundColor: GallaColors.canvas,
@@ -87,11 +108,41 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               GallaSpacing.base,
               GallaSpacing.xs,
               GallaSpacing.base,
-              MediaQuery.paddingOf(context).bottom + GallaSpacing.shellBottomClearance,
+              MediaQuery.paddingOf(context).bottom +
+                  GallaSpacing.shellBottomClearance,
             ),
             children: [
               // ── Period filter chips ─────────────────────────────────────
-              _PeriodSelector(current: range, onChanged: (r) => vm.setRange(r)),
+              Row(
+                children: [
+                  Expanded(
+                    child: GallaFilterChip(
+                      label: 'This Week',
+                      selected: range == ReportRange.week,
+                      onTap: () => vm.setRange(ReportRange.week),
+                      fullWidth: true,
+                    ),
+                  ),
+                  const SizedBox(width: GallaSpacing.sm),
+                  Expanded(
+                    child: GallaFilterChip(
+                      label: 'This Month',
+                      selected: range == ReportRange.month,
+                      onTap: () => vm.setRange(ReportRange.month),
+                      fullWidth: true,
+                    ),
+                  ),
+                  const SizedBox(width: GallaSpacing.sm),
+                  Expanded(
+                    child: GallaFilterChip(
+                      label: 'This Year',
+                      selected: range == ReportRange.year,
+                      onTap: () => vm.setRange(ReportRange.year),
+                      fullWidth: true,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: GallaSpacing.base),
 
               // ── Business Summary hero ───────────────────────────────────
@@ -136,7 +187,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 ),
                 onPressed: () async {
                   final branchId = ref.read(selectedBranchIdProvider);
-                  final csv = await ref.read(repositoryProvider).exportTransactionsCsv(branchId: branchId);
+                  final csv = await ref
+                      .read(repositoryProvider)
+                      .exportTransactionsCsv(branchId: branchId);
                   await SharePlus.instance.share(
                     ShareParams(text: csv, subject: 'Galla-Transactions.csv'),
                   );
@@ -158,70 +211,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 }
 
 // ── Period Selector ────────────────────────────────────────────────────────────
-
-class _PeriodSelector extends StatelessWidget {
-  const _PeriodSelector({required this.current, required this.onChanged});
-  final ReportRange current;
-  final ValueChanged<ReportRange> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _PeriodChip(label: 'This Week', range: ReportRange.week, current: current, onTap: () => onChanged(ReportRange.week)),
-        ),
-        const SizedBox(width: GallaSpacing.sm),
-        Expanded(
-          child: _PeriodChip(label: 'This Month', range: ReportRange.month, current: current, onTap: () => onChanged(ReportRange.month)),
-        ),
-        const SizedBox(width: GallaSpacing.sm),
-        Expanded(
-          child: _PeriodChip(label: 'This Year', range: ReportRange.year, current: current, onTap: () => onChanged(ReportRange.year)),
-        ),
-      ],
-    );
-  }
-}
-
-class _PeriodChip extends StatelessWidget {
-  const _PeriodChip({required this.label, required this.range, required this.current, required this.onTap});
-  final String label;
-  final ReportRange range;
-  final ReportRange current;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = current == range;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? GallaColors.brand : GallaColors.surface,
-          borderRadius: BorderRadius.circular(GallaRadius.sm),
-          border: Border.all(color: isSelected ? GallaColors.brand : GallaColors.line),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : GallaColors.ink,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Business Summary Card ──────────────────────────────────────────────────────
 
 class _BusinessSummaryCard extends StatelessWidget {
   const _BusinessSummaryCard({
@@ -248,7 +237,7 @@ class _BusinessSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(GallaSpacing.cardPadding),
       decoration: BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.xl),
+        borderRadius: BorderRadius.circular(GallaRadius.card),
         border: Border.all(color: GallaColors.line),
       ),
       child: Column(
@@ -257,10 +246,10 @@ class _BusinessSummaryCard extends StatelessWidget {
           // Header
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Business Summary',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: GallaColors.ink),
+                  style: GallaType.tileTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -272,7 +261,9 @@ class _BusinessSummaryCard extends StatelessWidget {
                     textAlign: TextAlign.right,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11, color: GallaColors.muted, fontWeight: FontWeight.w500),
+                    style: GallaType.labelSm.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
             ],
@@ -316,17 +307,16 @@ class _BusinessSummaryCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Net Profit', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
+                    Text('Net Profit', style: GallaType.caption),
                     const SizedBox(height: 3),
                     Text(
                       m(netProfitMinor.abs()),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: isProfit ? GallaColors.moneyIn : GallaColors.moneyOut,
-                        letterSpacing: -0.8,
+                      style: GallaType.total.copyWith(
+                        color: isProfit
+                            ? GallaColors.moneyIn
+                            : GallaColors.moneyOut,
                       ),
                     ),
                   ],
@@ -334,26 +324,35 @@ class _BusinessSummaryCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: isProfit ? GallaColors.moneyInSoft : GallaColors.moneyOutSoft,
+                  color: isProfit
+                      ? GallaColors.moneyInSoft
+                      : GallaColors.moneyOutSoft,
                   borderRadius: BorderRadius.circular(GallaRadius.sm),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      isProfit ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                      isProfit
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
                       size: 16,
-                      color: isProfit ? GallaColors.moneyIn : GallaColors.moneyOut,
+                      color: isProfit
+                          ? GallaColors.moneyIn
+                          : GallaColors.moneyOut,
                     ),
                     const SizedBox(width: 5),
                     Text(
                       isProfit ? 'Profitable' : 'Net Loss',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isProfit ? GallaColors.moneyIn : GallaColors.moneyOut,
+                      style: GallaType.chipLabel.copyWith(
+                        color: isProfit
+                            ? GallaColors.moneyIn
+                            : GallaColors.moneyOut,
                       ),
                     ),
                   ],
@@ -397,18 +396,13 @@ class _ReportFigure extends StatelessWidget {
             children: [
               Icon(icon, size: 12, color: color),
               const SizedBox(width: 4),
-              Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+              Text(label, style: GallaType.labelSm.copyWith(color: color)),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: color,
-              letterSpacing: -0.3,
-            ),
+            style: GallaType.number.copyWith(color: color),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -431,7 +425,7 @@ class _IncomeExpenseChart extends StatelessWidget {
       padding: const EdgeInsets.all(GallaSpacing.cardPadding),
       decoration: BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.xl),
+        borderRadius: BorderRadius.circular(GallaRadius.card),
         border: Border.all(color: GallaColors.line),
       ),
       child: Column(
@@ -439,10 +433,10 @@ class _IncomeExpenseChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Income vs Expense',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  style: GallaType.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -456,7 +450,10 @@ class _IncomeExpenseChart extends StatelessWidget {
                     children: [
                       _ChartLegend(color: GallaColors.moneyIn, label: 'Income'),
                       const SizedBox(width: GallaSpacing.sm),
-                      _ChartLegend(color: GallaColors.moneyOut, label: 'Expense'),
+                      _ChartLegend(
+                        color: GallaColors.moneyOut,
+                        label: 'Expense',
+                      ),
                     ],
                   ),
                 ),
@@ -469,7 +466,8 @@ class _IncomeExpenseChart extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: ((report?.moneyInMinor ?? 0) > (report?.moneyOutMinor ?? 0)
+                maxY:
+                    ((report?.moneyInMinor ?? 0) > (report?.moneyOutMinor ?? 0)
                         ? (report?.moneyInMinor ?? 10000)
                         : (report?.moneyOutMinor ?? 10000)) /
                     100 *
@@ -484,19 +482,26 @@ class _IncomeExpenseChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           'W${val.toInt()}',
-                          style: const TextStyle(fontSize: 10, color: GallaColors.muted),
+                          style: GallaType.captionSm.copyWith(fontSize: 10),
                         ),
                       ),
                     ),
                   ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(color: GallaColors.line, strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) =>
+                      FlLine(color: GallaColors.line, strokeWidth: 1),
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: [
@@ -546,10 +551,16 @@ class _ChartLegend extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: GallaColors.muted, fontWeight: FontWeight.w500)),
+        Text(
+          label,
+          style: GallaType.labelSm.copyWith(fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }

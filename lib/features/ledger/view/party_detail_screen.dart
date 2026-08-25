@@ -21,17 +21,23 @@ class PartyDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
-
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final parties = ref.watch(partiesProvider).valueOrNull ?? const <Party>[];
     final party = parties.where((p) => p.id == widget.partyId).firstOrNull;
-    final allTxns = ref.watch(transactionsProvider).valueOrNull ?? const <Txn>[];
-    final partyTxns = allTxns.where((t) => t.partyId == widget.partyId).toList();
-    final invoices = ref.watch(invoicesProvider).valueOrNull ?? const <Invoice>[];
-    final partyInvoices = invoices.where((i) => i.partyId == widget.partyId).toList();
+    final allTxns =
+        ref.watch(transactionsProvider).valueOrNull ?? const <Txn>[];
+    final partyTxns = allTxns
+        .where((t) => t.partyId == widget.partyId)
+        .toList();
+    final invoices =
+        ref.watch(invoicesProvider).valueOrNull ?? const <Invoice>[];
+    final partyInvoices = invoices
+        .where((i) => i.partyId == widget.partyId)
+        .toList();
 
     if (party == null) {
       return Scaffold(
@@ -56,7 +62,13 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     }
 
     final initials = party.name.isNotEmpty
-        ? party.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? party.name
+              .trim()
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
 
     String m(int v) => Money(v, currency: currency).format();
@@ -129,8 +141,12 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                       label: 'Outstanding',
                       value: m(balanceMinor.abs()),
                       color: owesMe ? GallaColors.udhaar : GallaColors.moneyIn,
-                      bgColor: owesMe ? GallaColors.udhaarSofter : GallaColors.moneyInSoft,
-                      icon: owesMe ? Icons.pending_outlined : Icons.check_rounded,
+                      bgColor: owesMe
+                          ? GallaColors.udhaarSofter
+                          : GallaColors.moneyInSoft,
+                      icon: owesMe
+                          ? Icons.pending_outlined
+                          : Icons.check_rounded,
                     ),
                   ),
                 ],
@@ -153,7 +169,9 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                 trailing: partyTxns.isNotEmpty
                     ? Text(
                         '${partyTxns.length} entries',
-                        style: const TextStyle(fontSize: 12, color: GallaColors.muted, fontWeight: FontWeight.w500),
+                        style: GallaType.label.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
                       )
                     : null,
               ),
@@ -166,7 +184,8 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
               child: GallaEmptyState(
                 icon: Icons.receipt_long_outlined,
                 headline: 'No transactions yet',
-                body: 'Record income or expense with ${party.name} to see their history here.',
+                body:
+                    'Record income or expense with ${party.name} to see their history here.',
                 iconColor: GallaColors.udhaar,
               ),
             )
@@ -179,16 +198,13 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
                 160,
               ),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final t = partyTxns[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-                      child: TransactionTile(txn: t, currency: currency, s: s),
-                    );
-                  },
-                  childCount: partyTxns.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final t = partyTxns[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                    child: TransactionTile(txn: t, currency: currency, s: s),
+                  );
+                }, childCount: partyTxns.length),
               ),
             ),
 
@@ -206,18 +222,20 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(GallaSpacing.base, 0, GallaSpacing.base, 120),
+              padding: const EdgeInsets.fromLTRB(
+                GallaSpacing.base,
+                0,
+                GallaSpacing.base,
+                120,
+              ),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final inv = partyInvoices[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-                      child: _InvoiceTile(inv: inv, currency: currency),
-                    );
-                  },
-                  childCount: partyInvoices.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final inv = partyInvoices[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                    child: _InvoiceTile(inv: inv, currency: currency),
+                  );
+                }, childCount: partyInvoices.length),
               ),
             ),
           ],
@@ -241,7 +259,10 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
           decoration: const InputDecoration(labelText: 'Phone Number'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text('Save'),
@@ -296,9 +317,7 @@ class _PartyHeroHeader extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               initials,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+              style: GallaType.screenTitle.copyWith(
                 color: owesMe ? GallaColors.udhaar : GallaColors.brand,
               ),
             ),
@@ -306,18 +325,13 @@ class _PartyHeroHeader extends StatelessWidget {
           const SizedBox(height: GallaSpacing.sm),
 
           // Name
-          Text(
-            party.name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: GallaColors.ink,
-              letterSpacing: -0.3,
-            ),
-          ),
+          Text(party.name, style: GallaType.numberLg),
           if (party.phone != null && party.phone!.isNotEmpty) ...[
             const SizedBox(height: 2),
-            Text(party.phone!, style: const TextStyle(fontSize: 13, color: GallaColors.muted)),
+            Text(
+              party.phone!,
+              style: GallaType.body.copyWith(color: GallaColors.muted),
+            ),
           ],
 
           if (hasBalance) ...[
@@ -325,10 +339,13 @@ class _PartyHeroHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: owesMe ? GallaColors.udhaarSofter : GallaColors.moneyInSoft,
+                color: owesMe
+                    ? GallaColors.udhaarSofter
+                    : GallaColors.moneyOutSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.pill),
                 border: Border.all(
-                  color: (owesMe ? GallaColors.udhaar : GallaColors.moneyIn).withValues(alpha: 0.25),
+                  color: (owesMe ? GallaColors.udhaar : GallaColors.moneyOut)
+                      .withValues(alpha: 0.25),
                 ),
               ),
               child: Row(
@@ -336,19 +353,16 @@ class _PartyHeroHeader extends StatelessWidget {
                 children: [
                   Text(
                     owesMe ? 'You will receive ' : 'You owe ',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: GallaType.bodyStrong.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: owesMe ? GallaColors.udhaar : GallaColors.moneyIn,
+                      color: owesMe ? GallaColors.udhaar : GallaColors.moneyOut,
                     ),
                   ),
                   Text(
                     Money(balanceMinor.abs(), currency: currency).format(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: owesMe ? GallaColors.udhaar : GallaColors.moneyIn,
+                    style: GallaType.numberMd.copyWith(
                       letterSpacing: -0.5,
+                      color: owesMe ? GallaColors.udhaar : GallaColors.moneyOut,
                     ),
                   ),
                 ],
@@ -362,13 +376,22 @@ class _PartyHeroHeader extends StatelessWidget {
                 color: GallaColors.moneyInSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.pill),
               ),
-              child: const Text(
-                '✓ Fully Settled',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: GallaColors.moneyIn,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_rounded,
+                    size: 14,
+                    color: GallaColors.moneyIn,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Fully Settled',
+                    style: GallaType.chipLabel.copyWith(
+                      color: GallaColors.moneyIn,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -398,7 +421,10 @@ class _SummaryBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: GallaSpacing.md, vertical: GallaSpacing.md),
+      padding: const EdgeInsets.symmetric(
+        horizontal: GallaSpacing.md,
+        vertical: GallaSpacing.md,
+      ),
       decoration: BoxDecoration(
         color: GallaColors.surface,
         borderRadius: BorderRadius.circular(GallaRadius.card),
@@ -410,15 +436,21 @@ class _SummaryBox extends StatelessWidget {
           Container(
             width: 28,
             height: 28,
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(GallaRadius.sm)),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(GallaRadius.sm),
+            ),
             child: Icon(icon, size: 15, color: color),
           ),
           const SizedBox(height: GallaSpacing.sm),
-          Text(label, style: const TextStyle(fontSize: 10, color: GallaColors.muted, fontWeight: FontWeight.w600)),
+          Text(label, style: GallaType.labelSm.copyWith(fontSize: 10)),
           const SizedBox(height: 2),
           Text(
             value,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: color),
+            style: GallaType.subtitleSm.copyWith(
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -454,10 +486,10 @@ class _InvoiceTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(inv.invoiceNumber, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                Text(inv.invoiceNumber, style: GallaType.subtitle),
                 Text(
                   DateFormat.yMMMd().format(inv.issueDate),
-                  style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+                  style: GallaType.captionSm,
                 ),
               ],
             ),
@@ -467,10 +499,12 @@ class _InvoiceTile extends StatelessWidget {
             children: [
               Text(
                 Money(inv.totalMinor, currency: currency).format(),
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                style: GallaType.subtitle,
               ),
               const SizedBox(height: 3),
-              GallaStatusBadge(type: isPaid ? GallaBadgeType.settled : GallaBadgeType.pending),
+              GallaStatusBadge(
+                type: isPaid ? GallaBadgeType.settled : GallaBadgeType.pending,
+              ),
             ],
           ),
         ],
@@ -509,7 +543,9 @@ class _PartyActionBar extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: GallaColors.udhaar,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(GallaRadius.button),
+                      ),
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -525,7 +561,10 @@ class _PartyActionBar extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Add Credit', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Add Credit',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
                 const SizedBox(width: GallaSpacing.sm),
@@ -534,7 +573,9 @@ class _PartyActionBar extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: GallaColors.brand,
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(GallaRadius.button),
+                      ),
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -550,7 +591,10 @@ class _PartyActionBar extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.payments_outlined, size: 18),
-                    label: const Text('Receive Payment', style: TextStyle(fontWeight: FontWeight.w700)),
+                    label: const Text(
+                      'Receive Payment',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ],
@@ -564,11 +608,13 @@ class _PartyActionBar extends StatelessWidget {
                   foregroundColor: GallaColors.udhaar,
                   side: const BorderSide(color: GallaColors.udhaar, width: 1.5),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(GallaRadius.button),
+                  ),
                 ),
                 onPressed: () {},
                 icon: const Icon(Icons.notifications_outlined, size: 16),
-                label: const Text('Send Reminder', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                label: Text('Send Reminder', style: GallaType.subtitle),
               ),
             ),
           ],

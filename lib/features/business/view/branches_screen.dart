@@ -47,7 +47,9 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 hintText: 'e.g. Branch 2 / Thamel Store',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -57,7 +59,9 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 labelText: 'Location / Address',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -67,28 +71,41 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 labelText: 'Contact Phone',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               final name = _nameController.text.trim();
               if (name.isEmpty) return;
-              await ref.read(repositoryProvider).createBranch(
+              await ref
+                  .read(repositoryProvider)
+                  .createBranch(
                     name,
-                    address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-                    phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+                    address: _addressController.text.trim().isEmpty
+                        ? null
+                        : _addressController.text.trim(),
+                    phone: _phoneController.text.trim().isEmpty
+                        ? null
+                        : _phoneController.text.trim(),
                   );
               if (ctx.mounted) Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: GallaColors.brand,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text(s.save),
           ),
@@ -99,7 +116,8 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final branchesAsync = ref.watch(branchesProvider);
     final activeBranchId = ref.watch(selectedBranchIdProvider);
@@ -130,14 +148,20 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: GallaColors.line),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.store_mall_directory_outlined, color: GallaColors.brand, size: 28),
+                    Icon(
+                      Icons.store_mall_directory_outlined,
+                      color: GallaColors.brand,
+                      size: 28,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Track cash books and inventory separately for multiple store locations, or view all combined.',
-                        style: TextStyle(fontSize: 13, color: GallaColors.muted),
+                        style: GallaType.body.copyWith(
+                          color: GallaColors.muted,
+                        ),
                       ),
                     ),
                   ],
@@ -147,17 +171,28 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
 
               // "All Branches" Option
               ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
-                    color: activeBranchId == null ? GallaColors.brand : GallaColors.line,
+                    color: activeBranchId == null
+                        ? GallaColors.brand
+                        : GallaColors.line,
                     width: activeBranchId == null ? 2 : 1,
                   ),
                 ),
                 tileColor: GallaColors.surface,
-                leading: const Icon(Icons.apps_rounded, color: GallaColors.brand),
-                title: Text(s.allBranches, style: const TextStyle(fontWeight: FontWeight.w700)),
+                leading: const Icon(
+                  Icons.apps_rounded,
+                  color: GallaColors.brand,
+                ),
+                title: Text(
+                  s.allBranches,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 subtitle: const Text('Combined view across all locations'),
                 trailing: activeBranchId == null
                     ? const Icon(Icons.check_circle, color: GallaColors.brand)
@@ -165,14 +200,18 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 onTap: () {
                   ref.read(selectedBranchIdProvider.notifier).state = null;
                   ref.read(repositoryProvider).loadSettings().then((set) {
-                    ref.read(repositoryProvider).saveSettings(set.copyWith(activeBranchId: null));
+                    ref
+                        .read(repositoryProvider)
+                        .saveSettings(set.copyWith(activeBranchId: null));
                   });
                 },
               ),
               const SizedBox(height: 12),
 
-              Text('Your Branches (${branches.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                'Your Branches (${branches.length})',
+                style: GallaType.tileTitle,
+              ),
               const SizedBox(height: 8),
 
               if (branches.isEmpty)
@@ -186,7 +225,10 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Text('No additional branches added yet.', style: TextStyle(color: GallaColors.muted)),
+                        const Text(
+                          'No additional branches added yet.',
+                          style: TextStyle(color: GallaColors.muted),
+                        ),
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
                           onPressed: () => _showAddBranchDialog(context, s),
@@ -207,29 +249,52 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(
-                        color: isSelected ? GallaColors.brand : GallaColors.line,
+                        color: isSelected
+                            ? GallaColors.brand
+                            : GallaColors.line,
                         width: isSelected ? 2 : 1,
                       ),
                     ),
                     tileColor: GallaColors.surface,
-                    leading: const Icon(Icons.storefront_outlined, color: GallaColors.brand),
-                    title: Text(b.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    leading: const Icon(
+                      Icons.storefront_outlined,
+                      color: GallaColors.brand,
+                    ),
+                    title: Text(
+                      b.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
                     subtitle: b.address != null ? Text(b.address!) : null,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isSelected)
-                          const Icon(Icons.check_circle, color: GallaColors.brand),
+                          const Icon(
+                            Icons.check_circle,
+                            color: GallaColors.brand,
+                          ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red,
+                          ),
                           onPressed: () async {
-                            await ref.read(repositoryProvider).deleteBranch(b.id);
+                            await ref
+                                .read(repositoryProvider)
+                                .deleteBranch(b.id);
                             if (activeBranchId == b.id) {
-                              ref.read(selectedBranchIdProvider.notifier).state = null;
+                              ref
+                                      .read(selectedBranchIdProvider.notifier)
+                                      .state =
+                                  null;
                             }
                           },
                         ),
@@ -238,7 +303,9 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                     onTap: () {
                       ref.read(selectedBranchIdProvider.notifier).state = b.id;
                       ref.read(repositoryProvider).loadSettings().then((set) {
-                        ref.read(repositoryProvider).saveSettings(set.copyWith(activeBranchId: b.id));
+                        ref
+                            .read(repositoryProvider)
+                            .saveSettings(set.copyWith(activeBranchId: b.id));
                       });
                     },
                   ),

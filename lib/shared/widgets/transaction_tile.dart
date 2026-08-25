@@ -25,19 +25,21 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = txn.partyName ??
+    final title =
+        txn.partyName ??
         txn.category ??
         (txn.isAdjustment
             ? s.correctCash
             : txn.direction == Direction.moneyIn
-                ? s.moneyIn
-                : s.moneyOut);
+            ? s.moneyIn
+            : s.moneyOut);
 
     final timeStr = DateFormat.jm().format(txn.occurredAt);
     final isIn = txn.direction == Direction.moneyIn;
     final amountColor = isIn ? GallaColors.moneyIn : GallaColors.moneyOut;
     final sign = isIn ? '+' : '−';
-    final formatted = '$sign ${Money(txn.amountMinor, currency: currency).format()}';
+    final formatted =
+        '$sign ${Money(txn.amountMinor, currency: currency).format()}';
 
     Widget content = Padding(
       padding: const EdgeInsets.symmetric(
@@ -59,11 +61,7 @@ class TransactionTile extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: GallaColors.ink,
-                  ),
+                  style: GallaType.bodyStrong.copyWith(fontSize: 14),
                 ),
                 const SizedBox(height: 2),
                 _SubtitleRow(txn: txn, timeStr: timeStr, s: s),
@@ -75,11 +73,9 @@ class TransactionTile extends StatelessWidget {
           // ── Amount ─────────────────────────────────────────────────────
           Text(
             formatted,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: amountColor,
+            style: GallaType.subtitle.copyWith(
               letterSpacing: -0.2,
+              color: amountColor,
             ),
           ),
         ],
@@ -103,7 +99,11 @@ class TransactionTile extends StatelessWidget {
 }
 
 class _SubtitleRow extends StatelessWidget {
-  const _SubtitleRow({required this.txn, required this.timeStr, required this.s});
+  const _SubtitleRow({
+    required this.txn,
+    required this.timeStr,
+    required this.s,
+  });
   final Txn txn;
   final String timeStr;
   final S s;
@@ -112,7 +112,7 @@ class _SubtitleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(timeStr, style: const TextStyle(fontSize: 11, color: GallaColors.muted)),
+        Text(timeStr, style: GallaType.captionSm),
         if (txn.isCredit) ...[
           const SizedBox(width: 5),
           Container(
@@ -123,9 +123,8 @@ class _SubtitleRow extends StatelessWidget {
             ),
             child: Text(
               'Udhaar',
-              style: const TextStyle(
+              style: GallaType.badge.copyWith(
                 fontSize: 9,
-                fontWeight: FontWeight.w700,
                 color: GallaColors.udhaar,
               ),
             ),
@@ -133,14 +132,14 @@ class _SubtitleRow extends StatelessWidget {
         ],
         if (txn.note != null && txn.note!.isNotEmpty) ...[
           const SizedBox(width: 5),
-          const Text('·', style: TextStyle(fontSize: 11, color: GallaColors.muted)),
+          Text('·', style: GallaType.captionSm),
           const SizedBox(width: 5),
           Flexible(
             child: Text(
               txn.note!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+              style: GallaType.captionSm,
             ),
           ),
         ],
@@ -166,7 +165,7 @@ class PartyBalanceLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (balanceMinor == 0) {
-      return Text(s.settled, style: const TextStyle(color: GallaColors.muted, fontSize: 12));
+      return Text(s.settled, style: GallaType.caption);
     }
     final owesYou = balanceMinor > 0;
     return Column(
@@ -174,17 +173,14 @@ class PartyBalanceLabel extends StatelessWidget {
       children: [
         Text(
           owesYou ? s.theyOweYou : s.youOweThem,
-          style: TextStyle(
+          style: GallaType.labelSm.copyWith(
             color: owesYou ? GallaColors.udhaar : GallaColors.moneyOut,
-            fontWeight: FontWeight.w600,
-            fontSize: 11,
           ),
         ),
         Text(
           Money(balanceMinor.abs(), currency: currency).format(),
-          style: TextStyle(
+          style: GallaType.numberSm.copyWith(
             fontSize: 14,
-            fontWeight: FontWeight.w800,
             color: owesYou ? GallaColors.udhaar : GallaColors.moneyOut,
           ),
         ),
@@ -204,27 +200,25 @@ class DateGroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final isToday = DateUtils.isSameDay(date, now);
-    final isYesterday = DateUtils.isSameDay(date, now.subtract(const Duration(days: 1)));
+    final isYesterday = DateUtils.isSameDay(
+      date,
+      now.subtract(const Duration(days: 1)),
+    );
 
     final label = isToday
         ? 'Today'
         : isYesterday
-            ? 'Yesterday'
-            : DateFormat('EEE, d MMM').format(date);
+        ? 'Yesterday'
+        : DateFormat('EEE, d MMM').format(date);
 
     return Padding(
-      padding: const EdgeInsets.only(top: GallaSpacing.base, bottom: GallaSpacing.sm),
+      padding: const EdgeInsets.only(
+        top: GallaSpacing.base,
+        bottom: GallaSpacing.sm,
+      ),
       child: Row(
         children: [
-          Text(
-            label.toUpperCase(),
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: GallaColors.muted,
-              letterSpacing: 0.6,
-            ),
-          ),
+          Text(label.toUpperCase(), style: GallaType.overline),
           const SizedBox(width: GallaSpacing.sm),
           Expanded(child: Container(height: 1, color: GallaColors.line)),
         ],
@@ -250,7 +244,9 @@ class _DirectionBadge extends StatelessWidget {
       'purchase / stock' || 'purchase' || 'stock' => Icons.inventory_2_outlined,
       'rent' => Icons.home_outlined,
       'staff / salary' || 'salary' => Icons.badge_outlined,
-      'electricity / utility' || 'electricity' || 'utility' => Icons.bolt_outlined,
+      'electricity / utility' ||
+      'electricity' ||
+      'utility' => Icons.bolt_outlined,
       'transport' => Icons.local_shipping_outlined,
       'personal / drawings' || 'personal' => Icons.person_outlined,
       _ => Icons.receipt_long_outlined,
@@ -273,7 +269,7 @@ class _DirectionBadge extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(GallaRadius.md),
       ),
-      child: Icon(icon, color: fgColor, size: 19),
+      child: Icon(icon, color: fgColor, size: 20),
     );
   }
 }

@@ -36,10 +36,13 @@ class ReminderEngine {
     if (!settings.notifyPaymentDue) return;
     final parties = await _repo.partiesWithBalances();
     var shown = 0;
-    for (final p in parties.where((p) => p.remindEnabled && p.balanceMinor != 0)) {
+    for (final p in parties.where(
+      (p) => p.remindEnabled && p.balanceMinor != 0,
+    )) {
       if (shown >= 2) break;
       final last = p.lastRemindedAt;
-      if (last != null && DateTime.now().difference(last).inDays < p.remindEveryDays) {
+      if (last != null &&
+          DateTime.now().difference(last).inDays < p.remindEveryDays) {
         continue;
       }
       final theyOwe = p.balanceMinor > 0;

@@ -56,4 +56,6 @@ class InventoryViewModel extends AsyncNotifier<List<InventoryItem>> {
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 final inventoryViewModelProvider =
-    AsyncNotifierProvider<InventoryViewModel, List<InventoryItem>>(InventoryViewModel.new);
+    AsyncNotifierProvider<InventoryViewModel, List<InventoryItem>>(
+      InventoryViewModel.new,
+    );

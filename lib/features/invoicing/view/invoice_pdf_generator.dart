@@ -36,10 +36,16 @@ class InvoicePdfGenerator {
                     children: [
                       pw.Text(
                         businessName.isEmpty ? 'Galla Business' : businessName,
-                        style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(
+                          fontSize: 22,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
                       pw.SizedBox(height: 4),
-                      pw.Text('Tax Invoice / Bill', style: const pw.TextStyle(color: PdfColors.grey700)),
+                      pw.Text(
+                        'Tax Invoice / Bill',
+                        style: const pw.TextStyle(color: PdfColors.grey700),
+                      ),
                     ],
                   ),
                   pw.Column(
@@ -47,13 +53,21 @@ class InvoicePdfGenerator {
                     children: [
                       pw.Text(
                         inv.invoiceNumber,
-                        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.teal800),
+                        style: pw.TextStyle(
+                          fontSize: 18,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.teal800,
+                        ),
                       ),
                       pw.SizedBox(height: 4),
-                      pw.Text('Date: ${DateFormat.yMMMd().format(inv.issueDate)}'),
+                      pw.Text(
+                        'Date: ${DateFormat.yMMMd().format(inv.issueDate)}',
+                      ),
                       if (inv.dueDate != null)
-                        pw.Text('Due: ${DateFormat.yMMMd().format(inv.dueDate!)}',
-                            style: const pw.TextStyle(color: PdfColors.red800)),
+                        pw.Text(
+                          'Due: ${DateFormat.yMMMd().format(inv.dueDate!)}',
+                          style: const pw.TextStyle(color: PdfColors.red800),
+                        ),
                     ],
                   ),
                 ],
@@ -63,19 +77,34 @@ class InvoicePdfGenerator {
               pw.SizedBox(height: 12),
 
               // Bill To
-              pw.Text('Bill To:', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+              pw.Text(
+                'Bill To:',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey700,
+                ),
+              ),
               pw.SizedBox(height: 4),
               pw.Text(
                 inv.partyName ?? 'Valued Customer',
-                style: pw.TextStyle(fontSize: 15, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 15,
+                  fontWeight: pw.FontWeight.bold,
+                ),
               ),
               pw.SizedBox(height: 20),
 
               // Items Table
               pw.TableHelper.fromTextArray(
                 headers: ['#', 'Description', 'Qty', 'Unit Price', 'Total'],
-                headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
-                headerDecoration: const pw.BoxDecoration(color: PdfColors.teal800),
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+                headerDecoration: const pw.BoxDecoration(
+                  color: PdfColors.teal800,
+                ),
                 cellAlignment: pw.Alignment.centerLeft,
                 cellAlignments: {
                   0: pw.Alignment.center,
@@ -109,11 +138,29 @@ class InvoicePdfGenerator {
                       children: [
                         _summaryRow('Subtotal', m(inv.subtotalMinor)),
                         if (inv.taxRatePct > 0)
-                          _summaryRow('Tax (${inv.taxRatePct}%)', m(inv.taxMinor)),
+                          _summaryRow(
+                            'Tax (${inv.taxRatePct}%)',
+                            m(inv.taxMinor),
+                          ),
                         pw.Divider(color: PdfColors.grey400),
-                        _summaryRow('Total Amount', m(inv.totalMinor), isBold: true),
-                        _summaryRow('Paid', m(inv.paidAmountMinor), color: PdfColors.green800),
-                        _summaryRow('Balance Due', m(inv.dueAmountMinor), isBold: true, color: inv.dueAmountMinor > 0 ? PdfColors.red800 : PdfColors.grey700),
+                        _summaryRow(
+                          'Total Amount',
+                          m(inv.totalMinor),
+                          isBold: true,
+                        ),
+                        _summaryRow(
+                          'Paid',
+                          m(inv.paidAmountMinor),
+                          color: PdfColors.green800,
+                        ),
+                        _summaryRow(
+                          'Balance Due',
+                          m(inv.dueAmountMinor),
+                          isBold: true,
+                          color: inv.dueAmountMinor > 0
+                              ? PdfColors.red800
+                              : PdfColors.grey700,
+                        ),
                       ],
                     ),
                   ),
@@ -122,8 +169,20 @@ class InvoicePdfGenerator {
 
               if (inv.notes != null && inv.notes!.isNotEmpty) ...[
                 pw.SizedBox(height: 24),
-                pw.Text('Notes:', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                pw.Text(inv.notes!, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+                pw.Text(
+                  'Notes:',
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  inv.notes!,
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey800,
+                  ),
+                ),
               ],
 
               pw.Spacer(),
@@ -132,10 +191,20 @@ class InvoicePdfGenerator {
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  pw.Text('Generated by Galla — Digital Business Ledger',
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
-                  pw.Text('Thank you for your business!',
-                      style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                  pw.Text(
+                    'Generated by Galla — Digital Business Ledger',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                  pw.Text(
+                    'Thank you for your business!',
+                    style: const pw.TextStyle(
+                      fontSize: 9,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -163,21 +232,32 @@ class InvoicePdfGenerator {
     );
   }
 
-  static pw.Widget _summaryRow(String label, String value, {bool isBold = false, PdfColor? color}) {
+  static pw.Widget _summaryRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    PdfColor? color,
+  }) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 3),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label,
-              style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal)),
-          pw.Text(value,
-              style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                  color: color)),
+          pw.Text(
+            label,
+            style: pw.TextStyle(
+              fontSize: 11,
+              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            ),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              fontSize: 11,
+              fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+              color: color,
+            ),
+          ),
         ],
       ),
     );

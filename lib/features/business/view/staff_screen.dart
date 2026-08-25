@@ -52,7 +52,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     hintText: 'e.g. Ramesh Giri',
                     filled: true,
                     fillColor: GallaColors.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -62,7 +64,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     labelText: 'Phone Number',
                     filled: true,
                     fillColor: GallaColors.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -72,12 +76,23 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     labelText: s.staffRole,
                     filled: true,
                     fillColor: GallaColors.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                   items: [
-                    DropdownMenuItem(value: StaffRole.staff, child: Text(s.staffRoleSimple)),
-                    DropdownMenuItem(value: StaffRole.manager, child: const Text('Manager (Reports Access)')),
-                    DropdownMenuItem(value: StaffRole.owner, child: Text(s.ownerRole)),
+                    DropdownMenuItem(
+                      value: StaffRole.staff,
+                      child: Text(s.staffRoleSimple),
+                    ),
+                    DropdownMenuItem(
+                      value: StaffRole.manager,
+                      child: const Text('Manager (Reports Access)'),
+                    ),
+                    DropdownMenuItem(
+                      value: StaffRole.owner,
+                      child: Text(s.ownerRole),
+                    ),
                   ],
                   onChanged: (r) {
                     if (r != null) setDialogState(() => _selectedRole = r);
@@ -92,30 +107,43 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     labelText: 'Login PIN (4 digits, optional)',
                     filled: true,
                     fillColor: GallaColors.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 final name = _nameController.text.trim();
                 if (name.isEmpty) return;
-                await ref.read(repositoryProvider).createStaffMember(
+                await ref
+                    .read(repositoryProvider)
+                    .createStaffMember(
                       name,
-                      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+                      phone: _phoneController.text.trim().isEmpty
+                          ? null
+                          : _phoneController.text.trim(),
                       role: _selectedRole,
-                      pin: _pinController.text.trim().isEmpty ? null : _pinController.text.trim(),
+                      pin: _pinController.text.trim().isEmpty
+                          ? null
+                          : _pinController.text.trim(),
                     );
                 if (ctx.mounted) Navigator.pop(ctx);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: GallaColors.brand,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Text(s.save),
             ),
@@ -127,7 +155,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final staffAsync = ref.watch(staffMembersProvider);
 
@@ -173,21 +202,19 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Active Session Mode', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
+                          Text('Active Session Mode', style: GallaType.caption),
                           Text(
                             settings.activeStaffName ?? s.ownerRole,
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            style: GallaType.cardTitle,
                           ),
                           Text(
                             settings.activeStaffRole == StaffRole.owner
                                 ? 'Full Owner Permissions'
                                 : 'Restricted Staff Mode',
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: GallaType.label.copyWith(
                               color: settings.activeStaffRole == StaffRole.owner
                                   ? GallaColors.moneyIn
                                   : GallaColors.moneyOut,
-                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -201,7 +228,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         );
                       },
                       style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       child: const Text('Switch'),
                     ),
@@ -210,8 +239,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
               ),
               const SizedBox(height: 20),
 
-              Text('Registered Staff (${staffList.length})',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                'Registered Staff (${staffList.length})',
+                style: GallaType.tileTitle,
+              ),
               const SizedBox(height: 8),
 
               if (staffList.isEmpty)
@@ -249,7 +280,10 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: const BorderSide(color: GallaColors.line),
@@ -259,15 +293,25 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       backgroundColor: GallaColors.brandSoft,
                       child: Text(
                         m.name.isNotEmpty ? m.name[0].toUpperCase() : 'S',
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: GallaColors.brand),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: GallaColors.brand,
+                        ),
                       ),
                     ),
-                    title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: Text('Role: ${m.role.name.toUpperCase()} ${m.phone != null ? "· ${m.phone}" : ""}'),
+                    title: Text(
+                      m.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      'Role: ${m.role.name.toUpperCase()} ${m.phone != null ? "· ${m.phone}" : ""}',
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       onPressed: () async {
-                        await ref.read(repositoryProvider).deleteStaffMember(m.id);
+                        await ref
+                            .read(repositoryProvider)
+                            .deleteStaffMember(m.id);
                         if (settings.activeStaffId == m.id) {
                           final repo = ref.read(repositoryProvider);
                           final current = await repo.loadSettings();

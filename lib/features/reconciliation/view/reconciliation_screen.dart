@@ -15,7 +15,8 @@ class ReconciliationScreen extends ConsumerStatefulWidget {
   const ReconciliationScreen({super.key});
 
   @override
-  ConsumerState<ReconciliationScreen> createState() => _ReconciliationScreenState();
+  ConsumerState<ReconciliationScreen> createState() =>
+      _ReconciliationScreenState();
 }
 
 class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
@@ -54,7 +55,8 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final currency = settings.currency;
     final historyAsync = ref.watch(reconciliationsProvider);
@@ -69,7 +71,9 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
     final expectedCashMinor = _todaySummary?.cashOnHandMinor ?? 0;
     final countedVal = int.tryParse(_cashController.text.trim());
     final countedCashMinor = countedVal != null ? countedVal * 100 : null;
-    final discrepancyMinor = countedCashMinor != null ? countedCashMinor - expectedCashMinor : null;
+    final discrepancyMinor = countedCashMinor != null
+        ? countedCashMinor - expectedCashMinor
+        : null;
 
     return Scaffold(
       backgroundColor: GallaColors.canvas,
@@ -92,7 +96,9 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
             decoration: BoxDecoration(
               color: GallaColors.brandSoft,
               borderRadius: BorderRadius.circular(GallaRadius.xl),
-              border: Border.all(color: GallaColors.brand.withValues(alpha: 0.15)),
+              border: Border.all(
+                color: GallaColors.brand.withValues(alpha: 0.15),
+              ),
             ),
             child: Row(
               children: [
@@ -103,13 +109,21 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                     color: GallaColors.brand.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(GallaRadius.md),
                   ),
-                  child: const Icon(Icons.account_balance_wallet_outlined, color: GallaColors.brand, size: 22),
+                  child: const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: GallaColors.brand,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: GallaSpacing.md),
                 Expanded(
                   child: Text(
                     s.reconcileIntro,
-                    style: const TextStyle(fontSize: 13, color: GallaColors.brand, height: 1.35, fontWeight: FontWeight.w500),
+                    style: GallaType.bodyStrong.copyWith(
+                      fontWeight: FontWeight.w500,
+                      height: 1.35,
+                      color: GallaColors.brand,
+                    ),
                   ),
                 ),
               ],
@@ -131,15 +145,12 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.systemExpected, style: const TextStyle(fontSize: 12, color: GallaColors.muted)),
+                    Text(s.systemExpected, style: GallaType.caption),
                     const SizedBox(height: 3),
                     Text(
                       Money(expectedCashMinor, currency: currency).format(),
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                      style: GallaType.numberXl.copyWith(
                         color: GallaColors.brand,
-                        letterSpacing: -0.5,
                       ),
                     ),
                   ],
@@ -199,7 +210,9 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                     : GallaColors.moneyOutSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.xl),
                 border: Border.all(
-                  color: discrepancyMinor == 0 ? GallaColors.moneyIn.withValues(alpha: 0.4) : GallaColors.moneyOut.withValues(alpha: 0.4),
+                  color: discrepancyMinor == 0
+                      ? GallaColors.moneyIn.withValues(alpha: 0.4)
+                      : GallaColors.moneyOut.withValues(alpha: 0.4),
                 ),
               ),
               child: Column(
@@ -208,20 +221,17 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        s.discrepancy,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: GallaColors.ink),
-                      ),
+                      Text(s.discrepancy, style: GallaType.subtitle),
                       Text(
                         discrepancyMinor == 0
                             ? s.noDiscrepancy
                             : (discrepancyMinor > 0
-                                ? '+${Money(discrepancyMinor, currency: currency).format()} (Surplus)'
-                                : '-${Money(discrepancyMinor.abs(), currency: currency).format()} (Shortage)'),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: discrepancyMinor == 0 ? GallaColors.moneyIn : GallaColors.moneyOut,
+                                  ? '+${Money(discrepancyMinor, currency: currency).format()} (Surplus)'
+                                  : '-${Money(discrepancyMinor.abs(), currency: currency).format()} (Shortage)'),
+                        style: GallaType.number.copyWith(
+                          color: discrepancyMinor == 0
+                              ? GallaColors.moneyIn
+                              : GallaColors.moneyOut,
                         ),
                       ),
                     ],
@@ -230,16 +240,18 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                     const SizedBox(height: GallaSpacing.sm),
                     const Divider(),
                     const SizedBox(height: GallaSpacing.sm),
-                    const Text(
+                    Text(
                       'Common Causes Checklist:',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: GallaColors.inkSecondary),
+                      style: GallaType.chipLabel.copyWith(
+                        color: GallaColors.inkSecondary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       discrepancyMinor < 0
                           ? '• Unrecorded cash expense / supplier payment\n• Unrecorded cash withdrawal or change given\n• Calculation / counting error'
                           : '• Unrecorded cash sale or customer payment\n• Cash received from customer credit (udhaar)',
-                      style: const TextStyle(fontSize: 12, height: 1.45, color: GallaColors.muted),
+                      style: GallaType.caption.copyWith(height: 1.45),
                     ),
                   ],
                 ],
@@ -262,7 +274,9 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                 backgroundColor: GallaColors.brand,
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(52),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(GallaRadius.button),
+                ),
               ),
               onPressed: _submitting
                   ? null
@@ -276,9 +290,13 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
 
                       await repo.performReconciliation(
                         countedCashMinor: countedCashMinor,
-                        bankBalanceMinor: bankVal != null ? bankVal * 100 : null,
+                        bankBalanceMinor: bankVal != null
+                            ? bankVal * 100
+                            : null,
                         expectedCashMinor: expectedCashMinor,
-                        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+                        note: _noteController.text.trim().isEmpty
+                            ? null
+                            : _noteController.text.trim(),
                         createAdjustmentEntry: discrepancyMinor != 0,
                         branchId: branchId,
                       );
@@ -304,11 +322,16 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
                     )
                   : Text(
-                      discrepancyMinor == 0 ? 'Save Reconciliation Record' : s.acceptAdjustment,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      discrepancyMinor == 0
+                          ? 'Save Reconciliation Record'
+                          : s.acceptAdjustment,
+                      style: GallaType.tileTitle,
                     ),
             ),
             const SizedBox(height: GallaSpacing.xl),
@@ -333,10 +356,10 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                     borderRadius: BorderRadius.circular(GallaRadius.card),
                     border: Border.all(color: GallaColors.line),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
                       'No previous reconciliations recorded yet.',
-                      style: TextStyle(color: GallaColors.muted, fontSize: 13),
+                      style: GallaType.body.copyWith(color: GallaColors.muted),
                     ),
                   ),
                 );
@@ -346,7 +369,8 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: history.length,
-                separatorBuilder: (_, _) => const SizedBox(height: GallaSpacing.sm),
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: GallaSpacing.sm),
                 itemBuilder: (context, idx) {
                   final rec = history[idx];
                   final isZero = rec.discrepancyMinor == 0;
@@ -363,12 +387,18 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                           width: 38,
                           height: 38,
                           decoration: BoxDecoration(
-                            color: isZero ? GallaColors.moneyInSoft : GallaColors.moneyOutSoft,
+                            color: isZero
+                                ? GallaColors.moneyInSoft
+                                : GallaColors.moneyOutSoft,
                             borderRadius: BorderRadius.circular(GallaRadius.md),
                           ),
                           child: Icon(
-                            isZero ? Icons.check_circle_outline_rounded : Icons.tune_rounded,
-                            color: isZero ? GallaColors.moneyIn : GallaColors.moneyOut,
+                            isZero
+                                ? Icons.check_circle_outline_rounded
+                                : Icons.tune_rounded,
+                            color: isZero
+                                ? GallaColors.moneyIn
+                                : GallaColors.moneyOut,
                             size: 20,
                           ),
                         ),
@@ -378,15 +408,17 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                DateFormat.yMMMd().add_jm().format(rec.occurredAt),
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: GallaColors.ink),
+                                DateFormat.yMMMd().add_jm().format(
+                                  rec.occurredAt,
+                                ),
+                                style: GallaType.subtitleSm,
                               ),
                               if (rec.note != null && rec.note!.isNotEmpty)
-                                Text(rec.note!, style: const TextStyle(fontSize: 12, color: GallaColors.muted)),
+                                Text(rec.note!, style: GallaType.caption),
                               const SizedBox(height: 2),
                               Text(
                                 'Counted: ${Money(rec.countedCashMinor, currency: currency).format()} (Expected: ${Money(rec.expectedCashMinor, currency: currency).format()})',
-                                style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+                                style: GallaType.captionSm,
                               ),
                             ],
                           ),
@@ -394,11 +426,15 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                         Text(
                           isZero
                               ? '0 Diff'
-                              : Money(rec.discrepancyMinor, currency: currency).format(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.w800,
+                              : Money(
+                                  rec.discrepancyMinor,
+                                  currency: currency,
+                                ).format(),
+                          style: GallaType.numberSm.copyWith(
                             fontSize: 14,
-                            color: isZero ? GallaColors.moneyIn : GallaColors.moneyOut,
+                            color: isZero
+                                ? GallaColors.moneyIn
+                                : GallaColors.moneyOut,
                           ),
                         ),
                       ],

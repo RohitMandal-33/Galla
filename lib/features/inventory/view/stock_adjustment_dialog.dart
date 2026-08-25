@@ -12,12 +12,15 @@ class StockAdjustmentDialog extends ConsumerStatefulWidget {
   final InventoryItem item;
 
   @override
-  ConsumerState<StockAdjustmentDialog> createState() => _StockAdjustmentDialogState();
+  ConsumerState<StockAdjustmentDialog> createState() =>
+      _StockAdjustmentDialogState();
 }
 
 class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   late final TextEditingController _qtyController;
-  final _reasonController = TextEditingController(text: 'Physical Stock Count Audit');
+  final _reasonController = TextEditingController(
+    text: 'Physical Stock Count Audit',
+  );
 
   @override
   void initState() {
@@ -38,10 +41,12 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final currentQty = widget.item.currentQuantity;
-    final enteredQty = double.tryParse(_qtyController.text.trim()) ?? currentQty;
+    final enteredQty =
+        double.tryParse(_qtyController.text.trim()) ?? currentQty;
     final delta = enteredQty - currentQty;
 
     return AlertDialog(
@@ -53,35 +58,49 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
           children: [
             Text(
               'Current Recorded: $currentQty ${widget.item.unit}',
-              style: const TextStyle(fontSize: 14, color: GallaColors.muted),
+              style: GallaType.body.copyWith(
+                fontSize: 14,
+                color: GallaColors.muted,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _qtyController,
               autofocus: true,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'New Counted Quantity (${widget.item.unit})',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
             if (delta != 0)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: delta > 0 ? GallaColors.moneyInSoft : GallaColors.moneyOutSoft,
+                  color: delta > 0
+                      ? GallaColors.moneyInSoft
+                      : GallaColors.moneyOutSoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  delta > 0 ? '+${delta.toStringAsFixed(1)} Surplus' : '${delta.toStringAsFixed(1)} Shortage',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: delta > 0 ? GallaColors.moneyIn : GallaColors.moneyOut,
+                  delta > 0
+                      ? '+${delta.toStringAsFixed(1)} Surplus'
+                      : '${delta.toStringAsFixed(1)} Shortage',
+                  style: GallaType.chipLabel.copyWith(
+                    color: delta > 0
+                        ? GallaColors.moneyIn
+                        : GallaColors.moneyOut,
                   ),
                 ),
               ),
@@ -92,19 +111,26 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 labelText: 'Reason for Adjustment',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: () async {
             final qty = double.tryParse(_qtyController.text.trim());
             if (qty == null) return;
-            await ref.read(repositoryProvider).adjustStock(
+            await ref
+                .read(repositoryProvider)
+                .adjustStock(
                   widget.item.id,
                   qty,
                   _reasonController.text.trim(),
@@ -114,7 +140,9 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: GallaColors.brand,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: Text(s.save),
         ),

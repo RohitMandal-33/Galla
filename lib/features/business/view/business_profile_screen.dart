@@ -13,7 +13,8 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
   const BusinessProfileScreen({super.key});
 
   @override
-  ConsumerState<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
+  ConsumerState<BusinessProfileScreen> createState() =>
+      _BusinessProfileScreenState();
 }
 
 class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
@@ -28,9 +29,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     super.initState();
     final s = ref.read(settingsProvider).valueOrNull ?? const AppSettings();
     _nameCtrl = TextEditingController(text: s.businessName);
-    _taxCtrl = TextEditingController(text: s.taxRatePct > 0 ? '${s.taxRatePct}' : '');
+    _taxCtrl = TextEditingController(
+      text: s.taxRatePct > 0 ? '${s.taxRatePct}' : '',
+    );
     _thresholdCtrl = TextEditingController(
-      text: s.lowCashThresholdMinor > 0 ? '${s.lowCashThresholdMinor ~/ 100}' : '',
+      text: s.lowCashThresholdMinor > 0
+          ? '${s.lowCashThresholdMinor ~/ 100}'
+          : '',
     );
   }
 
@@ -77,8 +82,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           'This will populate your Galla with realistic Nepali retail data for "Shree Ganesh Kirana".',
         ),
         actions: [
-          TextButton(onPressed: () => ctx.pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => ctx.pop(true), child: const Text('Load Demo')),
+          TextButton(
+            onPressed: () => ctx.pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => ctx.pop(true),
+            child: const Text('Load Demo'),
+          ),
         ],
       ),
     );
@@ -103,9 +114,15 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final initials = settings.businessName.isNotEmpty
-        ? settings.businessName.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? settings.businessName
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'GK';
 
     return Scaffold(
@@ -116,7 +133,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           if (!_loading)
             TextButton(
               onPressed: _save,
-              child: const Text('Save', style: TextStyle(fontWeight: FontWeight.w700)),
+              child: const Text(
+                'Save',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
         ],
       ),
@@ -140,11 +160,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     alignment: Alignment.center,
                     child: Text(
                       initials,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                      style: GallaType.total.copyWith(color: Colors.white),
                     ),
                   ),
                   Positioned(
@@ -156,7 +172,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         color: GallaColors.gold,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.store_rounded, size: 16, color: Colors.white),
+                      child: const Icon(
+                        Icons.store_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -182,7 +202,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       hintText: 'e.g. Shree Ganesh Kirana',
                       prefixIcon: Icon(Icons.storefront_outlined),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Please enter a name' : null,
+                    validator: (v) => v == null || v.trim().isEmpty
+                        ? 'Please enter a name'
+                        : null,
                   ),
                   const SizedBox(height: GallaSpacing.md),
                   DropdownButtonFormField<String>(
@@ -192,20 +214,33 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       prefixIcon: Icon(Icons.currency_exchange_outlined),
                     ),
                     items: const [
-                      DropdownMenuItem(value: 'NPR', child: Text('NPR — Nepali Rupee (Rs)')),
-                      DropdownMenuItem(value: 'INR', child: Text('INR — Indian Rupee (₹)')),
-                      DropdownMenuItem(value: 'USD', child: Text('USD — US Dollar (\$)')),
+                      DropdownMenuItem(
+                        value: 'NPR',
+                        child: Text('NPR — Nepali Rupee (Rs)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'INR',
+                        child: Text('INR — Indian Rupee (₹)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'USD',
+                        child: Text('USD — US Dollar (\$)'),
+                      ),
                     ],
                     onChanged: (v) {
                       if (v != null) {
-                        ref.read(repositoryProvider).saveSettings(settings.copyWith(currency: v));
+                        ref
+                            .read(repositoryProvider)
+                            .saveSettings(settings.copyWith(currency: v));
                       }
                     },
                   ),
                   const SizedBox(height: GallaSpacing.md),
                   TextFormField(
                     controller: _taxCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     decoration: const InputDecoration(
                       labelText: 'Default Tax / VAT % (Optional)',
                       hintText: 'e.g. 13 for Nepal VAT',
@@ -230,24 +265,35 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 children: [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('PIN & Biometric Lock', style: TextStyle(fontWeight: FontWeight.w700)),
-                    subtitle: const Text('Require Face ID / Fingerprint or PIN to open Galla'),
+                    title: const Text(
+                      'PIN & Biometric Lock',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'Require Face ID / Fingerprint or PIN to open Galla',
+                    ),
                     value: settings.lockEnabled,
                     activeColor: GallaColors.brand,
                     onChanged: (v) async {
                       final repo = ref.read(repositoryProvider);
-                      await repo.saveSettings(settings.copyWith(lockEnabled: v));
+                      await repo.saveSettings(
+                        settings.copyWith(lockEnabled: v),
+                      );
                     },
                   ),
                   const Divider(),
                   Row(
                     children: [
-                      const Icon(Icons.shield_outlined, color: GallaColors.brand, size: 20),
+                      const Icon(
+                        Icons.shield_outlined,
+                        color: GallaColors.brand,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
-                      const Expanded(
+                      Expanded(
                         child: Text(
                           'Your business data is stored encrypted on this device.',
-                          style: TextStyle(fontSize: 12, color: GallaColors.muted),
+                          style: GallaType.caption,
                         ),
                       ),
                     ],
@@ -271,7 +317,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 children: [
                   OutlinedButton.icon(
                     onPressed: _loading ? null : _loadDemo,
-                    icon: const Icon(Icons.auto_fix_high_rounded, color: GallaColors.gold),
+                    icon: const Icon(
+                      Icons.auto_fix_high_rounded,
+                      color: GallaColors.gold,
+                    ),
                     label: const Text('Load Demo Data (Kirana Store)'),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: GallaColors.gold),
@@ -279,9 +328,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Seeds realistic Nepali products, customers, transactions, and invoices.',
-                    style: TextStyle(fontSize: 11, color: GallaColors.muted),
+                    style: GallaType.captionSm,
                     textAlign: TextAlign.center,
                   ),
                 ],

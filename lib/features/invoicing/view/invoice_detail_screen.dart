@@ -16,7 +16,8 @@ class InvoiceDetailScreen extends ConsumerStatefulWidget {
   final String invoiceId;
 
   @override
-  ConsumerState<InvoiceDetailScreen> createState() => _InvoiceDetailScreenState();
+  ConsumerState<InvoiceDetailScreen> createState() =>
+      _InvoiceDetailScreenState();
 }
 
 class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
@@ -41,7 +42,12 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     }
   }
 
-  Future<void> _recordPaymentDialog(BuildContext context, Invoice inv, String currency, S s) async {
+  Future<void> _recordPaymentDialog(
+    BuildContext context,
+    Invoice inv,
+    String currency,
+    S s,
+  ) async {
     final amountCtrl = TextEditingController(
       text: (inv.dueAmountMinor / 100).toStringAsFixed(0),
     );
@@ -67,7 +73,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
             children: [
               Text(
                 s.recordInvoicePayment,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                style: GallaType.numberMd.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 4),
               Text(
@@ -83,7 +89,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   labelText: '${s.amount} ($currency)',
                   filled: true,
                   fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
               const SizedBox(height: 12),
@@ -94,7 +102,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   hintText: 'Cash / Bank Transfer / Digital Pay',
                   filled: true,
                   fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -109,7 +119,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                     await repo.recordInvoicePayment(
                       inv.id,
                       val * 100,
-                      note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+                      note: noteCtrl.text.trim().isEmpty
+                          ? null
+                          : noteCtrl.text.trim(),
                     );
                     if (ctx.mounted) Navigator.pop(ctx);
                     await _load();
@@ -117,9 +129,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GallaColors.moneyIn,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: Text(s.save, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  child: Text(
+                    s.save,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -131,7 +148,8 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final currency = settings.currency;
 
@@ -170,10 +188,21 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Delete Invoice?'),
-                  content: const Text('Are you sure you want to delete this invoice?'),
+                  content: const Text(
+                    'Are you sure you want to delete this invoice?',
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -204,25 +233,26 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   children: [
                     Text(
                       inv.invoiceNumber,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: GallaColors.brand),
+                      style: GallaType.numberLg.copyWith(
+                        color: GallaColors.brand,
+                      ),
                     ),
                     _statusBadge(inv.status, s),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  inv.partyName ?? 'Customer',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
+                Text(inv.partyName ?? 'Customer', style: GallaType.cardTitle),
                 const SizedBox(height: 4),
                 Text(
                   'Issued: ${DateFormat.yMMMd().format(inv.issueDate)}',
-                  style: const TextStyle(fontSize: 12, color: GallaColors.muted),
+                  style: GallaType.caption,
                 ),
                 if (inv.dueDate != null)
                   Text(
                     'Due: ${DateFormat.yMMMd().format(inv.dueDate!)}',
-                    style: const TextStyle(fontSize: 12, color: GallaColors.moneyOut, fontWeight: FontWeight.w600),
+                    style: GallaType.label.copyWith(
+                      color: GallaColors.moneyOut,
+                    ),
                   ),
               ],
             ),
@@ -230,7 +260,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
           const SizedBox(height: 16),
 
           // Line Items
-          Text(s.lineItems, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          Text(s.lineItems, style: GallaType.cardTitle),
           const SizedBox(height: 8),
 
           Container(
@@ -247,7 +277,10 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                   return Column(
                     children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -256,18 +289,23 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                                 children: [
                                   Text(
                                     item.description,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                                    style: GallaType.bodyStrong.copyWith(
+                                      fontSize: 14,
+                                    ),
                                   ),
                                   Text(
                                     '${item.quantity == item.quantity.toInt() ? item.quantity.toInt() : item.quantity} × ${Money(item.unitPriceMinor, currency: currency).format()}',
-                                    style: const TextStyle(fontSize: 12, color: GallaColors.muted),
+                                    style: GallaType.caption,
                                   ),
                                 ],
                               ),
                             ),
                             Text(
-                              Money(item.totalMinor, currency: currency).format(),
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                              Money(
+                                item.totalMinor,
+                                currency: currency,
+                              ).format(),
+                              style: GallaType.subtitle,
                             ),
                           ],
                         ),
@@ -291,12 +329,26 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
             ),
             child: Column(
               children: [
-                _row(s.subtotal, Money(inv.subtotalMinor, currency: currency).format()),
+                _row(
+                  s.subtotal,
+                  Money(inv.subtotalMinor, currency: currency).format(),
+                ),
                 if (inv.taxRatePct > 0)
-                  _row('${s.tax} (${inv.taxRatePct}%)', Money(inv.taxMinor, currency: currency).format()),
+                  _row(
+                    '${s.tax} (${inv.taxRatePct}%)',
+                    Money(inv.taxMinor, currency: currency).format(),
+                  ),
                 const Divider(),
-                _row(s.total, Money(inv.totalMinor, currency: currency).format(), isBold: true),
-                _row(s.paid, Money(inv.paidAmountMinor, currency: currency).format(), color: GallaColors.moneyIn),
+                _row(
+                  s.total,
+                  Money(inv.totalMinor, currency: currency).format(),
+                  isBold: true,
+                ),
+                _row(
+                  s.paid,
+                  Money(inv.paidAmountMinor, currency: currency).format(),
+                  color: GallaColors.moneyIn,
+                ),
                 if (!isPaid)
                   _row(
                     s.due,
@@ -320,9 +372,17 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Notes', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: GallaColors.muted)),
+                  Text(
+                    'Notes',
+                    style: GallaType.chipLabel.copyWith(
+                      color: GallaColors.muted,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(inv.notes!, style: const TextStyle(fontSize: 14)),
+                  Text(
+                    inv.notes!,
+                    style: GallaType.body.copyWith(fontSize: 14),
+                  ),
                 ],
               ),
             ),
@@ -348,7 +408,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                 label: Text(s.sharePdf),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
             ),
@@ -356,14 +418,17 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _recordPaymentDialog(context, inv, currency, s),
+                  onPressed: () =>
+                      _recordPaymentDialog(context, inv, currency, s),
                   icon: const Icon(Icons.payments_outlined),
                   label: Text(s.recordPayment),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: GallaColors.moneyIn,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
@@ -380,15 +445,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isBold ? FontWeight.w700 : FontWeight.normal)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
-                  color: color ?? GallaColors.ink)),
+          Text(label, style: GallaType.body.copyWith(fontSize: 14)),
+          Text(
+            value,
+            style: GallaType.body.copyWith(
+              fontSize: 14,
+              color: color ?? GallaColors.ink,
+            ),
+          ),
         ],
       ),
     );
@@ -422,8 +486,11 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: fg)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(label, style: GallaType.chipLabel.copyWith(color: fg)),
     );
   }
 }

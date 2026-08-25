@@ -19,7 +19,8 @@ class GallaScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final vmAsync = ref.watch(gallaViewModelProvider);
     final branches = ref.watch(branchesProvider).valueOrNull ?? [];
@@ -35,13 +36,20 @@ class GallaScreen extends ConsumerWidget {
     }
 
     final hour = DateTime.now().hour;
-    final greeting = hour < 12 ? 'Good morning' : (hour < 17 ? 'Good afternoon' : 'Good evening');
+    final greeting = hour < 12
+        ? 'Good morning'
+        : (hour < 17 ? 'Good afternoon' : 'Good evening');
     final firstName = settings.businessName.isNotEmpty
         ? settings.businessName.split(' ').first
         : 'Merchant';
 
     final initials = settings.businessName.isNotEmpty
-        ? settings.businessName.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? settings.businessName
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'GK';
 
     // 30-day metrics calculation for the 3 financial cards
@@ -58,7 +66,10 @@ class GallaScreen extends ConsumerWidget {
     final profitMinor = revMinor - expMinor;
 
     final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
-    final totalUdhaarMinor = udhaarParties.fold(0, (sum, p) => sum + p.balanceMinor);
+    final totalUdhaarMinor = udhaarParties.fold(
+      0,
+      (sum, p) => sum + p.balanceMinor,
+    );
 
     return Scaffold(
       backgroundColor: GallaColors.canvas,
@@ -90,11 +101,7 @@ class GallaScreen extends ConsumerWidget {
                     alignment: Alignment.center,
                     child: Text(
                       initials,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
+                      style: GallaType.number.copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -108,11 +115,7 @@ class GallaScreen extends ConsumerWidget {
                         '$greeting, $firstName',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: GallaColors.muted,
-                        ),
+                        style: GallaType.label,
                       ),
                       GestureDetector(
                         onTap: () => context.push('/profile'),
@@ -122,13 +125,11 @@ class GallaScreen extends ConsumerWidget {
                               child: Text(
                                 settings.businessName.isNotEmpty
                                     ? (branchLabel.isNotEmpty
-                                        ? '${settings.businessName} · $branchLabel'
-                                        : settings.businessName)
+                                          ? '${settings.businessName} · $branchLabel'
+                                          : settings.businessName)
                                     : 'Shree Ganesh Kirana',
-                                style: const TextStyle(
+                                style: GallaType.number.copyWith(
                                   fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  color: GallaColors.ink,
                                   letterSpacing: -0.4,
                                 ),
                                 maxLines: 1,
@@ -136,7 +137,11 @@ class GallaScreen extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(Icons.arrow_forward_ios_rounded, size: 11, color: GallaColors.muted),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 11,
+                              color: GallaColors.muted,
+                            ),
                           ],
                         ),
                       ),
@@ -144,14 +149,18 @@ class GallaScreen extends ConsumerWidget {
                         DateFormat('EEEE, d MMMM').format(DateTime.now()),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+                        style: GallaType.captionSm,
                       ),
                     ],
                   ),
                 ),
                 // AI Assistant Icon
                 IconButton.filledTonal(
-                  icon: const Icon(Icons.auto_awesome_rounded, size: 20, color: GallaColors.brand),
+                  icon: const Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 20,
+                    color: GallaColors.brand,
+                  ),
                   tooltip: 'Galla Assistant',
                   onPressed: () => context.push('/ai-assistant'),
                 ),
@@ -165,22 +174,28 @@ class GallaScreen extends ConsumerWidget {
               GallaSpacing.base,
               GallaSpacing.xs,
               GallaSpacing.base,
-              MediaQuery.paddingOf(context).bottom + GallaSpacing.shellBottomClearance,
+              MediaQuery.paddingOf(context).bottom +
+                  GallaSpacing.shellBottomClearance,
             ),
             sliver: vmAsync.when(
-              loading: () => const SliverToBoxAdapter(child: GallaHomeSkeletonLoader()),
-              error: (e, _) => SliverToBoxAdapter(
-                child: Center(child: Text('Error: $e')),
-              ),
+              loading: () =>
+                  const SliverToBoxAdapter(child: GallaHomeSkeletonLoader()),
+              error: (e, _) =>
+                  SliverToBoxAdapter(child: Center(child: Text('Error: $e'))),
               data: (vm) {
                 return SliverList(
                   delegate: SliverChildListDelegate([
                     // ── Day Navigation Bar ──────────────────────────────
                     _DayNavRow(
                       day: vm.selectedDay ?? DateTime.now(),
-                      onPrevious: () => ref.read(gallaViewModelProvider.notifier).goToYesterday(),
-                      onNext: () => ref.read(gallaViewModelProvider.notifier).goToTomorrow(),
-                      onToday: () => ref.read(gallaViewModelProvider.notifier).goToToday(),
+                      onPrevious: () => ref
+                          .read(gallaViewModelProvider.notifier)
+                          .goToYesterday(),
+                      onNext: () => ref
+                          .read(gallaViewModelProvider.notifier)
+                          .goToTomorrow(),
+                      onToday: () =>
+                          ref.read(gallaViewModelProvider.notifier).goToToday(),
                     ),
                     const SizedBox(height: GallaSpacing.md),
 
@@ -191,7 +206,8 @@ class GallaScreen extends ConsumerWidget {
                       moneyOutMinor: vm.summary?.outMinor ?? 0,
                       currency: settings.currency,
                       trendPercent: 12.4,
-                      onViewReport: () => context.push('/reports/pnl?range=month'),
+                      onViewReport: () =>
+                          context.push('/reports/pnl?range=month'),
                     ),
                     const SizedBox(height: GallaSpacing.md),
 
@@ -201,31 +217,44 @@ class GallaScreen extends ConsumerWidget {
                         Expanded(
                           child: GallaMetricCard(
                             title: 'Revenue',
-                            value: Money(revMinor, currency: settings.currency).format(),
+                            value: Money(
+                              revMinor,
+                              currency: settings.currency,
+                            ).format(),
                             trendPercent: 14.0,
                             isPositiveTrend: true,
                             accentColor: GallaColors.moneyIn,
                             icon: Icons.trending_up_rounded,
-                            onTap: () => context.push('/reports/pnl?range=month'),
+                            onTap: () =>
+                                context.push('/reports/pnl?range=month'),
                           ),
                         ),
                         const SizedBox(width: GallaSpacing.sm),
                         Expanded(
                           child: GallaMetricCard(
                             title: 'Net Profit',
-                            value: Money(profitMinor, currency: settings.currency).format(),
+                            value: Money(
+                              profitMinor,
+                              currency: settings.currency,
+                            ).format(),
                             trendPercent: 21.0,
                             isPositiveTrend: profitMinor >= 0,
-                            accentColor: profitMinor >= 0 ? GallaColors.brand : GallaColors.moneyOut,
+                            accentColor: profitMinor >= 0
+                                ? GallaColors.brand
+                                : GallaColors.moneyOut,
                             icon: Icons.account_balance_wallet_outlined,
-                            onTap: () => context.push('/reports/pnl?range=month'),
+                            onTap: () =>
+                                context.push('/reports/pnl?range=month'),
                           ),
                         ),
                         const SizedBox(width: GallaSpacing.sm),
                         Expanded(
                           child: GallaMetricCard(
                             title: 'Udhaar Due',
-                            value: Money(totalUdhaarMinor, currency: settings.currency).format(),
+                            value: Money(
+                              totalUdhaarMinor,
+                              currency: settings.currency,
+                            ).format(),
                             trendPercent: 5.0,
                             isPositiveTrend: false,
                             accentColor: GallaColors.udhaar,
@@ -246,7 +275,9 @@ class GallaScreen extends ConsumerWidget {
                       ),
                       ...actions.take(3).map((act) {
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+                          padding: const EdgeInsets.only(
+                            bottom: GallaSpacing.sm,
+                          ),
                           child: GallaActionCard(
                             title: act.title,
                             badge: act.badge,
@@ -284,7 +315,10 @@ class GallaScreen extends ConsumerWidget {
                             icon: Icons.add_rounded,
                             color: GallaColors.moneyIn,
                             bgColor: GallaColors.moneyInSoft,
-                            onTap: () => showAddEntrySheet(context, initialDirection: Direction.moneyIn),
+                            onTap: () => showAddEntrySheet(
+                              context,
+                              initialDirection: Direction.moneyIn,
+                            ),
                           ),
                         ),
                         const SizedBox(width: GallaSpacing.sm),
@@ -294,7 +328,10 @@ class GallaScreen extends ConsumerWidget {
                             icon: Icons.remove_rounded,
                             color: GallaColors.moneyOut,
                             bgColor: GallaColors.moneyOutSoft,
-                            onTap: () => showAddEntrySheet(context, initialDirection: Direction.moneyOut),
+                            onTap: () => showAddEntrySheet(
+                              context,
+                              initialDirection: Direction.moneyOut,
+                            ),
                           ),
                         ),
                       ],
@@ -327,9 +364,15 @@ class GallaScreen extends ConsumerWidget {
 
                     // ── 5. Today's Entries ──────────────────────────────
                     GallaSectionHeader(
-                      title: DateUtils.isSameDay(vm.selectedDay ?? DateTime.now(), DateTime.now())
+                      title:
+                          DateUtils.isSameDay(
+                            vm.selectedDay ?? DateTime.now(),
+                            DateTime.now(),
+                          )
                           ? "Today's Entries"
-                          : DateFormat.MMMEd().format(vm.selectedDay ?? DateTime.now()),
+                          : DateFormat.MMMEd().format(
+                              vm.selectedDay ?? DateTime.now(),
+                            ),
                       trailing: vm.todayTxns.isNotEmpty
                           ? TextButton(
                               onPressed: () => context.go('/ledger'),
@@ -340,12 +383,29 @@ class GallaScreen extends ConsumerWidget {
                     ),
 
                     if (vm.todayTxns.isEmpty)
-                      _EmptyEntryCard(s: s)
+                      GallaEmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        headline: 'Your first entry starts today\'s Galla.',
+                        body: s.nothingToday,
+                        actionLabel: s.addEntry,
+                        onAction: () => showAddEntrySheet(
+                          context,
+                          initialDirection: Direction.moneyIn,
+                        ),
+                      )
                     else
-                      ...vm.todayTxns.take(8).map(
+                      ...vm.todayTxns
+                          .take(8)
+                          .map(
                             (t) => Padding(
-                              padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-                              child: TransactionTile(txn: t, currency: settings.currency, s: s),
+                              padding: const EdgeInsets.only(
+                                bottom: GallaSpacing.sm,
+                              ),
+                              child: TransactionTile(
+                                txn: t,
+                                currency: settings.currency,
+                                s: s,
+                              ),
                             ),
                           ),
                   ]),
@@ -384,7 +444,11 @@ class _DayNavRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(GallaRadius.sm),
               border: Border.all(color: GallaColors.line),
             ),
-            child: const Icon(Icons.chevron_left_rounded, size: 18, color: GallaColors.muted),
+            child: const Icon(
+              Icons.chevron_left_rounded,
+              size: 18,
+              color: GallaColors.muted,
+            ),
           ),
         ),
         const SizedBox(width: GallaSpacing.sm),
@@ -394,11 +458,7 @@ class _DayNavRow extends StatelessWidget {
               isToday
                   ? 'Today, ${DateFormat('MMM d').format(day)}'
                   : DateFormat('EEE, MMM d, yyyy').format(day),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: GallaColors.muted,
-              ),
+              style: GallaType.bodyStrong.copyWith(color: GallaColors.muted),
             ),
           ),
         ),
@@ -413,7 +473,11 @@ class _DayNavRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(GallaRadius.sm),
               border: Border.all(color: GallaColors.line),
             ),
-            child: const Icon(Icons.chevron_right_rounded, size: 18, color: GallaColors.muted),
+            child: const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: GallaColors.muted,
+            ),
           ),
         ),
         if (!isToday) ...[
@@ -426,77 +490,14 @@ class _DayNavRow extends StatelessWidget {
                 color: GallaColors.brandSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.sm),
               ),
-              child: const Text(
+              child: Text(
                 'Today',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: GallaColors.brand,
-                ),
+                style: GallaType.chipLabel.copyWith(color: GallaColors.brand),
               ),
             ),
           ),
         ],
       ],
-    );
-  }
-}
-
-class _EmptyEntryCard extends StatelessWidget {
-  const _EmptyEntryCard({required this.s});
-  final S s;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: GallaSpacing.xxl, horizontal: GallaSpacing.xl),
-      decoration: BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.lg),
-        border: Border.all(color: GallaColors.line),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: GallaColors.brandSofter,
-              borderRadius: BorderRadius.circular(GallaRadius.lg),
-            ),
-            child: const Icon(
-              Icons.receipt_long_outlined,
-              size: 24,
-              color: GallaColors.brand,
-            ),
-          ),
-          const SizedBox(height: GallaSpacing.md),
-          const Text(
-            'Your first entry starts today\'s Galla.',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: GallaColors.ink,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: GallaSpacing.xs),
-          Text(
-            s.nothingToday,
-            style: const TextStyle(fontSize: 12, color: GallaColors.muted),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: GallaSpacing.base),
-          OutlinedButton.icon(
-            onPressed: () => showAddEntrySheet(context, initialDirection: Direction.moneyIn),
-            icon: const Icon(Icons.add, size: 16),
-            label: Text(s.addEntry),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(160, 40),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

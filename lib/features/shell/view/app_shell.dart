@@ -143,7 +143,8 @@ class _QuickAddFab extends StatefulWidget {
   State<_QuickAddFab> createState() => _QuickAddFabState();
 }
 
-class _QuickAddFabState extends State<_QuickAddFab> with TickerProviderStateMixin {
+class _QuickAddFabState extends State<_QuickAddFab>
+    with TickerProviderStateMixin {
   late final AnimationController _press;
   late final AnimationController _pulse;
   late final Animation<double> _scale;
@@ -151,12 +152,18 @@ class _QuickAddFabState extends State<_QuickAddFab> with TickerProviderStateMixi
   @override
   void initState() {
     super.initState();
-    _press = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.90).animate(
-      CurvedAnimation(parent: _press, curve: Curves.easeOut),
+    _press = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 100),
     );
-    _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
-      ..repeat(reverse: true);
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.90,
+    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeOut));
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -214,7 +221,11 @@ class _QuickAddFabState extends State<_QuickAddFab> with TickerProviderStateMixi
                       gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFE8C547), Color(0xFFB8962E), Color(0xFF8C7018)],
+                        colors: [
+                          GallaColors.goldLight,
+                          GallaColors.gold,
+                          GallaColors.goldDark,
+                        ],
                       ),
                     ),
                     padding: const EdgeInsets.all(3),
@@ -224,10 +235,14 @@ class _QuickAddFabState extends State<_QuickAddFab> with TickerProviderStateMixi
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF2D5A40), Color(0xFF1A3B2E)],
+                          colors: [GallaColors.brandMid, GallaColors.brand],
                         ),
                       ),
-                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
+                      child: const Icon(
+                        Icons.add_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ],
@@ -284,11 +299,7 @@ class _NavItem extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                ),
+                style: GallaType.captionSm.copyWith(fontSize: 10, color: color),
               ),
             ],
           ),

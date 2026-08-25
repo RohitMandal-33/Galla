@@ -60,7 +60,9 @@ class LedgerViewModel extends AsyncNotifier<LedgerState> {
     if (currentState == null) return;
 
     if (query.isEmpty) {
-      state = AsyncData(currentState.copyWith(searchQuery: '', searchResults: []));
+      state = AsyncData(
+        currentState.copyWith(searchQuery: '', searchResults: []),
+      );
       return;
     }
 
@@ -68,10 +70,9 @@ class LedgerViewModel extends AsyncNotifier<LedgerState> {
       query,
       branchId: ref.read(selectedBranchIdProvider),
     );
-    state = AsyncData(currentState.copyWith(
-      searchQuery: query,
-      searchResults: results,
-    ));
+    state = AsyncData(
+      currentState.copyWith(searchQuery: query, searchResults: results),
+    );
   }
 
   void setViewMode(LedgerViewMode mode) {
@@ -85,7 +86,10 @@ class LedgerViewModel extends AsyncNotifier<LedgerState> {
 final ledgerViewModelProvider =
     AsyncNotifierProvider<LedgerViewModel, LedgerState>(LedgerViewModel.new);
 
-final partyDetailProvider = FutureProvider.family<Party?, String>((ref, partyId) async {
+final partyDetailProvider = FutureProvider.family<Party?, String>((
+  ref,
+  partyId,
+) async {
   final parties = ref.watch(partiesProvider).valueOrNull ?? [];
   return parties.where((p) => p.id == partyId).firstOrNull;
 });

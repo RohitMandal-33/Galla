@@ -9,7 +9,8 @@ class Parties extends Table {
   TextColumn get name => text()();
   TextColumn get phone => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
-  BoolColumn get remindEnabled => boolean().withDefault(const Constant(false))();
+  BoolColumn get remindEnabled =>
+      boolean().withDefault(const Constant(false))();
   IntColumn get remindEveryDays => integer().withDefault(const Constant(14))();
   DateTimeColumn get lastRemindedAt => dateTime().nullable()();
   DateTimeColumn get settledAt => dateTime().nullable()();
@@ -156,43 +157,45 @@ class SettingsRows extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [
-  Parties,
-  LedgerEntries,
-  Invoices,
-  InvoiceItems,
-  InventoryItems,
-  Branches,
-  StaffMembers,
-  ReconciliationLogs,
-  SettingsRows,
-])
+@DriftDatabase(
+  tables: [
+    Parties,
+    LedgerEntries,
+    Invoices,
+    InvoiceItems,
+    InventoryItems,
+    Branches,
+    StaffMembers,
+    ReconciliationLogs,
+    SettingsRows,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
-      : super(executor ?? driftDatabase(name: 'galla_db'));
+    : super(executor ?? driftDatabase(name: 'galla_db'));
 
   @override
   int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-        },
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.createTable(invoices);
-            await m.createTable(invoiceItems);
-            await m.createTable(inventoryItems);
-            await m.createTable(branches);
-            await m.createTable(staffMembers);
-            await m.createTable(reconciliationLogs);
-            await m.addColumn(ledgerEntries, ledgerEntries.branchId);
-            await m.addColumn(ledgerEntries, ledgerEntries.staffId);
-            await m.addColumn(ledgerEntries, ledgerEntries.staffName);
-            await m.addColumn(ledgerEntries, ledgerEntries.invoiceId);
-            await m.addColumn(ledgerEntries, ledgerEntries.inventoryItemId);
-          }
-        },
-      );
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.createTable(invoices);
+        await m.createTable(invoiceItems);
+        await m.createTable(inventoryItems);
+        await m.createTable(branches);
+        await m.createTable(staffMembers);
+        await m.createTable(reconciliationLogs);
+        await m.addColumn(ledgerEntries, ledgerEntries.branchId);
+        await m.addColumn(ledgerEntries, ledgerEntries.staffId);
+        await m.addColumn(ledgerEntries, ledgerEntries.staffName);
+        await m.addColumn(ledgerEntries, ledgerEntries.invoiceId);
+        await m.addColumn(ledgerEntries, ledgerEntries.inventoryItemId);
+      }
+    },
+  );
 }

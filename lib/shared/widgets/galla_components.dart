@@ -37,11 +37,7 @@ class GallaBalanceCard extends StatelessWidget {
         color: GallaColors.brand,
         borderRadius: BorderRadius.circular(GallaRadius.xl),
         boxShadow: GallaElevation.hero,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF244837), Color(0xFF163326)],
-        ),
+        gradient: GallaColors.heroGradient,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,36 +53,44 @@ class GallaBalanceCard extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                      style: GallaType.label.copyWith(
                         letterSpacing: 0.3,
+                        color: Colors.white70,
                       ),
                     ),
                     if (trendPercent != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: (trendPercent! >= 0 ? const Color(0xFF6EDB96) : const Color(0xFFFF9595))
-                              .withValues(alpha: 0.2),
+                          color:
+                              (trendPercent! >= 0
+                                      ? GallaColors.moneyInOnDark
+                                      : GallaColors.moneyOutOnDark)
+                                  .withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(GallaRadius.xs),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              trendPercent! >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                              trendPercent! >= 0
+                                  ? Icons.arrow_upward_rounded
+                                  : Icons.arrow_downward_rounded,
                               size: 10,
-                              color: trendPercent! >= 0 ? const Color(0xFF6EDB96) : const Color(0xFFFF9595),
+                              color: trendPercent! >= 0
+                                  ? GallaColors.moneyInOnDark
+                                  : GallaColors.moneyOutOnDark,
                             ),
                             const SizedBox(width: 2),
                             Text(
                               '${trendPercent!.abs().toStringAsFixed(1)}% vs yest.',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: trendPercent! >= 0 ? const Color(0xFF6EDB96) : const Color(0xFFFF9595),
+                              style: GallaType.badge.copyWith(
+                                color: trendPercent! >= 0
+                                    ? GallaColors.moneyInOnDark
+                                    : GallaColors.moneyOutOnDark,
                               ),
                             ),
                           ],
@@ -100,18 +104,17 @@ class GallaBalanceCard extends StatelessWidget {
                 GestureDetector(
                   onTap: onViewReport,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(GallaRadius.sm),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Report',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: GallaType.labelSm.copyWith(color: Colors.white),
                     ),
                   ),
                 ),
@@ -126,7 +129,10 @@ class GallaBalanceCard extends StatelessWidget {
             transitionBuilder: (child, animation) => FadeTransition(
               opacity: animation,
               child: SlideTransition(
-                position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.1),
+                  end: Offset.zero,
+                ).animate(animation),
                 child: child,
               ),
             ),
@@ -136,12 +142,9 @@ class GallaBalanceCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 m(cashOnHandMinor),
-                style: const TextStyle(
-                  fontSize: 38,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -1.2,
+                style: GallaType.hero.copyWith(
                   height: 1.0,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -160,16 +163,20 @@ class GallaBalanceCard extends StatelessWidget {
                   label: 'Cash In',
                   value: m(moneyInMinor),
                   icon: Icons.arrow_downward_rounded,
-                  color: const Color(0xFF6EDB96),
+                  color: GallaColors.moneyInOnDark,
                 ),
               ),
-              Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.12)),
+              Container(
+                width: 1,
+                height: 36,
+                color: Colors.white.withValues(alpha: 0.12),
+              ),
               Expanded(
                 child: _BalanceFigure(
                   label: 'Cash Out',
                   value: m(moneyOutMinor),
                   icon: Icons.arrow_upward_rounded,
-                  color: const Color(0xFFFF9595),
+                  color: GallaColors.moneyOutOnDark,
                   leftAlign: false,
                 ),
               ),
@@ -225,30 +232,25 @@ class GallaMetricCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: GallaColors.muted,
-                    ),
+                    style: GallaType.labelSm,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (icon != null) ...[
                   const SizedBox(width: 4),
-                  Icon(icon, size: 14, color: accentColor.withValues(alpha: 0.7)),
+                  Icon(
+                    icon,
+                    size: 14,
+                    color: accentColor.withValues(alpha: 0.7),
+                  ),
                 ],
               ],
             ),
             const SizedBox(height: 6),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: GallaColors.ink,
-                letterSpacing: -0.4,
-              ),
+              style: GallaType.number.copyWith(letterSpacing: -0.4),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -257,17 +259,21 @@ class GallaMetricCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    isPositiveTrend ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                    isPositiveTrend
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
                     size: 11,
-                    color: isPositiveTrend ? GallaColors.moneyIn : GallaColors.moneyOut,
+                    color: isPositiveTrend
+                        ? GallaColors.moneyIn
+                        : GallaColors.moneyOut,
                   ),
                   const SizedBox(width: 2),
                   Text(
                     '${trendPercent!.toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: isPositiveTrend ? GallaColors.moneyIn : GallaColors.moneyOut,
+                    style: GallaType.badge.copyWith(
+                      color: isPositiveTrend
+                          ? GallaColors.moneyIn
+                          : GallaColors.moneyOut,
                     ),
                   ),
                 ],
@@ -340,29 +346,24 @@ class GallaActionCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: GallaColors.ink,
-                        ),
+                        style: GallaType.subtitleSm,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: badgeBgColor,
                         borderRadius: BorderRadius.circular(GallaRadius.xs),
                       ),
                       child: Text(
                         badge,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: badgeColor,
-                        ),
+                        style: GallaType.badge.copyWith(color: badgeColor),
                       ),
                     ),
                   ],
@@ -371,7 +372,7 @@ class GallaActionCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle!,
-                    style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+                    style: GallaType.captionSm,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -385,15 +386,22 @@ class GallaActionCard extends StatelessWidget {
               onPressed: onAction,
               style: FilledButton.styleFrom(
                 backgroundColor: GallaColors.brand,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 minimumSize: const Size(52, 34),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(GallaRadius.sm),
                 ),
-                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+                textStyle: GallaType.labelStrong,
               ),
-              child: Text(actionLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: Text(
+                actionLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ),
         ],
@@ -444,14 +452,7 @@ class GallaPaymentBadge extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(GallaRadius.xs),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
-      ),
+      child: Text(label, style: GallaType.badge.copyWith(color: fg)),
     );
   }
 }
@@ -473,10 +474,7 @@ class GallaStatusDot extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -504,19 +502,35 @@ class _BalanceFigure extends StatelessWidget {
         right: leftAlign ? GallaSpacing.base : 0,
       ),
       child: Column(
-        crossAxisAlignment: leftAlign ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        crossAxisAlignment: leftAlign
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
         children: [
           Row(
-            mainAxisAlignment: leftAlign ? MainAxisAlignment.start : MainAxisAlignment.end,
+            mainAxisAlignment: leftAlign
+                ? MainAxisAlignment.start
+                : MainAxisAlignment.end,
             children: [
               if (!leftAlign) ...[
-                Text(label, style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w500)),
+                Text(
+                  label,
+                  style: GallaType.labelSm.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white54,
+                  ),
+                ),
                 const SizedBox(width: 4),
                 Icon(icon, size: 12, color: Colors.white54),
               ] else ...[
                 Icon(icon, size: 12, color: Colors.white54),
                 const SizedBox(width: 4),
-                Text(label, style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w500)),
+                Text(
+                  label,
+                  style: GallaType.labelSm.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white54,
+                  ),
+                ),
               ],
             ],
           ),
@@ -525,11 +539,9 @@ class _BalanceFigure extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: color,
+            style: GallaType.cardTitle.copyWith(
               letterSpacing: -0.3,
+              color: color,
             ),
           ),
         ],
@@ -577,7 +589,11 @@ class GallaUdhaarCard extends StatelessWidget {
                 color: GallaColors.udhaarSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.md),
               ),
-              child: const Icon(Icons.people_outline_rounded, color: GallaColors.udhaar, size: 20),
+              child: const Icon(
+                Icons.people_outline_rounded,
+                color: GallaColors.udhaar,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -586,8 +602,7 @@ class GallaUdhaarCard extends StatelessWidget {
                 children: [
                   Text(
                     'Customers owe you',
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: GallaType.labelSm.copyWith(
                       fontWeight: FontWeight.w500,
                       color: GallaColors.udhaar.withValues(alpha: 0.8),
                     ),
@@ -599,20 +614,17 @@ class GallaUdhaarCard extends StatelessWidget {
                     children: [
                       Text(
                         m,
-                        style: const TextStyle(
+                        style: GallaType.number.copyWith(
                           fontSize: 17,
-                          fontWeight: FontWeight.w800,
                           color: GallaColors.udhaar,
-                          letterSpacing: -0.3,
                         ),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         '$partyCount ${partyCount == 1 ? "customer" : "customers"}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: GallaColors.udhaar.withValues(alpha: 0.7),
+                        style: GallaType.labelSm.copyWith(
                           fontWeight: FontWeight.w500,
+                          color: GallaColors.udhaar.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -620,7 +632,11 @@ class GallaUdhaarCard extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: GallaColors.udhaar.withValues(alpha: 0.7), size: 20),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: GallaColors.udhaar.withValues(alpha: 0.7),
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -653,12 +669,7 @@ class GallaSectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: GallaColors.ink,
-                letterSpacing: -0.1,
-              ),
+              style: GallaType.tileTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -694,7 +705,13 @@ class GallaPartyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = party.name.isNotEmpty
-        ? party.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? party.name
+              .trim()
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
 
     final balanceMinor = party.balanceMinor;
@@ -702,13 +719,20 @@ class GallaPartyCard extends StatelessWidget {
     final iOweThem = balanceMinor < 0;
     final settled = balanceMinor == 0;
 
-    final avatarBg = owesMe ? GallaColors.udhaarSoft : (iOweThem ? GallaColors.moneyOutSoft : GallaColors.brandSoft);
-    final avatarFg = owesMe ? GallaColors.udhaar : (iOweThem ? GallaColors.moneyOut : GallaColors.brand);
+    final avatarBg = owesMe
+        ? GallaColors.udhaarSoft
+        : (iOweThem ? GallaColors.moneyOutSoft : GallaColors.brandSoft);
+    final avatarFg = owesMe
+        ? GallaColors.udhaar
+        : (iOweThem ? GallaColors.moneyOut : GallaColors.brand);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: GallaSpacing.base, vertical: GallaSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: GallaSpacing.base,
+          vertical: GallaSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: GallaColors.surface,
           borderRadius: BorderRadius.circular(GallaRadius.card),
@@ -721,15 +745,14 @@ class GallaPartyCard extends StatelessWidget {
             Container(
               width: 44,
               height: 44,
-              decoration: BoxDecoration(color: avatarBg, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: avatarBg,
+                shape: BoxShape.circle,
+              ),
               alignment: Alignment.center,
               child: Text(
                 initials,
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                  color: avatarFg,
-                ),
+                style: GallaType.numberSm.copyWith(color: avatarFg),
               ),
             ),
             const SizedBox(width: GallaSpacing.md),
@@ -744,7 +767,7 @@ class GallaPartyCard extends StatelessWidget {
                       Flexible(
                         child: Text(
                           party.name,
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: GallaColors.ink),
+                          style: GallaType.tileTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -752,16 +775,18 @@ class GallaPartyCard extends StatelessWidget {
                       if (daysOverdue != null && daysOverdue! > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1.5,
+                          ),
                           decoration: BoxDecoration(
                             color: GallaColors.moneyOutSoft,
                             borderRadius: BorderRadius.circular(GallaRadius.xs),
                           ),
                           child: Text(
                             '${daysOverdue}d overdue',
-                            style: const TextStyle(
+                            style: GallaType.badge.copyWith(
                               fontSize: 9,
-                              fontWeight: FontWeight.w700,
                               color: GallaColors.moneyOut,
                             ),
                           ),
@@ -771,15 +796,9 @@ class GallaPartyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   if (lastActivity != null)
-                    Text(
-                      lastActivity!,
-                      style: const TextStyle(fontSize: 12, color: GallaColors.muted),
-                    )
+                    Text(lastActivity!, style: GallaType.caption)
                   else if (party.phone != null && party.phone!.isNotEmpty)
-                    Text(
-                      party.phone!,
-                      style: const TextStyle(fontSize: 12, color: GallaColors.muted),
-                    ),
+                    Text(party.phone!, style: GallaType.caption),
                 ],
               ),
             ),
@@ -792,13 +811,14 @@ class GallaPartyCard extends StatelessWidget {
                   settled
                       ? 'Settled'
                       : owesMe
-                          ? 'They owe'
-                          : 'You owe',
-                  style: TextStyle(
+                      ? 'They owe'
+                      : 'You owe',
+                  style: GallaType.labelSm.copyWith(
                     fontSize: 10,
-                    fontWeight: FontWeight.w600,
                     letterSpacing: 0.2,
-                    color: settled ? GallaColors.muted : (owesMe ? GallaColors.udhaar : GallaColors.moneyOut),
+                    color: settled
+                        ? GallaColors.muted
+                        : (owesMe ? GallaColors.udhaar : GallaColors.moneyOut),
                   ),
                 ),
                 if (!settled)
@@ -809,11 +829,10 @@ class GallaPartyCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: owesMe ? GallaColors.udhaar : GallaColors.moneyOut,
-                        letterSpacing: -0.3,
+                      style: GallaType.numberSm.copyWith(
+                        color: owesMe
+                            ? GallaColors.udhaar
+                            : GallaColors.moneyOut,
                       ),
                     ),
                   ),
@@ -829,7 +848,16 @@ class GallaPartyCard extends StatelessWidget {
 // ── GallaStatusBadge ───────────────────────────────────────────────────────────
 /// Small chip showing payment method or udhaar status.
 
-enum GallaBadgeType { cash, qr, bank, udhaar, income, expense, pending, settled }
+enum GallaBadgeType {
+  cash,
+  qr,
+  bank,
+  udhaar,
+  income,
+  expense,
+  pending,
+  settled,
+}
 
 class GallaStatusBadge extends StatelessWidget {
   const GallaStatusBadge({super.key, required this.type});
@@ -838,14 +866,54 @@ class GallaStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, bg, fg, icon) = switch (type) {
-      GallaBadgeType.cash => ('Cash', GallaColors.brandSofter, GallaColors.brand, Icons.payments_outlined),
-      GallaBadgeType.qr => ('QR', GallaColors.blueSoft, GallaColors.blue, Icons.qr_code_2_rounded),
-      GallaBadgeType.bank => ('Bank', GallaColors.blueSoft, GallaColors.blue, Icons.account_balance_outlined),
-      GallaBadgeType.udhaar => ('Udhaar', GallaColors.udhaarSoft, GallaColors.udhaar, Icons.pending_outlined),
-      GallaBadgeType.income => ('Income', GallaColors.moneyInSoft, GallaColors.moneyIn, Icons.add_rounded),
-      GallaBadgeType.expense => ('Expense', GallaColors.moneyOutSoft, GallaColors.moneyOut, Icons.remove_rounded),
-      GallaBadgeType.pending => ('Pending', GallaColors.udhaarSoft, GallaColors.udhaar, Icons.schedule_rounded),
-      GallaBadgeType.settled => ('Settled', GallaColors.moneyInSoft, GallaColors.moneyIn, Icons.check_rounded),
+      GallaBadgeType.cash => (
+        'Cash',
+        GallaColors.brandSofter,
+        GallaColors.brand,
+        Icons.payments_outlined,
+      ),
+      GallaBadgeType.qr => (
+        'QR',
+        GallaColors.fonepaySoft,
+        GallaColors.fonepay,
+        Icons.qr_code_2_rounded,
+      ),
+      GallaBadgeType.bank => (
+        'Bank',
+        GallaColors.blueSoft,
+        GallaColors.blue,
+        Icons.account_balance_outlined,
+      ),
+      GallaBadgeType.udhaar => (
+        'Udhaar',
+        GallaColors.udhaarSoft,
+        GallaColors.udhaar,
+        Icons.pending_outlined,
+      ),
+      GallaBadgeType.income => (
+        'Income',
+        GallaColors.moneyInSoft,
+        GallaColors.moneyIn,
+        Icons.add_rounded,
+      ),
+      GallaBadgeType.expense => (
+        'Expense',
+        GallaColors.moneyOutSoft,
+        GallaColors.moneyOut,
+        Icons.remove_rounded,
+      ),
+      GallaBadgeType.pending => (
+        'Pending',
+        GallaColors.udhaarSoft,
+        GallaColors.udhaar,
+        Icons.schedule_rounded,
+      ),
+      GallaBadgeType.settled => (
+        'Settled',
+        GallaColors.moneyInSoft,
+        GallaColors.moneyIn,
+        Icons.check_rounded,
+      ),
     };
 
     return Container(
@@ -859,8 +927,62 @@ class GallaStatusBadge extends StatelessWidget {
         children: [
           Icon(icon, size: 10, color: fg),
           const SizedBox(width: 3),
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg)),
+          Text(label, style: GallaType.badge.copyWith(color: fg)),
         ],
+      ),
+    );
+  }
+}
+
+// ── GallaFilterChip ─────────────────────────────────────────────────────────────
+/// Single-select pill chip for filters and tab rows. The one true chip — use
+/// this everywhere instead of feature-local copies.
+
+class GallaFilterChip extends StatelessWidget {
+  const GallaFilterChip({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.selectedColor = GallaColors.brand,
+    this.fullWidth = false,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  /// Accent used when selected. Defaults to brand; pass a semantic color
+  /// (e.g. moneyOut for "Low Stock") when the filter carries meaning.
+  final Color selectedColor;
+
+  /// Stretch to fill available width (for Expanded / evenly-split rows).
+  final bool fullWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: GallaAnimations.fast,
+        width: fullWidth ? double.infinity : null,
+        alignment: fullWidth ? Alignment.center : null,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? selectedColor : GallaColors.surface,
+          borderRadius: BorderRadius.circular(GallaRadius.pill),
+          border: Border.all(
+            color: selected ? selectedColor : GallaColors.line,
+          ),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GallaType.chipLabel.copyWith(
+            color: selected ? Colors.white : GallaColors.ink,
+          ),
+        ),
       ),
     );
   }
@@ -892,7 +1014,10 @@ class GallaEmptyState extends StatelessWidget {
     final fg = iconColor ?? GallaColors.brand;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: GallaSpacing.xxl, vertical: GallaSpacing.xxxl),
+        padding: const EdgeInsets.symmetric(
+          horizontal: GallaSpacing.xxl,
+          vertical: GallaSpacing.xxxl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -908,13 +1033,16 @@ class GallaEmptyState extends StatelessWidget {
             const SizedBox(height: GallaSpacing.base),
             Text(
               headline,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: GallaColors.ink),
+              style: GallaType.cardTitle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: GallaSpacing.xs),
             Text(
               body,
-              style: const TextStyle(fontSize: 13, color: GallaColors.muted, height: 1.5),
+              style: GallaType.body.copyWith(
+                height: 1.5,
+                color: GallaColors.muted,
+              ),
               textAlign: TextAlign.center,
             ),
             if (actionLabel != null && onAction != null) ...[
@@ -947,15 +1075,22 @@ class GallaSkeletonBlock extends StatefulWidget {
   State<GallaSkeletonBlock> createState() => _GallaSkeletonBlockState();
 }
 
-class _GallaSkeletonBlockState extends State<GallaSkeletonBlock> with SingleTickerProviderStateMixin {
+class _GallaSkeletonBlockState extends State<GallaSkeletonBlock>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.3, end: 0.7).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -1008,36 +1143,46 @@ class GallaHomeSkeletonLoader extends StatelessWidget {
           ),
           const SizedBox(height: GallaSpacing.xl),
           // Transaction skeletons
-          ...List.generate(4, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
-            child: Container(
-              height: 66,
-              decoration: BoxDecoration(
-                color: GallaColors.surface,
-                borderRadius: BorderRadius.circular(GallaRadius.lg),
-                border: Border.all(color: GallaColors.line),
-              ),
-              padding: const EdgeInsets.all(GallaSpacing.md),
-              child: Row(
-                children: [
-                  const GallaSkeletonBlock(width: 40, height: 40, radius: GallaRadius.md),
-                  const SizedBox(width: GallaSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        GallaSkeletonBlock(width: 120 + (i % 3) * 20.0, height: 12),
-                        const SizedBox(height: 6),
-                        const GallaSkeletonBlock(width: 80, height: 10),
-                      ],
+          ...List.generate(
+            4,
+            (i) => Padding(
+              padding: const EdgeInsets.only(bottom: GallaSpacing.sm),
+              child: Container(
+                height: 66,
+                decoration: BoxDecoration(
+                  color: GallaColors.surface,
+                  borderRadius: BorderRadius.circular(GallaRadius.lg),
+                  border: Border.all(color: GallaColors.line),
+                ),
+                padding: const EdgeInsets.all(GallaSpacing.md),
+                child: Row(
+                  children: [
+                    const GallaSkeletonBlock(
+                      width: 40,
+                      height: 40,
+                      radius: GallaRadius.md,
                     ),
-                  ),
-                  const GallaSkeletonBlock(width: 60, height: 14),
-                ],
+                    const SizedBox(width: GallaSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          GallaSkeletonBlock(
+                            width: 120 + (i % 3) * 20.0,
+                            height: 12,
+                          ),
+                          const SizedBox(height: 6),
+                          const GallaSkeletonBlock(width: 80, height: 10),
+                        ],
+                      ),
+                    ),
+                    const GallaSkeletonBlock(width: 60, height: 14),
+                  ],
+                ),
               ),
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -1075,10 +1220,14 @@ class _GallaQuickActionButtonState extends State<GallaQuickActionButton>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 80));
-    _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
     );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
 
   @override
@@ -1098,14 +1247,18 @@ class _GallaQuickActionButtonState extends State<GallaQuickActionButton>
       onTapCancel: () => _ctrl.reverse(),
       child: AnimatedBuilder(
         animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
           decoration: BoxDecoration(
             color: widget.bgColor,
             borderRadius: BorderRadius.circular(GallaRadius.lg),
-            border: Border.all(color: widget.color.withValues(alpha: 0.22), width: 1.4),
+            border: Border.all(
+              color: widget.color.withValues(alpha: 0.22),
+              width: 1.4,
+            ),
             boxShadow: [
               BoxShadow(
                 color: widget.color.withValues(alpha: 0.12),
@@ -1137,8 +1290,7 @@ class _GallaQuickActionButtonState extends State<GallaQuickActionButton>
               Text(
                 widget.label,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
+                style: GallaType.chipLabel.copyWith(
                   fontWeight: FontWeight.w800,
                   color: widget.color,
                 ),
@@ -1176,7 +1328,8 @@ class GallaMoneyDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ??
+    final effectiveColor =
+        color ??
         switch (direction) {
           Direction.moneyIn => GallaColors.moneyIn,
           Direction.moneyOut => GallaColors.moneyOut,
@@ -1184,7 +1337,9 @@ class GallaMoneyDisplay extends StatelessWidget {
         };
 
     final formatted = Money(minor, currency: currency).format();
-    final sign = showSign && direction != null ? (direction == Direction.moneyIn ? '+' : '−') : '';
+    final sign = showSign && direction != null
+        ? (direction == Direction.moneyIn ? '+' : '−')
+        : '';
 
     return Text(
       '$sign$formatted',
@@ -1194,144 +1349,6 @@ class GallaMoneyDisplay extends StatelessWidget {
         color: effectiveColor,
         letterSpacing: -1.2,
         height: 1.0,
-      ),
-    );
-  }
-}
-
-// ── GallaPaymentMethodSelector ─────────────────────────────────────────────────
-/// Segmented payment method selector: Cash | QR | Bank | Udhaar
-
-class GallaPaymentMethodSelector extends StatelessWidget {
-  const GallaPaymentMethodSelector({
-    super.key,
-    required this.isUdhaar,
-    required this.onChanged,
-  });
-
-  final bool isUdhaar;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: GallaColors.canvas,
-        borderRadius: BorderRadius.circular(GallaRadius.md),
-        border: Border.all(color: GallaColors.line),
-      ),
-      child: Row(
-        children: [
-          _MethodTab(
-            label: 'Cash',
-            icon: Icons.payments_outlined,
-            selected: !isUdhaar,
-            color: GallaColors.brand,
-            onTap: () => onChanged(false),
-          ),
-          _MethodTab(
-            label: 'Udhaar',
-            icon: Icons.pending_outlined,
-            selected: isUdhaar,
-            color: GallaColors.udhaar,
-            onTap: () => onChanged(true),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MethodTab extends StatelessWidget {
-  const _MethodTab({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
-            borderRadius: BorderRadius.circular(GallaRadius.sm),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 14, color: selected ? color : GallaColors.muted),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: selected ? color : GallaColors.muted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── GallaConfirmationOverlay ────────────────────────────────────────────────────
-/// Success checkmark animation shown after saving.
-
-class GallaSuccessCheck extends StatefulWidget {
-  const GallaSuccessCheck({super.key, this.color = GallaColors.moneyIn});
-  final Color color;
-
-  @override
-  State<GallaSuccessCheck> createState() => _GallaSuccessCheckState();
-}
-
-class _GallaSuccessCheckState extends State<GallaSuccessCheck> with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _scale = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
-    _ctrl.forward();
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ScaleTransition(
-      scale: _scale,
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: widget.color,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check_rounded, color: Colors.white, size: 30),
       ),
     );
   }

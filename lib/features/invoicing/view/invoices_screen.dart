@@ -7,6 +7,7 @@ import '../../../core/l10n/strings.dart';
 import '../../../core/money/money.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
+import '../../../shared/widgets/galla_components.dart';
 import '../../../domain/models.dart';
 import '../viewmodel/invoices_viewmodel.dart';
 
@@ -15,7 +16,8 @@ class InvoicesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final invAsync = ref.watch(invoicesViewModelProvider);
     final vm = ref.read(invoicesViewModelProvider.notifier);
@@ -56,27 +58,27 @@ class InvoicesScreen extends ConsumerWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: [
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'All',
-                      isSelected: state.filter == null,
+                      selected: state.filter == null,
                       onTap: () => vm.setFilter(null),
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Paid',
-                      isSelected: state.filter == InvoiceStatus.paid,
+                      selected: state.filter == InvoiceStatus.paid,
                       onTap: () => vm.setFilter(InvoiceStatus.paid),
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Unpaid',
-                      isSelected: state.filter == InvoiceStatus.unpaid,
+                      selected: state.filter == InvoiceStatus.unpaid,
                       onTap: () => vm.setFilter(InvoiceStatus.unpaid),
                     ),
                     const SizedBox(width: 8),
-                    _FilterChip(
+                    GallaFilterChip(
                       label: 'Overdue / Partial',
-                      isSelected: state.filter == InvoiceStatus.partiallyPaid,
+                      selected: state.filter == InvoiceStatus.partiallyPaid,
                       onTap: () => vm.setFilter(InvoiceStatus.partiallyPaid),
                     ),
                   ],
@@ -86,21 +88,13 @@ class InvoicesScreen extends ConsumerWidget {
               // ── Invoice List ──────────────────────────────────────────────
               Expanded(
                 child: invoices.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.receipt_long_outlined, size: 48, color: GallaColors.faint),
-                            const SizedBox(height: 12),
-                            const Text('No invoices found', style: TextStyle(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 16),
-                            FilledButton.icon(
-                              onPressed: () => context.push('/invoices/create'),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Create First Invoice'),
-                            ),
-                          ],
-                        ),
+                    ? GallaEmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        headline: 'No invoices found',
+                        body:
+                            'Create your first invoice to start billing customers.',
+                        actionLabel: 'Create First Invoice',
+                        onAction: () => context.push('/invoices/create'),
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
@@ -121,42 +115,6 @@ class InvoicesScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? GallaColors.brand : GallaColors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? GallaColors.brand : GallaColors.line),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : GallaColors.ink,
-          ),
-        ),
       ),
     );
   }
@@ -195,13 +153,10 @@ class _InvoiceCard extends StatelessWidget {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              invoice.invoiceNumber,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-            ),
+            Text(invoice.invoiceNumber, style: GallaType.numberSm),
             Text(
               Money(invoice.totalMinor, currency: currency).format(),
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+              style: GallaType.numberSm,
             ),
           ],
         ),
@@ -215,11 +170,11 @@ class _InvoiceCard extends StatelessWidget {
                 children: [
                   Text(
                     invoice.partyName ?? 'Walk-in Customer',
-                    style: const TextStyle(fontSize: 13, color: GallaColors.muted),
+                    style: GallaType.body.copyWith(color: GallaColors.muted),
                   ),
                   Text(
                     DateFormat.yMMMd().format(invoice.issueDate),
-                    style: const TextStyle(fontSize: 11, color: GallaColors.muted),
+                    style: GallaType.captionSm,
                   ),
                 ],
               ),
@@ -231,8 +186,7 @@ class _InvoiceCard extends StatelessWidget {
                 ),
                 child: Text(
                   status.name.toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: GallaType.labelStrong.copyWith(
                     fontWeight: FontWeight.w800,
                     color: statusColor,
                   ),

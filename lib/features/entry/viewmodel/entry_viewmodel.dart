@@ -88,13 +88,15 @@ class EntrySeed {
 
 class EntryViewModel extends StateNotifier<EntryState> {
   EntryViewModel(this._repo, this._ref, {EntrySeed seed = const EntrySeed()})
-      : super(EntryState(
+    : super(
+        EntryState(
           direction: seed.direction,
           isUdhaar: seed.isCredit,
           partyName: seed.partyName,
           category: seed.category,
           amountMinor: seed.amountMinor,
-        ));
+        ),
+      );
 
   final GallaRepository _repo;
   final Ref _ref;
@@ -147,9 +149,5 @@ class EntryViewModel extends StateNotifier<EntryState> {
 
 final entryViewModelProvider = StateNotifierProvider.autoDispose
     .family<EntryViewModel, EntryState, EntrySeed>((ref, seed) {
-  return EntryViewModel(
-    ref.read(repositoryProvider),
-    ref,
-    seed: seed,
-  );
-});
+      return EntryViewModel(ref.read(repositoryProvider), ref, seed: seed);
+    });

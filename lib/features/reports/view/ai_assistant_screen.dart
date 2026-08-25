@@ -35,20 +35,30 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final q = question.toLowerCase();
 
     String answer = "I've analyzed your store's transactions: ";
-    if (q.contains('week') || q.contains('how was my business') || q.contains('performance')) {
-      answer += "Your business has recorded ${txns.length} entries. Profit trend is healthy with an overall score of ${health?.overallScore ?? 80}/100.";
+    if (q.contains('week') ||
+        q.contains('how was my business') ||
+        q.contains('performance')) {
+      answer +=
+          "Your business has recorded ${txns.length} entries. Profit trend is healthy with an overall score of ${health?.overallScore ?? 80}/100.";
     } else if (q.contains('expense') || q.contains('spending')) {
-      answer += "Your top expenses are purchases, rent, and utility. Total expenses this period are within safe margins.";
-    } else if (q.contains('owe') || q.contains('customer') || q.contains('udhaar')) {
-      answer += "Review your Udhaar tab — sending payment reminders via WhatsApp usually speeds up collections by 40%.";
+      answer +=
+          "Your top expenses are purchases, rent, and utility. Total expenses this period are within safe margins.";
+    } else if (q.contains('owe') ||
+        q.contains('customer') ||
+        q.contains('udhaar')) {
+      answer +=
+          "Review your Udhaar tab — sending payment reminders via WhatsApp usually speeds up collections by 40%.";
     } else if (q.contains('stock') || q.contains('selling')) {
       if (inventory.isNotEmpty) {
-        answer += "Your tracked stock item '${inventory.first.name}' is moving well. Current inventory is ${inventory.first.currentQuantity} ${inventory.first.unit}.";
+        answer +=
+            "Your tracked stock item '${inventory.first.name}' is moving well. Current inventory is ${inventory.first.currentQuantity} ${inventory.first.unit}.";
       } else {
-        answer += "You currently have healthy stock rotation across your catalog.";
+        answer +=
+            "You currently have healthy stock rotation across your catalog.";
       }
     } else {
-      answer += "Based on your ledger, your cash flow is positive. Keep recording daily transactions for even deeper predictions!";
+      answer +=
+          "Based on your ledger, your cash flow is positive. Keep recording daily transactions for even deeper predictions!";
     }
 
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -64,7 +74,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final healthAsync = ref.watch(healthReportProvider);
     final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
     final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
@@ -78,7 +89,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       }
     }
 
-    final topItemName = inventory.isNotEmpty ? inventory.first.name : 'Mustard Oil 1L';
+    final topItemName = inventory.isNotEmpty
+        ? inventory.first.name
+        : 'Mustard Oil 1L';
 
     return Scaffold(
       backgroundColor: GallaColors.canvas,
@@ -101,18 +114,21 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 // Greeting
                 Text(
                   'Namaste, ${settings.businessName.isNotEmpty ? settings.businessName.split(" ").first : "Suman"} 👋',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  style: GallaType.screenTitle,
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   "I'm here to help you understand your business better.",
-                  style: TextStyle(color: GallaColors.muted, fontSize: 13),
+                  style: GallaType.body.copyWith(color: GallaColors.muted),
                 ),
                 const SizedBox(height: 16),
 
                 // 1. Business Health Card
                 healthAsync.when(
-                  loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
+                  loading: () => const SizedBox(
+                    height: 80,
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
                   error: (_, _) => const SizedBox.shrink(),
                   data: (health) => Container(
                     padding: const EdgeInsets.all(16),
@@ -129,7 +145,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             color: GallaColors.brandSoft,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Icon(Icons.thumb_up_alt_outlined, color: GallaColors.brand, size: 22),
+                          child: const Icon(
+                            Icons.thumb_up_alt_outlined,
+                            color: GallaColors.brand,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -137,24 +157,33 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('Business Health', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                                  Text(
+                                    'Business Health',
+                                    style: GallaType.subtitle,
+                                  ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: GallaColors.moneyInSoft,
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text('Good', style: TextStyle(color: GallaColors.moneyIn, fontSize: 11, fontWeight: FontWeight.w700)),
+                                    child: Text(
+                                      'Good',
+                                      style: GallaType.labelStrong.copyWith(
+                                        color: GallaColors.moneyIn,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                health.headline,
-                                style: const TextStyle(fontSize: 12, color: GallaColors.muted),
-                              ),
+                              Text(health.headline, style: GallaType.caption),
                             ],
                           ),
                         ),
@@ -180,22 +209,29 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           color: GallaColors.blueSoft,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.wallet_outlined, color: GallaColors.blue, size: 22),
+                        child: const Icon(
+                          Icons.wallet_outlined,
+                          color: GallaColors.blue,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Cash in Hand', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
+                            Text('Cash in Hand', style: GallaType.caption),
                             Text(
-                              Money(cashInHand, currency: settings.currency).format(),
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                              Money(
+                                cashInHand,
+                                currency: settings.currency,
+                              ).format(),
+                              style: GallaType.number,
                             ),
                           ],
                         ),
                       ),
-                      const Text('As of today', style: TextStyle(fontSize: 11, color: GallaColors.muted)),
+                      Text('As of today', style: GallaType.captionSm),
                     ],
                   ),
                 ),
@@ -217,15 +253,19 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           color: GallaColors.amberSoft,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.shopping_bag_outlined, color: GallaColors.amber, size: 22),
+                        child: const Icon(
+                          Icons.shopping_bag_outlined,
+                          color: GallaColors.amber,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Top Tracked Item', style: TextStyle(fontSize: 12, color: GallaColors.muted)),
-                            Text(topItemName, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                            Text('Top Tracked Item', style: GallaType.caption),
+                            Text(topItemName, style: GallaType.subtitle),
                           ],
                         ),
                       ),
@@ -235,7 +275,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 const SizedBox(height: 18),
 
                 // Suggested Prompts
-                const Text('Suggested Questions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: GallaColors.muted)),
+                Text(
+                  'Suggested Questions',
+                  style: GallaType.subtitleSm.copyWith(
+                    color: GallaColors.muted,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 _PromptChip(
                   text: 'How was my business this week?',
@@ -256,19 +301,29 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   const Divider(),
                   ..._messages.map((m) {
                     return Align(
-                      alignment: m.isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      alignment: m.isUser
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
-                          color: m.isUser ? GallaColors.brand : GallaColors.surface,
+                          color: m.isUser
+                              ? GallaColors.brand
+                              : GallaColors.surface,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: m.isUser ? GallaColors.brand : GallaColors.line),
+                          border: Border.all(
+                            color: m.isUser
+                                ? GallaColors.brand
+                                : GallaColors.line,
+                          ),
                         ),
                         child: Text(
                           m.message,
-                          style: TextStyle(
-                            fontSize: 13,
+                          style: GallaType.body.copyWith(
                             color: m.isUser ? Colors.white : GallaColors.ink,
                           ),
                         ),
@@ -297,7 +352,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         hintText: 'Ask anything...',
                         filled: true,
                         fillColor: GallaColors.canvas,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide.none,
@@ -313,7 +371,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 20),
+                      icon: const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       onPressed: () => _ask(_inputController.text),
                     ),
                   ),
@@ -349,8 +411,17 @@ class _PromptChip extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-              const Icon(Icons.north_east_rounded, size: 14, color: GallaColors.muted),
+              Text(
+                text,
+                style: GallaType.bodyStrong.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Icon(
+                Icons.north_east_rounded,
+                size: 14,
+                color: GallaColors.muted,
+              ),
             ],
           ),
         ),

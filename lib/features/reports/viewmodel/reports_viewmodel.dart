@@ -44,7 +44,8 @@ class ReportsViewModel extends AsyncNotifier<ReportsState> {
   @override
   Future<ReportsState> build() async {
     final txns = ref.watch(transactionsProvider).valueOrNull ?? [];
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final branchId = ref.watch(selectedBranchIdProvider);
 
     return _compute(txns, settings, branchId, ReportRange.month);
@@ -71,25 +72,29 @@ class ReportsViewModel extends AsyncNotifier<ReportsState> {
     );
   }
 
-  ReportPeriod _periodFor(ReportRange range, DateTime today, AppSettings settings) {
+  ReportPeriod _periodFor(
+    ReportRange range,
+    DateTime today,
+    AppSettings settings,
+  ) {
     return switch (range) {
       ReportRange.week => ReportPeriod(
-          start: today.subtract(Duration(days: today.weekday - 1)),
-          end: today.add(const Duration(days: 1)),
-          label: 'This Week',
-        ),
+        start: today.subtract(Duration(days: today.weekday - 1)),
+        end: today.add(const Duration(days: 1)),
+        label: 'This Week',
+      ),
       ReportRange.year => ReportPeriod(
-          start: DateTime(today.year),
-          end: DateTime(today.year + 1),
-          label: 'This Year',
-        ),
+        start: DateTime(today.year),
+        end: DateTime(today.year + 1),
+        label: 'This Year',
+      ),
       ReportRange.month => ReportPeriod(
-          start: DateTime(today.year, today.month, 1),
-          end: today.month == 12
-              ? DateTime(today.year + 1, 1, 1)
-              : DateTime(today.year, today.month + 1, 1),
-          label: 'This Month',
-        ),
+        start: DateTime(today.year, today.month, 1),
+        end: today.month == 12
+            ? DateTime(today.year + 1, 1, 1)
+            : DateTime(today.year, today.month + 1, 1),
+        label: 'This Month',
+      ),
     };
   }
 

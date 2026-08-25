@@ -14,12 +14,19 @@ class MoreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final branches = ref.watch(branchesProvider).valueOrNull ?? [];
     final staff = ref.watch(staffMembersProvider).valueOrNull ?? [];
 
     final initials = settings.businessName.isNotEmpty
-        ? settings.businessName.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        ? settings.businessName
+              .trim()
+              .split(' ')
+              .map((w) => w.isNotEmpty ? w[0] : '')
+              .take(2)
+              .join()
+              .toUpperCase()
         : 'G';
 
     return Scaffold(
@@ -45,24 +52,26 @@ class MoreScreen extends ConsumerWidget {
                 backgroundColor: GallaColors.brandSoft,
                 child: Text(
                   initials,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: GallaColors.brand,
-                  ),
+                  style: GallaType.number.copyWith(color: GallaColors.brand),
                 ),
               ),
               title: Text(
-                settings.businessName.isNotEmpty ? settings.businessName : 'My Business',
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                settings.businessName.isNotEmpty
+                    ? settings.businessName
+                    : 'My Business',
+                style: GallaType.number,
               ),
               subtitle: Text(
                 settings.activeStaffRole == StaffRole.owner
                     ? 'Owner'
                     : 'Staff: ${settings.activeStaffName}',
-                style: const TextStyle(fontSize: 13, color: GallaColors.muted),
+                style: GallaType.body.copyWith(color: GallaColors.muted),
               ),
-              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: GallaColors.muted),
+              trailing: const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: GallaColors.muted,
+              ),
               onTap: () => _editBusinessDialog(context, ref, settings),
             ),
           ),
@@ -76,7 +85,8 @@ class MoreScreen extends ConsumerWidget {
                 icon: Icons.storefront_outlined,
                 iconColor: GallaColors.brand,
                 title: 'Multi-Branch',
-                trailingText: '${branches.length} ${branches.length == 1 ? "Branch" : "Branches"}',
+                trailingText:
+                    '${branches.length} ${branches.length == 1 ? "Branch" : "Branches"}',
                 onTap: () => context.push('/business/branches'),
               ),
               _MenuItem(
@@ -161,7 +171,8 @@ class MoreScreen extends ConsumerWidget {
                 title: 'Share Galla App',
                 onTap: () => SharePlus.instance.share(
                   ShareParams(
-                    text: 'Galla — Smart digital ledger and khata for small shops. Download today!',
+                    text:
+                        'Galla — Smart digital ledger and khata for small shops. Download today!',
                     subject: 'Galla Khata App',
                   ),
                 ),
@@ -173,7 +184,11 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  void _editBusinessDialog(BuildContext context, WidgetRef ref, AppSettings settings) {
+  void _editBusinessDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) {
     final nameCtrl = TextEditingController(text: settings.businessName);
     showDialog(
       context: context,
@@ -184,14 +199,17 @@ class MoreScreen extends ConsumerWidget {
           decoration: const InputDecoration(labelText: 'Business / Shop Name'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () async {
               final newName = nameCtrl.text.trim();
               if (newName.isNotEmpty) {
-                await ref.read(moreViewModelProvider.notifier).updateSettings(
-                      settings.copyWith(businessName: newName),
-                    );
+                await ref
+                    .read(moreViewModelProvider.notifier)
+                    .updateSettings(settings.copyWith(businessName: newName));
                 if (context.mounted) Navigator.pop(ctx);
               }
             },
@@ -202,7 +220,11 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  void _showSettingsDialog(BuildContext context, WidgetRef ref, AppSettings settings) {
+  void _showSettingsDialog(
+    BuildContext context,
+    WidgetRef ref,
+    AppSettings settings,
+  ) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -211,15 +233,27 @@ class MoreScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Currency: ${settings.currency}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              'Currency: ${settings.currency}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
-            Text('Estimated Tax: ${settings.taxRatePct}%', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              'Estimated Tax: ${settings.taxRatePct}%',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 8),
-            Text('Language: ${settings.locale == "ne" ? "Nepali" : "English"}', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              'Language: ${settings.locale == "ne" ? "Nepali" : "English"}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
           ],
         ),
         actions: [
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Done'),
+          ),
         ],
       ),
     );
@@ -234,7 +268,10 @@ class MoreScreen extends ConsumerWidget {
           'All your business ledger records are safely stored on this device with SQLite (Offline First). Data is immediately accessible without internet.',
         ),
         actions: [
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Understood')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Understood'),
+          ),
         ],
       ),
     );
@@ -249,7 +286,10 @@ class MoreScreen extends ConsumerWidget {
           '• Cash Book (Galla): Record daily sales, expenses, and cash in hand.\n• Udhaar Ledger: Track customer credit and repayments.\n• Invoices: Generate professional bills.\n• Reconciliation: Audit physical cash drawer.',
         ),
         actions: [
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -270,11 +310,7 @@ class _MenuGroup extends StatelessWidget {
           padding: const EdgeInsets.only(left: 4, bottom: 6),
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: GallaColors.muted,
-            ),
+            style: GallaType.subtitleSm.copyWith(color: GallaColors.muted),
           ),
         ),
         Container(
@@ -324,18 +360,22 @@ class _MenuItem extends StatelessWidget {
         ),
         child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      title: Text(title, style: GallaType.bodyStrong.copyWith(fontSize: 14)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (trailingText != null) ...[
             Text(
               trailingText!,
-              style: const TextStyle(fontSize: 12, color: GallaColors.muted, fontWeight: FontWeight.w500),
+              style: GallaType.label.copyWith(fontWeight: FontWeight.w500),
             ),
             const SizedBox(width: 6),
           ],
-          const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: GallaColors.muted),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: GallaColors.muted,
+          ),
         ],
       ),
     );

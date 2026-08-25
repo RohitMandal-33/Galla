@@ -14,7 +14,8 @@ class CreateInvoiceScreen extends ConsumerStatefulWidget {
   const CreateInvoiceScreen({super.key});
 
   @override
-  ConsumerState<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
+  ConsumerState<CreateInvoiceScreen> createState() =>
+      _CreateInvoiceScreenState();
 }
 
 class _LineItemDraft {
@@ -81,7 +82,11 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
     if (validItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one line item with description and price')),
+        const SnackBar(
+          content: Text(
+            'Please add at least one line item with description and price',
+          ),
+        ),
       );
       return;
     }
@@ -97,7 +102,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         issueDate: _issueDate,
         dueDate: _dueDate,
         taxRatePct: _taxRatePct,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         branchId: branchId,
         items: validItems
             .map(
@@ -117,7 +124,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -126,50 +135,57 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final currency = settings.currency;
     final parties = ref.watch(partiesProvider).valueOrNull ?? [];
     final inventory = ref.watch(inventoryProvider).valueOrNull ?? [];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(s.createInvoice),
-      ),
+      appBar: AppBar(title: Text(s.createInvoice)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: [
           // Customer / Party Section
-          Text(s.parties, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          Text(s.parties, style: GallaType.cardTitle),
           const SizedBox(height: 8),
           Autocomplete<Party>(
             optionsBuilder: (textEditingValue) {
-              if (textEditingValue.text.isEmpty) return const Iterable<Party>.empty();
-              return parties.where((p) =>
-                  p.name.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<Party>.empty();
+              }
+              return parties.where(
+                (p) => p.name.toLowerCase().contains(
+                  textEditingValue.text.toLowerCase(),
+                ),
+              );
             },
             displayStringForOption: (p) => p.name,
             onSelected: (p) {
               _selectedPartyId = p.id;
               _partyController.text = p.name;
             },
-            fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-              controller.addListener(() {
-                _partyController.text = controller.text;
-              });
-              return TextField(
-                controller: controller,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  labelText: '${s.parties} / Customer',
-                  hintText: 'e.g. Ramesh Traders',
-                  filled: true,
-                  fillColor: GallaColors.surface,
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              );
-            },
+            fieldViewBuilder:
+                (context, controller, focusNode, onFieldSubmitted) {
+                  controller.addListener(() {
+                    _partyController.text = controller.text;
+                  });
+                  return TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      labelText: '${s.parties} / Customer',
+                      hintText: 'e.g. Ramesh Traders',
+                      filled: true,
+                      fillColor: GallaColors.surface,
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  );
+                },
           ),
           const SizedBox(height: 16),
 
@@ -192,9 +208,14 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       labelText: 'Issue Date',
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
-                    child: Text(DateFormat.yMMMd().format(_issueDate), style: const TextStyle(fontSize: 14)),
+                    child: Text(
+                      DateFormat.yMMMd().format(_issueDate),
+                      style: GallaType.body.copyWith(fontSize: 14),
+                    ),
                   ),
                 ),
               ),
@@ -204,7 +225,8 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: _dueDate ?? _issueDate.add(const Duration(days: 14)),
+                      initialDate:
+                          _dueDate ?? _issueDate.add(const Duration(days: 14)),
                       firstDate: _issueDate,
                       lastDate: DateTime(2100),
                     );
@@ -215,13 +237,19 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       labelText: s.dueDate,
                       filled: true,
                       fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                     child: Text(
-                      _dueDate != null ? DateFormat.yMMMd().format(_dueDate!) : 'Optional',
-                      style: TextStyle(
+                      _dueDate != null
+                          ? DateFormat.yMMMd().format(_dueDate!)
+                          : 'Optional',
+                      style: GallaType.body.copyWith(
                         fontSize: 14,
-                        color: _dueDate != null ? GallaColors.ink : GallaColors.muted,
+                        color: _dueDate != null
+                            ? GallaColors.ink
+                            : GallaColors.muted,
                       ),
                     ),
                   ),
@@ -235,7 +263,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(s.lineItems, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              Text(s.lineItems, style: GallaType.cardTitle),
               if (inventory.isNotEmpty)
                 TextButton.icon(
                   onPressed: () => _pickFromInventory(inventory),
@@ -256,14 +284,22 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           OutlinedButton.icon(
             onPressed: () {
               setState(() {
-                _items.add(_LineItemDraft(description: '', quantity: 1.0, unitPriceMinor: 0));
+                _items.add(
+                  _LineItemDraft(
+                    description: '',
+                    quantity: 1.0,
+                    unitPriceMinor: 0,
+                  ),
+                );
               });
             },
             icon: const Icon(Icons.add),
             label: Text(s.addItem),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -273,14 +309,18 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             children: [
               Expanded(
                 child: TextField(
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: s.taxRate,
                     hintText: '0',
                     suffixText: '%',
                     filled: true,
                     fillColor: GallaColors.surface,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   controller: TextEditingController(
                     text: _taxRatePct > 0 ? '$_taxRatePct' : '',
@@ -303,7 +343,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               hintText: 'Payment terms, bank details, or thank you note',
               filled: true,
               fillColor: GallaColors.surface,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -318,9 +360,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             ),
             child: Column(
               children: [
-                _calcRow(s.subtotal, Money(_subtotalMinor, currency: currency).format()),
+                _calcRow(
+                  s.subtotal,
+                  Money(_subtotalMinor, currency: currency).format(),
+                ),
                 if (_taxRatePct > 0)
-                  _calcRow('${s.tax} ($_taxRatePct%)', Money(_taxMinor, currency: currency).format()),
+                  _calcRow(
+                    '${s.tax} ($_taxRatePct%)',
+                    Money(_taxMinor, currency: currency).format(),
+                  ),
                 const Divider(),
                 _calcRow(
                   s.total,
@@ -343,13 +391,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: GallaColors.brand,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: _saving
                   ? const CircularProgressIndicator(color: Colors.white)
                   : Text(
                       '${s.save} & Generate Invoice',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: GallaType.cardTitle,
                     ),
             ),
           ),
@@ -377,7 +427,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   decoration: InputDecoration(
                     labelText: 'Item / Description #${idx + 1}',
                     isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onChanged: (v) => item.description = v,
                 ),
@@ -400,11 +452,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   initialValue: item.quantity == item.quantity.toInt()
                       ? '${item.quantity.toInt()}'
                       : '${item.quantity}',
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Qty',
                     isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onChanged: (v) {
                     setState(() {
@@ -417,12 +473,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               Expanded(
                 flex: 3,
                 child: TextFormField(
-                  initialValue: item.unitPriceMinor > 0 ? '${item.unitPriceMinor ~/ 100}' : '',
+                  initialValue: item.unitPriceMinor > 0
+                      ? '${item.unitPriceMinor ~/ 100}'
+                      : '',
                   keyboardType: TextInputType.number,
                   decoration: InputDecoration(
                     labelText: 'Unit Price ($currency)',
                     isDense: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onChanged: (v) {
                     setState(() {
@@ -436,10 +496,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Text('Total', style: TextStyle(fontSize: 10, color: GallaColors.muted)),
+                  Text(
+                    'Total',
+                    style: GallaType.captionSm.copyWith(fontSize: 10),
+                  ),
                   Text(
                     Money(item.totalMinor, currency: currency).format(),
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: GallaType.subtitleSm,
                   ),
                 ],
               ),
@@ -450,21 +513,33 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     );
   }
 
-  Widget _calcRow(String label, String value, {bool isBold = false, double fontSize = 14, Color? color}) {
+  Widget _calcRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    double fontSize = 14,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: isBold ? FontWeight.w700 : FontWeight.normal)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: fontSize,
-                  fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
-                  color: color ?? GallaColors.ink)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+              color: color ?? GallaColors.ink,
+            ),
+          ),
         ],
       ),
     );
@@ -483,7 +558,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
           itemBuilder: (context, idx) {
             final item = inventory[idx];
             return ListTile(
-              title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+              title: Text(
+                item.name,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
               subtitle: Text('Stock: ${item.currentQuantity} ${item.unit}'),
               trailing: Text(
                 'Price: ${item.salePriceMinor ~/ 100}',

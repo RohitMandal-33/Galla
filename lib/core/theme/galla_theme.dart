@@ -29,9 +29,18 @@ class GallaColors {
   static const brandSoft = Color(0xFFE6F0EA); // Soft brand background
   static const brandSofter = Color(0xFFF0F7F2); // Very soft brand background
 
+  /// Gradient for hero surfaces (balance card, FAB face).
+  static const heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF244837), Color(0xFF163326)],
+  );
+
   // Accent — Warm Gold (Trust & Prosperity)
   static const gold = Color(0xFFB8962E);
+  static const goldLight = Color(0xFFE8C547);
   static const goldMid = Color(0xFFD4AF37);
+  static const goldDark = Color(0xFF8C7018);
   static const goldSoft = Color(0xFFFDF8EB);
   static const goldSofter = Color(0xFFFFFDF5);
 
@@ -40,6 +49,10 @@ class GallaColors {
   static const moneyInMid = Color(0xFF22994D);
   static const moneyInSoft = Color(0xFFEAF5ED);
   static const moneyInTag = Color(0xFF1B7A3E);
+
+  // Income/Expense variants for dark (brand) surfaces
+  static const moneyInOnDark = Color(0xFF6EDB96);
+  static const moneyOutOnDark = Color(0xFFFF9595);
 
   // Expense — Muted Red (semantic)
   static const moneyOut = Color(0xFFC0392B);
@@ -79,6 +92,66 @@ class GallaAnimations {
   static const slow = Duration(milliseconds: 400);
   static const spring = Cubic(0.175, 0.885, 0.32, 1.275);
   static const easeOut = Curves.easeOutCubic;
+}
+
+// ── Typography ─────────────────────────────────────────────────────────────────
+/// Semantic text styles for feature code. Prefer these over hand-written
+/// `TextStyle(fontSize: …)` literals so type stays consistent app-wide.
+///
+/// Title/number roles default to [GallaColors.ink]; caption/label roles to
+/// [GallaColors.muted]. Override per-site with `.copyWith(color: …)` — never
+/// re-declare size or weight inline.
+class GallaType {
+  static TextStyle _s(
+    double size,
+    FontWeight weight,
+    double? ls,
+    Color color, {
+    double? height,
+  }) => GoogleFonts.outfit(
+    fontSize: size,
+    fontWeight: weight,
+    letterSpacing: ls,
+    height: height,
+    color: color,
+  );
+
+  // Display numbers — w800, tight tracking
+  static final hero = _s(
+    38,
+    FontWeight.w800,
+    -1.2,
+    GallaColors.ink,
+    height: 1.0,
+  );
+  static final totalLg = _s(32, FontWeight.w800, -1.0, GallaColors.ink);
+  static final total = _s(28, FontWeight.w800, -0.8, GallaColors.ink);
+  static final numberXl = _s(24, FontWeight.w800, -0.5, GallaColors.ink);
+  static final numberLg = _s(20, FontWeight.w800, -0.3, GallaColors.ink);
+  static final numberMd = _s(18, FontWeight.w800, -0.3, GallaColors.ink);
+  static final number = _s(16, FontWeight.w800, -0.3, GallaColors.ink);
+  static final numberSm = _s(15, FontWeight.w800, -0.3, GallaColors.ink);
+
+  // Titles — ink
+  static final screenTitle = _s(22, FontWeight.w800, null, GallaColors.ink);
+  static final cardTitle = _s(16, FontWeight.w700, null, GallaColors.ink);
+  static final tileTitle = _s(15, FontWeight.w700, -0.1, GallaColors.ink);
+  static final subtitle = _s(14, FontWeight.w700, null, GallaColors.ink);
+  static final subtitleSm = _s(13, FontWeight.w700, null, GallaColors.ink);
+
+  // Body — ink
+  static final bodyStrong = _s(13, FontWeight.w600, null, GallaColors.ink);
+  static final body = _s(13, FontWeight.w400, null, GallaColors.ink);
+
+  // Labels & captions — muted unless overridden
+  static final chipLabel = _s(12, FontWeight.w700, null, GallaColors.ink);
+  static final labelStrong = _s(11, FontWeight.w700, null, GallaColors.ink);
+  static final label = _s(12, FontWeight.w600, null, GallaColors.muted);
+  static final labelSm = _s(11, FontWeight.w600, null, GallaColors.muted);
+  static final caption = _s(12, FontWeight.w400, null, GallaColors.muted);
+  static final captionSm = _s(11, FontWeight.w400, null, GallaColors.muted);
+  static final badge = _s(10, FontWeight.w700, null, GallaColors.ink);
+  static final overline = _s(11, FontWeight.w700, 0.6, GallaColors.muted);
 }
 
 // ── Elevation & Shadows ────────────────────────────────────────────────────────
@@ -304,7 +377,11 @@ ThemeData buildGallaTheme() {
       fillColor: GallaColors.surface,
       hintStyle: GoogleFonts.outfit(color: GallaColors.faint, fontSize: 14),
       labelStyle: GoogleFonts.outfit(color: GallaColors.muted, fontSize: 14),
-      floatingLabelStyle: GoogleFonts.outfit(color: GallaColors.brand, fontSize: 12, fontWeight: FontWeight.w600),
+      floatingLabelStyle: GoogleFonts.outfit(
+        color: GallaColors.brand,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(GallaRadius.md),
         borderSide: const BorderSide(color: GallaColors.line),
@@ -326,8 +403,13 @@ ThemeData buildGallaTheme() {
         backgroundColor: GallaColors.brand,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(52),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
-        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(GallaRadius.button),
+        ),
+        textStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
         elevation: 0,
       ),
     ),
@@ -335,14 +417,22 @@ ThemeData buildGallaTheme() {
       style: OutlinedButton.styleFrom(
         foregroundColor: GallaColors.brand,
         side: const BorderSide(color: GallaColors.brand, width: 1.5),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.button)),
-        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(GallaRadius.button),
+        ),
+        textStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: GallaColors.brand,
-        textStyle: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14),
+        textStyle: GoogleFonts.outfit(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
       ),
     ),
 
@@ -355,13 +445,19 @@ ThemeData buildGallaTheme() {
       labelTextStyle: WidgetStateProperty.resolveWith(
         (states) => GoogleFonts.outfit(
           fontSize: 11,
-          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-          color: states.contains(WidgetState.selected) ? GallaColors.brand : GallaColors.muted,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w500,
+          color: states.contains(WidgetState.selected)
+              ? GallaColors.brand
+              : GallaColors.muted,
         ),
       ),
       iconTheme: WidgetStateProperty.resolveWith(
         (states) => IconThemeData(
-          color: states.contains(WidgetState.selected) ? GallaColors.brand : GallaColors.muted,
+          color: states.contains(WidgetState.selected)
+              ? GallaColors.brand
+              : GallaColors.muted,
           size: 22,
         ),
       ),
@@ -372,7 +468,9 @@ ThemeData buildGallaTheme() {
       backgroundColor: GallaColors.surface,
       modalBackgroundColor: GallaColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(GallaRadius.bottomSheet)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(GallaRadius.bottomSheet),
+        ),
       ),
       showDragHandle: false,
       elevation: 0,
@@ -388,20 +486,31 @@ ThemeData buildGallaTheme() {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: GallaColors.brand,
-      contentTextStyle: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 14),
+      contentTextStyle: GoogleFonts.outfit(
+        color: Colors.white,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      ),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.md)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(GallaRadius.md),
+      ),
     ),
     chipTheme: ChipThemeData(
       backgroundColor: GallaColors.surfaceAlt,
       selectedColor: GallaColors.brandSoft,
       labelStyle: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500),
       side: const BorderSide(color: GallaColors.line),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GallaRadius.chip)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(GallaRadius.chip),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     ),
     listTileTheme: const ListTileThemeData(
-      contentPadding: EdgeInsets.symmetric(horizontal: GallaSpacing.base, vertical: GallaSpacing.xs),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: GallaSpacing.base,
+        vertical: GallaSpacing.xs,
+      ),
     ),
   );
 }

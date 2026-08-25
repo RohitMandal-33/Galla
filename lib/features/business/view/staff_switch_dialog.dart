@@ -68,7 +68,8 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
     final staffList = ref.watch(staffMembersProvider).valueOrNull ?? [];
 
@@ -81,7 +82,10 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
             RadioListTile<bool>(
               value: true,
               groupValue: _asOwner,
-              title: Text(s.ownerRole, style: const TextStyle(fontWeight: FontWeight.w700)),
+              title: Text(
+                s.ownerRole,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
               subtitle: const Text('Full access to reports & settings'),
               onChanged: (v) {
                 setState(() {
@@ -94,8 +98,13 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
             ...staffList.map((m) {
               return RadioListTile<bool>(
                 value: false,
-                groupValue: _asOwner ? null : (_selectedStaff?.id == m.id ? false : null),
-                title: Text(m.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                groupValue: _asOwner
+                    ? null
+                    : (_selectedStaff?.id == m.id ? false : null),
+                title: Text(
+                  m.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 subtitle: Text('Role: ${m.role.name.toUpperCase()}'),
                 onChanged: (v) {
                   setState(() {
@@ -114,7 +123,9 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
                 labelText: 'PIN (if configured)',
                 filled: true,
                 fillColor: GallaColors.surface,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 errorText: _error,
               ),
             ),
@@ -122,13 +133,18 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
         ElevatedButton(
           onPressed: _applySwitch,
           style: ElevatedButton.styleFrom(
             backgroundColor: GallaColors.brand,
             foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           child: const Text('Switch Mode'),
         ),

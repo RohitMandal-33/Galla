@@ -9,11 +9,11 @@ class Money {
   double get major => minor / 100.0;
 
   String get symbol => switch (currency) {
-        'INR' => '₹',
-        'USD' => '\$',
-        'NPR' => 'Rs',
-        _ => currency,
-      };
+    'INR' => '₹',
+    'USD' => '\$',
+    'NPR' => 'Rs',
+    _ => currency,
+  };
 
   String format({bool withSymbol = true}) {
     final formatted = NumberFormat('#,##,##0.00').format(major);

@@ -68,11 +68,15 @@ class GallaRepository {
   }) async {
     final now = DateTime.now();
     String? resolvedPartyId = partyId;
-    if (resolvedPartyId == null && partyName != null && partyName.trim().isNotEmpty) {
+    if (resolvedPartyId == null &&
+        partyName != null &&
+        partyName.trim().isNotEmpty) {
       resolvedPartyId = await findOrCreateParty(partyName.trim());
     }
     final id = _uuid.v4();
-    await _db.into(_db.ledgerEntries).insert(
+    await _db
+        .into(_db.ledgerEntries)
+        .insert(
           LedgerEntriesCompanion.insert(
             id: id,
             occurredAt: occurredAt ?? now,
@@ -96,10 +100,7 @@ class GallaRepository {
             inventoryItemId: Value(inventoryItemId),
           ),
         );
-    await _put(
-      'lastDirection',
-      direction == Direction.moneyOut ? 'out' : 'in',
-    );
+    await _put('lastDirection', direction == Direction.moneyOut ? 'out' : 'in');
 
     // Auto-adjust inventory if linked
     if (inventoryItemId != null) {
@@ -138,13 +139,15 @@ class GallaRepository {
   }
 
   Future<Txn?> getTxn(String id) async {
-    final row = await (_db.select(_db.ledgerEntries)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.ledgerEntries,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (row == null) return null;
     String? name;
     if (row.partyId != null) {
-      final p = await (_db.select(_db.parties)..where((x) => x.id.equals(row.partyId!)))
-          .getSingleOrNull();
+      final p = await (_db.select(
+        _db.parties,
+      )..where((x) => x.id.equals(row.partyId!))).getSingleOrNull();
       name = p?.name;
     }
     return _toTxn(row, name);
@@ -156,20 +159,20 @@ class GallaRepository {
     final parties = {
       for (final p in await _db.select(_db.parties).get()) p.id: p.name,
     };
-    final rows = await (_db.select(_db.ledgerEntries)
-          ..where(
-            (t) {
-              var expr = t.deletedAt.isNull() &
-                  t.occurredAt.isBiggerOrEqualValue(start) &
-                  t.occurredAt.isSmallerThanValue(end);
-              if (branchId != null) {
-                expr = expr & t.branchId.equals(branchId);
-              }
-              return expr;
-            },
-          )
-          ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
-        .get();
+    final rows =
+        await (_db.select(_db.ledgerEntries)
+              ..where((t) {
+                var expr =
+                    t.deletedAt.isNull() &
+                    t.occurredAt.isBiggerOrEqualValue(start) &
+                    t.occurredAt.isSmallerThanValue(end);
+                if (branchId != null) {
+                  expr = expr & t.branchId.equals(branchId);
+                }
+                return expr;
+              })
+              ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
+            .get();
     return rows.map((r) => _toTxn(r, parties[r.partyId])).toList();
   }
 
@@ -179,16 +182,17 @@ class GallaRepository {
     final parties = {
       for (final p in await _db.select(_db.parties).get()) p.id: p,
     };
-    final rows = await (_db.select(_db.ledgerEntries)
-          ..where((t) {
-            var expr = t.deletedAt.isNull();
-            if (branchId != null) {
-              expr = expr & t.branchId.equals(branchId);
-            }
-            return expr;
-          })
-          ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
-        .get();
+    final rows =
+        await (_db.select(_db.ledgerEntries)
+              ..where((t) {
+                var expr = t.deletedAt.isNull();
+                if (branchId != null) {
+                  expr = expr & t.branchId.equals(branchId);
+                }
+                return expr;
+              })
+              ..orderBy([(t) => OrderingTerm.desc(t.occurredAt)]))
+            .get();
     final amountQ = int.tryParse(q.replaceAll(',', ''));
     return rows
         .where((r) {
@@ -197,7 +201,8 @@ class GallaRepository {
           final cat = (r.category ?? '').toLowerCase();
           final staff = (r.staffName ?? '').toLowerCase();
           final amountMatch =
-              amountQ != null && (r.amountMinor == amountQ * 100 || r.amountMinor == amountQ);
+              amountQ != null &&
+              (r.amountMinor == amountQ * 100 || r.amountMinor == amountQ);
           return name.contains(q) ||
               note.contains(q) ||
               cat.contains(q) ||
@@ -213,16 +218,22 @@ class GallaRepository {
   // ---------------------------------------------------------------------------
 
   Stream<List<Party>> watchParties() {
-    return _db.select(_db.parties).watch().asyncMap((_) => partiesWithBalances());
+    return _db
+        .select(_db.parties)
+        .watch()
+        .asyncMap((_) => partiesWithBalances());
   }
 
   Future<String> findOrCreateParty(String name) async {
-    final existing = await (_db.select(_db.parties)
-          ..where((p) => p.name.lower().equals(name.toLowerCase())))
-        .getSingleOrNull();
+    final existing =
+        await (_db.select(_db.parties)
+              ..where((p) => p.name.lower().equals(name.toLowerCase())))
+            .getSingleOrNull();
     if (existing != null) return existing.id;
     final id = _uuid.v4();
-    await _db.into(_db.parties).insert(
+    await _db
+        .into(_db.parties)
+        .insert(
           PartiesCompanion.insert(
             id: id,
             name: name,
@@ -240,9 +251,9 @@ class GallaRepository {
 
     // Fetch all active ledger rows for parties in one query (filter in Dart
     // after one pass — still O(N) not O(N×M)).
-    final txns = await (_db.select(_db.ledgerEntries)
-          ..where((t) => t.deletedAt.isNull() & t.partyId.isNotNull()))
-        .get();
+    final txns = await (_db.select(
+      _db.ledgerEntries,
+    )..where((t) => t.deletedAt.isNull() & t.partyId.isNotNull())).get();
 
     // Build balance map in one pass
     final balanceMap = <String, int>{};
@@ -252,18 +263,18 @@ class GallaRepository {
     }
 
     return people.map((p) {
-      return Party(
-        id: p.id,
-        name: p.name,
-        phone: p.phone,
-        createdAt: p.createdAt,
-        remindEnabled: p.remindEnabled,
-        remindEveryDays: p.remindEveryDays,
-        lastRemindedAt: p.lastRemindedAt,
-        settledAt: p.settledAt,
-        balanceMinor: balanceMap[p.id] ?? 0,
-      );
-    }).toList()
+        return Party(
+          id: p.id,
+          name: p.name,
+          phone: p.phone,
+          createdAt: p.createdAt,
+          remindEnabled: p.remindEnabled,
+          remindEveryDays: p.remindEveryDays,
+          lastRemindedAt: p.lastRemindedAt,
+          settledAt: p.settledAt,
+          balanceMinor: balanceMap[p.id] ?? 0,
+        );
+      }).toList()
       ..sort((a, b) => b.balanceMinor.abs().compareTo(a.balanceMinor.abs()));
   }
 
@@ -278,11 +289,17 @@ class GallaRepository {
     return t.direction == 'in' ? -t.amountMinor : t.amountMinor;
   }
 
-  Future<void> setPartyReminder(String id, {required bool enabled, int? everyDays}) {
+  Future<void> setPartyReminder(
+    String id, {
+    required bool enabled,
+    int? everyDays,
+  }) {
     return (_db.update(_db.parties)..where((p) => p.id.equals(id))).write(
       PartiesCompanion(
         remindEnabled: Value(enabled),
-        remindEveryDays: everyDays == null ? const Value.absent() : Value(everyDays),
+        remindEveryDays: everyDays == null
+            ? const Value.absent()
+            : Value(everyDays),
       ),
     );
   }
@@ -305,15 +322,15 @@ class GallaRepository {
     final end = start.add(const Duration(days: 1));
 
     // Single query — fetch all active entries (branch-filtered)
-    final all = await (_db.select(_db.ledgerEntries)
-          ..where((t) {
-            var expr = t.deletedAt.isNull();
-            if (branchId != null) {
-              expr = expr & t.branchId.equals(branchId);
-            }
-            return expr;
-          }))
-        .get();
+    final all =
+        await (_db.select(_db.ledgerEntries)..where((t) {
+              var expr = t.deletedAt.isNull();
+              if (branchId != null) {
+                expr = expr & t.branchId.equals(branchId);
+              }
+              return expr;
+            }))
+            .get();
 
     // Single-pass aggregation
     var opening = 0;
@@ -324,7 +341,8 @@ class GallaRepository {
 
     for (final t in all) {
       final isBeforeDay = t.occurredAt.isBefore(start);
-      final isInDay = !t.occurredAt.isBefore(start) && t.occurredAt.isBefore(end);
+      final isInDay =
+          !t.occurredAt.isBefore(start) && t.occurredAt.isBefore(end);
 
       // Opening cash: non-credit, non-writeoff, before today
       if (isBeforeDay && !t.isCredit && !t.isWriteOff) {
@@ -349,10 +367,20 @@ class GallaRepository {
     );
   }
 
-  SimpleReport buildReport(List<Txn> all, ReportPeriod period, double taxRatePct) {
-    var moneyIn = 0, moneyOut = 0, cashIn = 0, cashOut = 0, given = 0, taken = 0;
+  SimpleReport buildReport(
+    List<Txn> all,
+    ReportPeriod period,
+    double taxRatePct,
+  ) {
+    var moneyIn = 0,
+        moneyOut = 0,
+        cashIn = 0,
+        cashOut = 0,
+        given = 0,
+        taken = 0;
     for (final t in all) {
-      if (t.occurredAt.isBefore(period.start) || !t.occurredAt.isBefore(period.end)) {
+      if (t.occurredAt.isBefore(period.start) ||
+          !t.occurredAt.isBefore(period.end)) {
         continue;
       }
       if (t.isWriteOff) continue;
@@ -383,7 +411,10 @@ class GallaRepository {
   // INVOICES & BILLING (V2 Feature 21.6)
   // ---------------------------------------------------------------------------
 
-  Stream<List<Invoice>> watchInvoices({String? branchId, InvoiceStatus? status}) {
+  Stream<List<Invoice>> watchInvoices({
+    String? branchId,
+    InvoiceStatus? status,
+  }) {
     final query = _db.select(_db.invoices)
       ..where((i) {
         var expr = i.deletedAt.isNull();
@@ -391,7 +422,10 @@ class GallaRepository {
         if (status != null) expr = expr & i.status.equals(status.key);
         return expr;
       })
-      ..orderBy([(i) => OrderingTerm.desc(i.issueDate), (i) => OrderingTerm.desc(i.createdAt)]);
+      ..orderBy([
+        (i) => OrderingTerm.desc(i.issueDate),
+        (i) => OrderingTerm.desc(i.createdAt),
+      ]);
 
     return query.watch().map((rows) => rows.map(_toInvoice).toList());
   }
@@ -412,7 +446,15 @@ class GallaRepository {
     String? partyName,
     DateTime? issueDate,
     DateTime? dueDate,
-    required List<({String description, double quantity, int unitPriceMinor, String? inventoryItemId})> items,
+    required List<
+      ({
+        String description,
+        double quantity,
+        int unitPriceMinor,
+        String? inventoryItemId,
+      })
+    >
+    items,
     double taxRatePct = 0.0,
     String? notes,
     String? branchId,
@@ -423,7 +465,9 @@ class GallaRepository {
 
     // Resolve party outside the transaction (findOrCreate may be idempotent)
     String? resolvedPartyId = partyId;
-    if (resolvedPartyId == null && partyName != null && partyName.trim().isNotEmpty) {
+    if (resolvedPartyId == null &&
+        partyName != null &&
+        partyName.trim().isNotEmpty) {
       resolvedPartyId = await findOrCreateParty(partyName.trim());
     }
 
@@ -466,7 +510,9 @@ class GallaRepository {
 
     // ─── ATOMIC: all inserts in a single transaction ──────────────────────────
     await _db.transaction(() async {
-      await _db.into(_db.invoices).insert(
+      await _db
+          .into(_db.invoices)
+          .insert(
             InvoicesCompanion.insert(
               id: invId,
               invoiceNumber: invNumber,
@@ -498,7 +544,9 @@ class GallaRepository {
       }
 
       // Record linked ledger entry directly to avoid nested transaction
-      await _db.into(_db.ledgerEntries).insert(
+      await _db
+          .into(_db.ledgerEntries)
+          .insert(
             LedgerEntriesCompanion.insert(
               id: _uuid.v4(),
               occurredAt: issueDate ?? now,
@@ -538,14 +586,14 @@ class GallaRepository {
     return InvoiceWithItems(invoice: invoice, items: domainItems);
   }
 
-
   Future<InvoiceWithItems?> getInvoiceWithItems(String invoiceId) async {
-    final invRow = await (_db.select(_db.invoices)..where((i) => i.id.equals(invoiceId)))
-        .getSingleOrNull();
+    final invRow = await (_db.select(
+      _db.invoices,
+    )..where((i) => i.id.equals(invoiceId))).getSingleOrNull();
     if (invRow == null) return null;
-    final itemRows = await (_db.select(_db.invoiceItems)
-          ..where((i) => i.invoiceId.equals(invoiceId)))
-        .get();
+    final itemRows = await (_db.select(
+      _db.invoiceItems,
+    )..where((i) => i.invoiceId.equals(invoiceId))).get();
 
     return InvoiceWithItems(
       invoice: _toInvoice(invRow),
@@ -582,7 +630,9 @@ class GallaRepository {
 
     // ─── ATOMIC: invoice update + ledger entry in one transaction ─────────────
     await _db.transaction(() async {
-      await (_db.update(_db.invoices)..where((i) => i.id.equals(invoiceId))).write(
+      await (_db.update(
+        _db.invoices,
+      )..where((i) => i.id.equals(invoiceId))).write(
         InvoicesCompanion(
           paidAmountMinor: Value(newPaid),
           status: Value(newStatus),
@@ -590,22 +640,24 @@ class GallaRepository {
       );
 
       // Record cash-in ledger entry inside same transaction
-      await _db.into(_db.ledgerEntries).insert(
-        LedgerEntriesCompanion.insert(
-          id: _uuid.v4(),
-          occurredAt: paymentAt,
-          createdAt: paymentAt,
-          direction: 'in',
-          amountMinor: paymentAmountMinor,
-          partyId: Value(inv.invoice.partyId),
-          category: const Value('Payment Received'),
-          note: Value(note ?? 'Payment for ${inv.invoice.invoiceNumber}'),
-          isCredit: const Value(false),
-          syncStatus: const Value('pending'),
-          invoiceId: Value(invoiceId),
-          branchId: Value(inv.invoice.branchId),
-        ),
-      );
+      await _db
+          .into(_db.ledgerEntries)
+          .insert(
+            LedgerEntriesCompanion.insert(
+              id: _uuid.v4(),
+              occurredAt: paymentAt,
+              createdAt: paymentAt,
+              direction: 'in',
+              amountMinor: paymentAmountMinor,
+              partyId: Value(inv.invoice.partyId),
+              category: const Value('Payment Received'),
+              note: Value(note ?? 'Payment for ${inv.invoice.invoiceNumber}'),
+              isCredit: const Value(false),
+              syncStatus: const Value('pending'),
+              invoiceId: Value(invoiceId),
+              branchId: Value(inv.invoice.branchId),
+            ),
+          );
     });
     // ─── END TRANSACTION ──────────────────────────────────────────────────────
   }
@@ -644,7 +696,9 @@ class GallaRepository {
   }) async {
     final now = DateTime.now();
     final id = _uuid.v4();
-    await _db.into(_db.inventoryItems).insert(
+    await _db
+        .into(_db.inventoryItems)
+        .insert(
           InventoryItemsCompanion.insert(
             id: id,
             name: name,
@@ -675,7 +729,9 @@ class GallaRepository {
   }
 
   Future<void> updateInventoryItem(InventoryItem item) async {
-    await (_db.update(_db.inventoryItems)..where((i) => i.id.equals(item.id))).write(
+    await (_db.update(
+      _db.inventoryItems,
+    )..where((i) => i.id.equals(item.id))).write(
       InventoryItemsCompanion(
         name: Value(item.name),
         sku: Value(item.sku),
@@ -699,11 +755,14 @@ class GallaRepository {
   }
 
   Future<void> _adjustStockRelative(String itemId, double deltaQuantity) async {
-    final row = await (_db.select(_db.inventoryItems)..where((i) => i.id.equals(itemId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.inventoryItems,
+    )..where((i) => i.id.equals(itemId))).getSingleOrNull();
     if (row != null) {
       final updated = row.currentQuantity + deltaQuantity;
-      await (_db.update(_db.inventoryItems)..where((i) => i.id.equals(itemId))).write(
+      await (_db.update(
+        _db.inventoryItems,
+      )..where((i) => i.id.equals(itemId))).write(
         InventoryItemsCompanion(
           currentQuantity: Value(updated),
           updatedAt: Value(DateTime.now()),
@@ -751,39 +810,44 @@ class GallaRepository {
       if (createAdjustmentEntry && discrepancyMinor != 0) {
         final isSurplus = discrepancyMinor > 0;
         adjTxnId = _uuid.v4();
-        final adjNote = note ??
+        final adjNote =
+            note ??
             (isSurplus
                 ? 'Reconciliation Surplus (${discrepancyMinor ~/ 100})'
                 : 'Reconciliation Shortage (${discrepancyMinor.abs() ~/ 100})');
-        await _db.into(_db.ledgerEntries).insert(
-          LedgerEntriesCompanion.insert(
-            id: adjTxnId!,
-            occurredAt: now,
-            createdAt: now,
-            direction: isSurplus ? 'in' : 'out',
-            amountMinor: discrepancyMinor.abs(),
-            category: const Value('Cash Reconciliation Adjustment'),
-            note: Value(adjNote),
-            isAdjustment: const Value(true),
-            syncStatus: const Value('pending'),
-            branchId: Value(branchId),
-          ),
-        );
+        await _db
+            .into(_db.ledgerEntries)
+            .insert(
+              LedgerEntriesCompanion.insert(
+                id: adjTxnId!,
+                occurredAt: now,
+                createdAt: now,
+                direction: isSurplus ? 'in' : 'out',
+                amountMinor: discrepancyMinor.abs(),
+                category: const Value('Cash Reconciliation Adjustment'),
+                note: Value(adjNote),
+                isAdjustment: const Value(true),
+                syncStatus: const Value('pending'),
+                branchId: Value(branchId),
+              ),
+            );
       }
 
-      await _db.into(_db.reconciliationLogs).insert(
-        ReconciliationLogsCompanion.insert(
-          id: id,
-          occurredAt: now,
-          countedCashMinor: countedCashMinor,
-          bankBalanceMinor: Value(bankBalanceMinor),
-          expectedCashMinor: expectedCashMinor,
-          discrepancyMinor: discrepancyMinor,
-          note: Value(note),
-          adjustmentTxnId: Value(adjTxnId),
-          branchId: Value(branchId),
-        ),
-      );
+      await _db
+          .into(_db.reconciliationLogs)
+          .insert(
+            ReconciliationLogsCompanion.insert(
+              id: id,
+              occurredAt: now,
+              countedCashMinor: countedCashMinor,
+              bankBalanceMinor: Value(bankBalanceMinor),
+              expectedCashMinor: expectedCashMinor,
+              discrepancyMinor: discrepancyMinor,
+              note: Value(note),
+              adjustmentTxnId: Value(adjTxnId),
+              branchId: Value(branchId),
+            ),
+          );
     });
     // ─── END TRANSACTION ──────────────────────────────────────────────────────
 
@@ -805,9 +869,14 @@ class GallaRepository {
   // ---------------------------------------------------------------------------
 
   Stream<List<Branch>> watchBranches() {
-    return _db.select(_db.branches).watch().map(
+    return _db
+        .select(_db.branches)
+        .watch()
+        .map(
           (rows) => rows.map(_toBranch).toList()
-            ..sort((a, b) => (b.isDefault ? 1 : 0).compareTo(a.isDefault ? 1 : 0)),
+            ..sort(
+              (a, b) => (b.isDefault ? 1 : 0).compareTo(a.isDefault ? 1 : 0),
+            ),
         );
   }
 
@@ -820,9 +889,13 @@ class GallaRepository {
     final id = _uuid.v4();
     final now = DateTime.now();
     if (isDefault) {
-      await _db.update(_db.branches).write(const BranchesCompanion(isDefault: Value(false)));
+      await _db
+          .update(_db.branches)
+          .write(const BranchesCompanion(isDefault: Value(false)));
     }
-    await _db.into(_db.branches).insert(
+    await _db
+        .into(_db.branches)
+        .insert(
           BranchesCompanion.insert(
             id: id,
             name: name,
@@ -851,9 +924,10 @@ class GallaRepository {
   // ---------------------------------------------------------------------------
 
   Stream<List<StaffMember>> watchStaffMembers() {
-    return _db.select(_db.staffMembers).watch().map(
-          (rows) => rows.map(_toStaffMember).toList(),
-        );
+    return _db
+        .select(_db.staffMembers)
+        .watch()
+        .map((rows) => rows.map(_toStaffMember).toList());
   }
 
   Future<StaffMember> createStaffMember(
@@ -865,7 +939,9 @@ class GallaRepository {
     final id = _uuid.v4();
     final now = DateTime.now();
     final pinHash = pin != null && pin.isNotEmpty ? hashPin(pin) : null;
-    await _db.into(_db.staffMembers).insert(
+    await _db
+        .into(_db.staffMembers)
+        .insert(
           StaffMembersCompanion.insert(
             id: id,
             name: name,
@@ -888,7 +964,9 @@ class GallaRepository {
   }
 
   Future<void> updateStaffMember(StaffMember staff) async {
-    await (_db.update(_db.staffMembers)..where((s) => s.id.equals(staff.id))).write(
+    await (_db.update(
+      _db.staffMembers,
+    )..where((s) => s.id.equals(staff.id))).write(
       StaffMembersCompanion(
         name: Value(staff.name),
         phone: Value(staff.phone),
@@ -904,8 +982,9 @@ class GallaRepository {
   }
 
   Future<bool> verifyStaffPin(String staffId, String pin) async {
-    final staff = await (_db.select(_db.staffMembers)..where((s) => s.id.equals(staffId)))
-        .getSingleOrNull();
+    final staff = await (_db.select(
+      _db.staffMembers,
+    )..where((s) => s.id.equals(staffId))).getSingleOrNull();
     if (staff == null || staff.pinHash == null) return false;
     return staff.pinHash == hashPin(pin);
   }
@@ -914,19 +993,23 @@ class GallaRepository {
   // BUSINESS HEALTH SCORE & AI INSIGHTS (V2 Feature 21.14)
   // ---------------------------------------------------------------------------
 
-  Future<BusinessHealthReport> computeBusinessHealth(DateTime month, {String? branchId}) async {
+  Future<BusinessHealthReport> computeBusinessHealth(
+    DateTime month, {
+    String? branchId,
+  }) async {
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 1);
 
-    final txns = await (_db.select(_db.ledgerEntries)
-          ..where((t) {
-            var expr = t.deletedAt.isNull() &
-                t.occurredAt.isBiggerOrEqualValue(start) &
-                t.occurredAt.isSmallerThanValue(end);
-            if (branchId != null) expr = expr & t.branchId.equals(branchId);
-            return expr;
-          }))
-        .get();
+    final txns =
+        await (_db.select(_db.ledgerEntries)..where((t) {
+              var expr =
+                  t.deletedAt.isNull() &
+                  t.occurredAt.isBiggerOrEqualValue(start) &
+                  t.occurredAt.isSmallerThanValue(end);
+              if (branchId != null) expr = expr & t.branchId.equals(branchId);
+              return expr;
+            }))
+            .get();
 
     final parties = await partiesWithBalances();
     final totalUdhaarDue = parties.fold<int>(
@@ -949,8 +1032,12 @@ class GallaRepository {
     }
 
     final netProfit = revenueMinor - expenseMinor;
-    final netMarginPct = revenueMinor > 0 ? (netProfit / revenueMinor * 100) : 0.0;
-    final cashRatioPct = revenueMinor > 0 ? (cashIn / revenueMinor * 100) : 100.0;
+    final netMarginPct = revenueMinor > 0
+        ? (netProfit / revenueMinor * 100)
+        : 0.0;
+    final cashRatioPct = revenueMinor > 0
+        ? (cashIn / revenueMinor * 100)
+        : 100.0;
 
     // Health Score calculation (0 - 100)
     var score = 70;
@@ -976,13 +1063,17 @@ class GallaRepository {
       BusinessHealthMetric(
         label: 'Net Margin',
         value: '${netMarginPct.toStringAsFixed(1)}%',
-        status: netMarginPct >= 15 ? 'good' : (netMarginPct > 0 ? 'warning' : 'critical'),
+        status: netMarginPct >= 15
+            ? 'good'
+            : (netMarginPct > 0 ? 'warning' : 'critical'),
         description: 'Percentage of revenue kept as profit after expenses.',
       ),
       BusinessHealthMetric(
         label: 'Cash Realization',
         value: '${cashRatioPct.toStringAsFixed(0)}%',
-        status: cashRatioPct >= 75 ? 'good' : (cashRatioPct >= 50 ? 'warning' : 'critical'),
+        status: cashRatioPct >= 75
+            ? 'good'
+            : (cashRatioPct >= 50 ? 'warning' : 'critical'),
         description: 'Cash received on the spot vs. given on credit.',
       ),
       BusinessHealthMetric(
@@ -995,22 +1086,33 @@ class GallaRepository {
 
     final insights = <String>[];
     if (netProfit > 0) {
-      insights.add('Your business is operating profitably this month with a positive net margin.');
+      insights.add(
+        'Your business is operating profitably this month with a positive net margin.',
+      );
     } else if (revenueMinor > 0) {
-      insights.add('Expenses exceeded revenue this month. Review your major supplier purchases.');
+      insights.add(
+        'Expenses exceeded revenue this month. Review your major supplier purchases.',
+      );
     }
     if (totalUdhaarDue > 0) {
-      insights.add('You have outstanding customer credit. Consider sending friendly reminders.');
+      insights.add(
+        'You have outstanding customer credit. Consider sending friendly reminders.',
+      );
     }
     if (cashRatioPct > 80) {
-      insights.add('Strong cash position — over 80% of sales were collected in cash immediately.');
+      insights.add(
+        'Strong cash position — over 80% of sales were collected in cash immediately.',
+      );
     }
 
     return BusinessHealthReport(
       overallScore: score,
       grade: grade,
-      headline: score >= 75 ? 'Healthy Financial Operations' : 'Attention Needed on Udhaar & Margins',
-      summary: 'Summary computed from ${txns.length} recorded transactions for this period.',
+      headline: score >= 75
+          ? 'Healthy Financial Operations'
+          : 'Attention Needed on Udhaar & Margins',
+      summary:
+          'Summary computed from ${txns.length} recorded transactions for this period.',
       metrics: metrics,
       actionableInsights: insights,
     );
@@ -1023,7 +1125,9 @@ class GallaRepository {
   Future<String> exportTransactionsCsv({String? branchId}) async {
     final txns = await watchTransactions(branchId: branchId).first;
     final buffer = StringBuffer();
-    buffer.writeln('ID,Date,Direction,Amount,Party,Category,Note,IsCredit,IsAdjustment,Staff');
+    buffer.writeln(
+      'ID,Date,Direction,Amount,Party,Category,Note,IsCredit,IsAdjustment,Staff',
+    );
     for (final t in txns) {
       buffer.writeln(
         '${t.id},"${t.occurredAt.toIso8601String()}",${t.direction == Direction.moneyIn ? "IN" : "OUT"},${t.amountMinor / 100},"${t.partyName ?? ""}","${t.category ?? ""}","${(t.note ?? "").replaceAll('"', '""')}",${t.isCredit},${t.isAdjustment},"${t.staffName ?? ""}"',
@@ -1035,7 +1139,9 @@ class GallaRepository {
   Future<String> exportInvoicesCsv({String? branchId}) async {
     final invs = await watchInvoices(branchId: branchId).first;
     final buffer = StringBuffer();
-    buffer.writeln('InvoiceNumber,Party,IssueDate,DueDate,Subtotal,Tax,Total,Paid,Status');
+    buffer.writeln(
+      'InvoiceNumber,Party,IssueDate,DueDate,Subtotal,Tax,Total,Paid,Status',
+    );
     for (final i in invs) {
       buffer.writeln(
         '${i.invoiceNumber},"${i.partyName ?? ""}",${i.issueDate.toIso8601String()},${i.dueDate?.toIso8601String() ?? ""},${i.subtotalMinor / 100},${i.taxMinor / 100},${i.totalMinor / 100},${i.paidAmountMinor / 100},${i.status.key}',
@@ -1066,7 +1172,8 @@ class GallaRepository {
       notifyPaymentDue: map['notifyPaymentDue'] != '0',
       notifyLowCash: map['notifyLowCash'] != '0',
       notifyLowStock: map['notifyLowStock'] != '0',
-      lowCashThresholdMinor: int.tryParse(map['lowCashThresholdMinor'] ?? '0') ?? 0,
+      lowCashThresholdMinor:
+          int.tryParse(map['lowCashThresholdMinor'] ?? '0') ?? 0,
       lastDirection: map['lastDirection'] == 'out'
           ? Direction.moneyOut
           : Direction.moneyIn,
@@ -1110,7 +1217,9 @@ class GallaRepository {
   }
 
   Future<void> _put(String key, String value) {
-    return _db.into(_db.settingsRows).insertOnConflictUpdate(
+    return _db
+        .into(_db.settingsRows)
+        .insertOnConflictUpdate(
           SettingsRowsCompanion(key: Value(key), value: Value(value)),
         );
   }
@@ -1121,7 +1230,8 @@ class GallaRepository {
 
   /// Legacy SHA-256 hash — kept for backward compat test assertions only.
   /// New code should use [hashPinSalted] + [verifyPinSalted].
-  static String hashPin(String pin) => sha256.convert(utf8.encode(pin)).toString();
+  static String hashPin(String pin) =>
+      sha256.convert(utf8.encode(pin)).toString();
 
   /// Generates a cryptographically random 16-byte hex salt.
   static String generateSalt() {
@@ -1157,9 +1267,9 @@ class GallaRepository {
 
   /// Helper: get an integer settings value with a default.
   Future<int> _getInt(String key, {int defaultValue = 0}) async {
-    final row = await (_db.select(_db.settingsRows)
-          ..where((r) => r.key.equals(key)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.settingsRows,
+    )..where((r) => r.key.equals(key))).getSingleOrNull();
     if (row == null) return defaultValue;
     return int.tryParse(row.value) ?? defaultValue;
   }

@@ -41,7 +41,8 @@ class MoreViewModel extends AsyncNotifier<MoreState> {
 
   @override
   Future<MoreState> build() async {
-    final settings = ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final branches = ref.watch(branchesProvider).valueOrNull ?? [];
     final staff = ref.watch(staffMembersProvider).valueOrNull ?? [];
     return MoreState(
@@ -59,31 +60,42 @@ class MoreViewModel extends AsyncNotifier<MoreState> {
 
   Future<void> setActiveBranch(String? branchId) async {
     ref.read(selectedBranchIdProvider.notifier).state = branchId;
-    final settings = ref.read(settingsProvider).valueOrNull ?? const AppSettings();
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const AppSettings();
     await _repo.saveSettings(settings.copyWith(activeBranchId: branchId));
     ref.invalidateSelf();
   }
 
-  Future<bool> switchToStaffMode(String staffId, String staffName, String pin) async {
+  Future<bool> switchToStaffMode(
+    String staffId,
+    String staffName,
+    String pin,
+  ) async {
     final verified = await _repo.verifyStaffPin(staffId, pin);
     if (!verified) return false;
-    final settings = ref.read(settingsProvider).valueOrNull ?? const AppSettings();
-    await _repo.saveSettings(settings.copyWith(
-      activeStaffId: staffId,
-      activeStaffName: staffName,
-      activeStaffRole: StaffRole.staff,
-    ));
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const AppSettings();
+    await _repo.saveSettings(
+      settings.copyWith(
+        activeStaffId: staffId,
+        activeStaffName: staffName,
+        activeStaffRole: StaffRole.staff,
+      ),
+    );
     ref.invalidateSelf();
     return true;
   }
 
   Future<void> switchToOwnerMode() async {
-    final settings = ref.read(settingsProvider).valueOrNull ?? const AppSettings();
-    await _repo.saveSettings(settings.copyWith(
-      activeStaffId: null,
-      activeStaffName: null,
-      activeStaffRole: StaffRole.owner,
-    ));
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const AppSettings();
+    await _repo.saveSettings(
+      settings.copyWith(
+        activeStaffId: null,
+        activeStaffName: null,
+        activeStaffRole: StaffRole.owner,
+      ),
+    );
     ref.invalidateSelf();
   }
 
@@ -95,5 +107,6 @@ class MoreViewModel extends AsyncNotifier<MoreState> {
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
-final moreViewModelProvider =
-    AsyncNotifierProvider<MoreViewModel, MoreState>(MoreViewModel.new);
+final moreViewModelProvider = AsyncNotifierProvider<MoreViewModel, MoreState>(
+  MoreViewModel.new,
+);
