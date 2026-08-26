@@ -128,6 +128,16 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
           onPressed: () async {
             final qty = double.tryParse(_qtyController.text.trim());
             if (qty == null) return;
+            if (qty < 0) {
+              // A negative physical count is impossible — reject it loudly
+              // instead of writing impossible stock into the books.
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Counted quantity cannot be negative'),
+                ),
+              );
+              return;
+            }
             await ref
                 .read(repositoryProvider)
                 .adjustStock(

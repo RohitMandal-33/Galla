@@ -37,10 +37,12 @@ class _LineItemDraft {
 class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   final _partyController = TextEditingController();
   final _notesController = TextEditingController();
+  final _taxController = TextEditingController();
   DateTime _issueDate = DateTime.now();
   DateTime? _dueDate;
   double _taxRatePct = 0.0;
   String? _selectedPartyId;
+  String? _selectedPartyName;
   bool _saving = false;
 
   final List<_LineItemDraft> _items = [
@@ -53,6 +55,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     final settings = ref.read(settingsProvider).valueOrNull;
     if (settings != null && settings.taxRatePct > 0) {
       _taxRatePct = settings.taxRatePct;
+      _taxController.text = '${settings.taxRatePct}';
     }
   }
 
@@ -60,6 +63,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   void dispose() {
     _partyController.dispose();
     _notesController.dispose();
+    _taxController.dispose();
     super.dispose();
   }
 
@@ -75,10 +79,28 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       );
       return;
     }
+    if (_dueDate != null && _dueDate!.isBefore(_issueDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Due date cannot be before the issue date'),
+        ),
+      );
+      return;
+    }
 
-    final validItems = _items
-        .where((i) => i.description.trim().isNotEmpty && i.unitPriceMinor > 0)
-        .toList();
+    // Drop only rows the user left empty — never silently discard filled-in
+    // items, and reject impossible values loudly.
+    final validItems = <_LineItemDraft>[];
+    var skipped = 0;
+    for (final i in _items) {
+      final desc = i.description.trim();
+      if (desc.isEmpty && i.unitPriceMinor == 0) continue; // untouched row
+      if (desc.isEmpty || i.unitPriceMinor <= 0) {
+        skipped++;
+        continue;
+      }
+      validItems.add(i);
+    }
 
     if (validItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -89,6 +111,15 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
         ),
       );
       return;
+    }
+    if (skipped > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$skipped incomplete item${skipped == 1 ? '' : 's'} not added',
+          ),
+        ),
+      );
     }
 
     setState(() => _saving = true);
@@ -164,14 +195,24 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
             displayStringForOption: (p) => p.name,
             onSelected: (p) {
               _selectedPartyId = p.id;
+              _selectedPartyName = p.name;
               _partyController.text = p.name;
             },
             fieldViewBuilder:
                 (context, controller, focusNode, onFieldSubmitted) {
                   controller.addListener(() {
                     _partyController.text = controller.text;
+                    // Editing the text manually must not keep pointing at a
+                    // previously selected party — the invoice would otherwise
+                    // attach to the wrong customer.
+                    if (_selectedPartyName != null &&
+                        controller.text.trim() != _selectedPartyName) {
+                      _selectedPartyId = null;
+                      _selectedPartyName = null;
+                    }
                   });
                   return TextField(
+                    key: const ValueKey('invoice-party-field'),
                     controller: controller,
                     focusNode: focusNode,
                     decoration: InputDecoration(
@@ -322,12 +363,17 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  controller: TextEditingController(
-                    text: _taxRatePct > 0 ? '$_taxRatePct' : '',
-                  ),
+                  controller: _taxController,
                   onChanged: (v) {
+                    final parsed = double.tryParse(v.trim());
                     setState(() {
-                      _taxRatePct = double.tryParse(v) ?? 0.0;
+                      // Tax must be a real percentage — negatives or nonsense
+                      // fall back to zero rather than corrupting the total.
+                      _taxRatePct = (parsed == null || parsed < 0)
+                          ? 0.0
+                          : parsed > 100
+                          ? 100.0
+                          : parsed;
                     });
                   },
                 ),
@@ -409,7 +455,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
   }
 
   Widget _buildItemRow(int idx, _LineItemDraft item, String currency) {
+    // Keyed by object identity so deleting a row never shifts another row's
+    // text fields onto the wrong draft.
     return Container(
+      key: ValueKey(item),
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -436,6 +485,7 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
               ),
               if (_items.length > 1)
                 IconButton(
+                  tooltip: 'Remove item',
                   icon: const Icon(Icons.close, color: Colors.red),
                   onPressed: () {
                     setState(() => _items.removeAt(idx));
@@ -464,7 +514,12 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                   onChanged: (v) {
                     setState(() {
-                      item.quantity = double.tryParse(v) ?? 1.0;
+                      final parsed = double.tryParse(v);
+                      // Quantity must be positive; invalid input keeps 1
+                      // instead of silently corrupting the total.
+                      item.quantity = parsed == null || parsed <= 0
+                          ? 1.0
+                          : parsed;
                     });
                   },
                 ),
@@ -486,8 +541,9 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
                   ),
                   onChanged: (v) {
                     setState(() {
-                      final val = int.tryParse(v) ?? 0;
-                      item.unitPriceMinor = val * 100;
+                      // Prices are whole major units here; negatives rejected.
+                      final val = int.tryParse(v.trim()) ?? 0;
+                      item.unitPriceMinor = val < 0 ? 0 : val * 100;
                     });
                   },
                 ),

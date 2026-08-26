@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -7,223 +8,139 @@ import '../../core/money/money.dart';
 import '../../core/theme/galla_theme.dart';
 import '../../domain/models.dart';
 
-// ── TransactionTile ─────────────────────────────────────────────────────────────
-
+/// A single ledger row, optimised for scanning:
+///
+///   Hari Traders                     +Rs 1,200
+///   Sale · Udhaar                        10:42
+///
+/// Flat by design — no card chrome. Lists provide dividers between rows.
+/// State is conveyed by an explicit +/− sign in addition to colour, so the
+/// row works for colour-blind users.
 class TransactionTile extends StatelessWidget {
   const TransactionTile({
     super.key,
     required this.txn,
     required this.currency,
     required this.s,
-    this.showCard = true,
+    this.dense = false,
   });
 
   final Txn txn;
   final String currency;
   final S s;
-  final bool showCard;
+
+  /// Tighter vertical padding for long lists (ledger history).
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        txn.partyName ??
-        txn.category ??
-        (txn.isAdjustment
-            ? s.correctCash
-            : txn.direction == Direction.moneyIn
-            ? s.moneyIn
-            : s.moneyOut);
+    final title = txn.partyName ?? txn.category ?? _fallbackTitle();
 
-    final timeStr = DateFormat.jm().format(txn.occurredAt);
     final isIn = txn.direction == Direction.moneyIn;
     final amountColor = isIn ? GallaColors.moneyIn : GallaColors.moneyOut;
-    final sign = isIn ? '+' : '−';
-    final formatted =
-        '$sign ${Money(txn.amountMinor, currency: currency).format()}';
+    final amountText =
+        '${isIn ? '+' : '−'} ${Money(txn.amountMinor, currency: currency).formatCompact()}';
+    final timeStr = DateFormat.jm().format(txn.occurredAt);
 
-    Widget content = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: GallaSpacing.base,
-        vertical: GallaSpacing.md,
-      ),
-      child: Row(
-        children: [
-          // ── Leading badge ──────────────────────────────────────────────
-          _DirectionBadge(direction: txn.direction, category: txn.category),
-          const SizedBox(width: GallaSpacing.md),
-
-          // ── Title + meta ───────────────────────────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GallaType.bodyStrong.copyWith(fontSize: 14),
+    return Semantics(
+      button: true,
+      label: '$title, $amountText ${isIn ? s.moneyIn : s.moneyOut}, $timeStr',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/ledger/transaction/${txn.id}');
+        },
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: GallaSpacing.base,
+            vertical: dense ? GallaSpacing.sm + 2 : GallaSpacing.md,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _DirectionBadge(direction: txn.direction, category: txn.category),
+              const SizedBox(width: GallaSpacing.md),
+              // ── Title + type line ────────────────────────────────────────
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GallaType.bodyStrong.copyWith(fontSize: 15),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            txn.category ?? _typeLabel(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GallaType.caption.copyWith(fontSize: 12),
+                          ),
+                        ),
+                        if (txn.isCredit) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1.5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: GallaColors.udhaarSoft,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              s.udhaar,
+                              style: GallaType.badge.copyWith(
+                                fontSize: 9,
+                                color: GallaColors.udhaar,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                _SubtitleRow(txn: txn, timeStr: timeStr, s: s),
-              ],
-            ),
-          ),
-          const SizedBox(width: GallaSpacing.sm),
-
-          // ── Amount ─────────────────────────────────────────────────────
-          Text(
-            formatted,
-            style: GallaType.subtitle.copyWith(
-              letterSpacing: -0.2,
-              color: amountColor,
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (!showCard) return content;
-
-    return GestureDetector(
-      onTap: () => context.push('/ledger/transaction/${txn.id}'),
-      child: Container(
-        decoration: BoxDecoration(
-          color: GallaColors.surface,
-          borderRadius: BorderRadius.circular(GallaRadius.lg),
-          border: Border.all(color: GallaColors.line),
-        ),
-        child: content,
-      ),
-    );
-  }
-}
-
-class _SubtitleRow extends StatelessWidget {
-  const _SubtitleRow({
-    required this.txn,
-    required this.timeStr,
-    required this.s,
-  });
-  final Txn txn;
-  final String timeStr;
-  final S s;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(timeStr, style: GallaType.captionSm),
-        if (txn.isCredit) ...[
-          const SizedBox(width: 5),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-            decoration: BoxDecoration(
-              color: GallaColors.udhaarSoft,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              'Udhaar',
-              style: GallaType.badge.copyWith(
-                fontSize: 9,
-                color: GallaColors.udhaar,
               ),
-            ),
+              const SizedBox(width: GallaSpacing.sm),
+              // ── Amount over time ────────────────────────────────────────
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    amountText,
+                    style: GallaType.numberSm.copyWith(color: amountColor),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(timeStr, style: GallaType.captionSm),
+                ],
+              ),
+            ],
           ),
-        ],
-        if (txn.note != null && txn.note!.isNotEmpty) ...[
-          const SizedBox(width: 5),
-          Text('·', style: GallaType.captionSm),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              txn.note!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GallaType.captionSm,
-            ),
-          ),
-        ],
-      ],
+        ),
+      ),
     );
   }
-}
 
-// ── PartyBalanceLabel ──────────────────────────────────────────────────────────
+  String _fallbackTitle() {
+    if (txn.isAdjustment) return s.correctCash;
+    if (txn.isWriteOff) return s.writeOff;
+    return txn.direction == Direction.moneyIn ? s.moneyIn : s.moneyOut;
+  }
 
-class PartyBalanceLabel extends StatelessWidget {
-  const PartyBalanceLabel({
-    super.key,
-    required this.balanceMinor,
-    required this.currency,
-    required this.s,
-  });
-
-  final int balanceMinor;
-  final String currency;
-  final S s;
-
-  @override
-  Widget build(BuildContext context) {
-    if (balanceMinor == 0) {
-      return Text(s.settled, style: GallaType.caption);
+  String _typeLabel() {
+    if (txn.isAdjustment) return s.correctCash;
+    if (txn.isWriteOff) return s.writeOff;
+    if (txn.isCredit) {
+      return txn.direction == Direction.moneyIn ? s.creditGiven : s.creditTaken;
     }
-    final owesYou = balanceMinor > 0;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Text(
-          owesYou ? s.theyOweYou : s.youOweThem,
-          style: GallaType.labelSm.copyWith(
-            color: owesYou ? GallaColors.udhaar : GallaColors.moneyOut,
-          ),
-        ),
-        Text(
-          Money(balanceMinor.abs(), currency: currency).format(),
-          style: GallaType.numberSm.copyWith(
-            fontSize: 14,
-            color: owesYou ? GallaColors.udhaar : GallaColors.moneyOut,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── DateGroupHeader ─────────────────────────────────────────────────────────────
-/// Used in ledger/transaction lists to group by date.
-
-class DateGroupHeader extends StatelessWidget {
-  const DateGroupHeader({super.key, required this.date});
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final isToday = DateUtils.isSameDay(date, now);
-    final isYesterday = DateUtils.isSameDay(
-      date,
-      now.subtract(const Duration(days: 1)),
-    );
-
-    final label = isToday
-        ? 'Today'
-        : isYesterday
-        ? 'Yesterday'
-        : DateFormat('EEE, d MMM').format(date);
-
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: GallaSpacing.base,
-        bottom: GallaSpacing.sm,
-      ),
-      child: Row(
-        children: [
-          Text(label.toUpperCase(), style: GallaType.overline),
-          const SizedBox(width: GallaSpacing.sm),
-          Expanded(child: Container(height: 1, color: GallaColors.line)),
-        ],
-      ),
-    );
+    return txn.direction == Direction.moneyIn ? s.typeSale : s.typeExpense;
   }
 }
 
@@ -236,9 +153,9 @@ class _DirectionBadge extends StatelessWidget {
 
   static IconData _categoryIcon(String cat) {
     return switch (cat.toLowerCase()) {
-      'sales' || 'sale' => Icons.storefront_outlined,
+      'sales' || 'sale' || 'sales / invoice' => Icons.storefront_outlined,
       'services' || 'service' => Icons.miscellaneous_services_outlined,
-      'customer payment' => Icons.person_outline_rounded,
+      'customer payment' || 'payment received' => Icons.payments_outlined,
       'commission' => Icons.percent_rounded,
       'interest' => Icons.account_balance_outlined,
       'purchase / stock' || 'purchase' || 'stock' => Icons.inventory_2_outlined,
@@ -249,6 +166,7 @@ class _DirectionBadge extends StatelessWidget {
       'utility' => Icons.bolt_outlined,
       'transport' => Icons.local_shipping_outlined,
       'personal / drawings' || 'personal' => Icons.person_outlined,
+      'cash reconciliation adjustment' => Icons.tune_rounded,
       _ => Icons.receipt_long_outlined,
     };
   }
@@ -258,18 +176,19 @@ class _DirectionBadge extends StatelessWidget {
     final isIn = direction == Direction.moneyIn;
     final bgColor = isIn ? GallaColors.moneyInSoft : GallaColors.moneyOutSoft;
     final fgColor = isIn ? GallaColors.moneyIn : GallaColors.moneyOut;
-    final icon = category != null
+    final icon = category != null && category!.trim().isNotEmpty
         ? _categoryIcon(category!)
         : (isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded);
 
     return Container(
-      width: 40,
-      height: 40,
+      width: 36,
+      height: 36,
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(GallaRadius.md),
+        borderRadius: BorderRadius.circular(GallaRadius.sm),
       ),
-      child: Icon(icon, color: fgColor, size: 20),
+      alignment: Alignment.center,
+      child: Icon(icon, color: fgColor, size: 18),
     );
   }
 }

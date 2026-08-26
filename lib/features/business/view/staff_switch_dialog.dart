@@ -34,7 +34,7 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
     if (_asOwner) {
       if (current.lockEnabled && current.pinHash != null) {
         final entered = _pinController.text.trim();
-        if (GallaRepository.hashPin(entered) != current.pinHash) {
+        if (!GallaRepository.verifyPinSalted(entered, current.pinHash!)) {
           setState(() => _error = 'Incorrect Owner PIN');
           return;
         }
@@ -49,7 +49,8 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
     } else if (_selectedStaff != null) {
       if (_selectedStaff!.pinHash != null) {
         final entered = _pinController.text.trim();
-        if (GallaRepository.hashPin(entered) != _selectedStaff!.pinHash) {
+        final ok = await repo.verifyStaffPin(_selectedStaff!.id, entered);
+        if (!ok) {
           setState(() => _error = 'Incorrect Staff PIN');
           return;
         }

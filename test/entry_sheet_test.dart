@@ -29,23 +29,27 @@ void main() {
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(repo),
-          settingsProvider
-              .overrideWith((ref) => Stream.value(const AppSettings())),
+          settingsProvider.overrideWith(
+            (ref) => Stream.value(const AppSettings()),
+          ),
           partiesProvider.overrideWith((ref) => Stream.value(const <Party>[])),
-          transactionsProvider
-              .overrideWith((ref) => Stream.value(const <Txn>[])),
+          transactionsProvider.overrideWith(
+            (ref) => Stream.value(const <Txn>[]),
+          ),
         ],
         child: MaterialApp(
           home: Builder(
-            builder: (context) => Center(
-              child: ElevatedButton(
-                onPressed: () => showAddEntrySheet(
-                  context,
-                  initialDirection: direction,
-                  isCredit: isCredit,
-                  seedCategory: seedCategory,
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showAddEntrySheet(
+                    context,
+                    initialDirection: direction,
+                    isCredit: isCredit,
+                    seedCategory: seedCategory,
+                  ),
+                  child: const Text('open'),
                 ),
-                child: const Text('open'),
               ),
             ),
           ),
@@ -59,14 +63,15 @@ void main() {
 
   testWidgets('opening Sale quick action sheet does not crash', (tester) async {
     await pumpAndOpen(tester, Direction.moneyIn, seedCategory: 'Sales');
-    expect(find.text('Save Entry'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('opening Expense quick action sheet does not crash',
-      (tester) async {
+  testWidgets('opening Expense quick action sheet does not crash', (
+    tester,
+  ) async {
     await pumpAndOpen(tester, Direction.moneyOut);
-    expect(find.text('Save Entry'), findsOneWidget);
+    expect(find.text('Save'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -76,24 +81,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('QuickAdd Sale tile opens the entry sheet (show-then-pop)',
-      (tester) async {
+  testWidgets('QuickAdd Sale tile opens the entry sheet (show-then-pop)', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(repo),
-          settingsProvider
-              .overrideWith((ref) => Stream.value(const AppSettings())),
+          settingsProvider.overrideWith(
+            (ref) => Stream.value(const AppSettings()),
+          ),
           partiesProvider.overrideWith((ref) => Stream.value(const <Party>[])),
-          transactionsProvider
-              .overrideWith((ref) => Stream.value(const <Txn>[])),
+          transactionsProvider.overrideWith(
+            (ref) => Stream.value(const <Txn>[]),
+          ),
         ],
         child: MaterialApp(
           home: Builder(
-            builder: (context) => Center(
-              child: ElevatedButton(
-                onPressed: () => showQuickAddSheet(context),
-                child: const Text('open'),
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => showQuickAddSheet(context),
+                  child: const Text('open'),
+                ),
               ),
             ),
           ),
@@ -108,17 +118,18 @@ void main() {
     await tester.pumpAndSettle();
 
     // Quick add closed, entry sheet open with the Sales category seeded.
-    expect(find.text('Record Transaction'), findsNothing);
-    expect(find.text('Save Entry'), findsOneWidget);
+    expect(find.text('Add transaction'), findsNothing);
+    expect(find.text('Save'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('saving a sale entry persists and closes the sheet',
-      (tester) async {
+  testWidgets('saving a sale entry persists and closes the sheet', (
+    tester,
+  ) async {
     await pumpAndOpen(tester, Direction.moneyIn, seedCategory: 'Sales');
     await tester.enterText(find.byType(TextField).first, '500');
     await tester.pump();
-    await tester.tap(find.text('Save Entry'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final txns = await repo.entriesForDay(DateTime.now());

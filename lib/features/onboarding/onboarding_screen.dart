@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/locale.dart';
 import '../../core/money/money.dart';
 import '../../core/providers.dart';
 import '../../core/theme/galla_theme.dart';
 import '../../data/demo_seeder.dart';
 import '../../data/galla_repository.dart';
 import '../../domain/models.dart';
+import '../../shared/widgets/galla_components.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -24,7 +26,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final _nameCtrl = TextEditingController(text: 'My Business');
   String _businessType = 'Kirana / Grocery';
   final String _currency = 'NPR';
-  final String _locale = 'ne';
+  String _locale = 'ne';
   final _balanceCtrl = TextEditingController(text: '15000');
   bool _loading = false;
 
@@ -78,6 +80,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     }
 
+    await applyAppLocale(_locale);
     ref.invalidate(settingsProvider);
     ref.invalidate(transactionsProvider);
     ref.invalidate(partiesProvider);
@@ -185,17 +188,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 88,
-            height: 88,
+            width: 104,
+            height: 104,
             decoration: BoxDecoration(
               color: GallaColors.brandSoft,
               borderRadius: BorderRadius.circular(28),
               boxShadow: GallaElevation.card,
             ),
-            child: const Icon(
-              Icons.point_of_sale_rounded,
-              size: 44,
-              color: GallaColors.brand,
+            padding: const EdgeInsets.all(12),
+            child: Image.asset(
+              'assets/images/galla_logo.png',
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(height: 28),
@@ -215,6 +218,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
+
+          // Language choice — first thing a merchant decides, changeable
+          // later from the business profile.
+          Row(
+            key: const ValueKey('onboarding-language'),
+            children: [
+              Expanded(
+                child: GallaFilterChip(
+                  label: 'English',
+                  selected: _locale != 'ne',
+                  onTap: () => setState(() => _locale = 'en'),
+                  fullWidth: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GallaFilterChip(
+                  label: 'नेपाली',
+                  selected: _locale == 'ne',
+                  onTap: () => setState(() => _locale = 'ne'),
+                  fullWidth: true,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(

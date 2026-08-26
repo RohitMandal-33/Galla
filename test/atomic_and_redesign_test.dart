@@ -42,49 +42,60 @@ void main() {
       expect(GallaRepository.verifyPinSalted('1111', legacyHash), isFalse);
     });
 
-    test('createInvoice atomically commits all line items, ledger entry, and stock decrement', () async {
-      final item = await repo.addInventoryItem(
-        name: 'Mustard Oil',
-        initialQuantity: 20.0,
-        costPriceMinor: 20000,
-        salePriceMinor: 25000,
-      );
+    test(
+      'createInvoice atomically commits all line items, ledger entry, and stock decrement',
+      () async {
+        final item = await repo.addInventoryItem(
+          name: 'Mustard Oil',
+          initialQuantity: 20.0,
+          costPriceMinor: 20000,
+          salePriceMinor: 25000,
+        );
 
-      final inv = await repo.createInvoice(
-        partyName: 'Hari Traders',
-        items: [
-          (description: 'Mustard Oil (x5)', quantity: 5.0, unitPriceMinor: 25000, inventoryItemId: item.id),
-        ],
-      );
+        final inv = await repo.createInvoice(
+          partyName: 'Hari Traders',
+          items: [
+            (
+              description: 'Mustard Oil (x5)',
+              quantity: 5.0,
+              unitPriceMinor: 25000,
+              inventoryItemId: item.id,
+            ),
+          ],
+        );
 
-      expect(inv.invoice.invoiceNumber, equals('INV-0001'));
-      expect(inv.invoice.totalMinor, equals(125000));
-      expect(inv.items.length, equals(1));
+        expect(inv.invoice.invoiceNumber, equals('INV-0001'));
+        expect(inv.invoice.totalMinor, equals(125000));
+        expect(inv.items.length, equals(1));
 
-      // Check stock decremented
-      final updatedInv = await repo.watchInventory().first;
-      expect(updatedInv.first.currentQuantity, equals(15.0));
+        // Check stock decremented
+        final updatedInv = await repo.watchInventory().first;
+        expect(updatedInv.first.currentQuantity, equals(15.0));
 
-      // Check party balance
-      final parties = await repo.partiesWithBalances();
-      expect(parties.first.name, equals('Hari Traders'));
-      expect(parties.first.balanceMinor, equals(125000));
-    });
+        // Check party balance
+        final parties = await repo.partiesWithBalances();
+        expect(parties.first.name, equals('Hari Traders'));
+        expect(parties.first.balanceMinor, equals(125000));
+      },
+    );
   });
 
   group('Phase 14: Demo Seeder', () {
-    test('DemoSeeder populates Nepali products, parties, transactions, and invoices', () async {
-      await DemoSeeder.seedNepaliKirana(repo);
+    test(
+      'DemoSeeder populates Nepali products, parties, transactions, and invoices',
+      () async {
+        await DemoSeeder.seedNepaliKirana(repo);
 
-      final parties = await repo.partiesWithBalances();
-      expect(parties.isNotEmpty, isTrue);
+        final parties = await repo.partiesWithBalances();
+        expect(parties.isNotEmpty, isTrue);
 
-      final settings = await repo.loadSettings();
-      expect(settings.businessName, equals('Shree Ganesh Kirana'));
-      expect(settings.currency, equals('NPR'));
+        final settings = await repo.loadSettings();
+        expect(settings.businessName, equals('Shree Ganesh Kirana'));
+        expect(settings.currency, equals('NPR'));
 
-      final todaySummary = await repo.summaryFor(DateTime.now());
-      expect(todaySummary.cashOnHandMinor, greaterThan(0));
-    });
+        final todaySummary = await repo.summaryFor(DateTime.now());
+        expect(todaySummary.cashOnHandMinor, greaterThan(0));
+      },
+    );
   });
 }

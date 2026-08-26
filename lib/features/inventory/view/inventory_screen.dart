@@ -34,7 +34,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
     return Scaffold(
       backgroundColor: GallaColors.canvas,
       appBar: AppBar(
-        title: const Text('Smart Inventory'),
+        title: const Text('Stock'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded),
@@ -323,7 +323,7 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final marginPct = insight?.grossMarginPct ?? 0.0;
+    final double? marginPct = insight?.grossMarginPct;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -400,7 +400,7 @@ class _ProductCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${item.currentQuantity.toStringAsFixed(0)} ${item.unit} available',
+                      '${item.currentQuantity == item.currentQuantity.toInt() ? item.currentQuantity.toInt() : item.currentQuantity} ${item.unit} available',
                       style: GallaType.label.copyWith(
                         color: item.isLowStock
                             ? GallaColors.moneyOut
@@ -450,9 +450,11 @@ class _ProductCard extends StatelessWidget {
                     style: GallaType.captionSm.copyWith(fontSize: 10),
                   ),
                   Text(
-                    '${marginPct.toStringAsFixed(0)}%',
+                    marginPct == null
+                        ? '—'
+                        : '${marginPct.toStringAsFixed(0)}%',
                     style: GallaType.subtitleSm.copyWith(
-                      color: marginPct >= 15
+                      color: marginPct != null && marginPct >= 15
                           ? GallaColors.moneyIn
                           : GallaColors.ink,
                     ),
@@ -486,7 +488,7 @@ class _ProductCard extends StatelessWidget {
                   minimumSize: const Size(60, 32),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text('Restock', style: GallaType.labelStrong),
+                child: Text('Count', style: GallaType.labelStrong),
               ),
             ],
           ),

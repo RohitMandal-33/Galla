@@ -1,14 +1,21 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams, XFile;
 
+import '../../../core/l10n/strings.dart';
 import '../../../core/providers.dart';
+import '../../../data/galla_repository.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../domain/models.dart';
 import 'staff_switch_dialog.dart';
-import '../viewmodel/more_viewmodel.dart';
 
+/// Secondary navigation — everything low-frequency lives here so the four
+/// primary destinations stay uncluttered.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
@@ -16,6 +23,7 @@ class MoreScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final s = S(settings.locale);
     final branches = ref.watch(branchesProvider).valueOrNull ?? [];
     final staff = ref.watch(staffMembersProvider).valueOrNull ?? [];
 
@@ -38,15 +46,15 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
         children: [
-          // ── Profile Card ──────────────────────────────────────────────────
+          // ── Profile — opens the full business profile screen ────────────
           Container(
             decoration: BoxDecoration(
               color: GallaColors.surface,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(GallaRadius.lg),
               border: Border.all(color: GallaColors.line),
             ),
             child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
+              contentPadding: const EdgeInsets.all(GallaSpacing.base),
               leading: CircleAvatar(
                 radius: 26,
                 backgroundColor: GallaColors.brandSoft,
@@ -58,13 +66,13 @@ class MoreScreen extends ConsumerWidget {
               title: Text(
                 settings.businessName.isNotEmpty
                     ? settings.businessName
-                    : 'My Business',
+                    : s.businessName,
                 style: GallaType.number,
               ),
               subtitle: Text(
                 settings.activeStaffRole == StaffRole.owner
                     ? 'Owner'
-                    : 'Staff: ${settings.activeStaffName}',
+                    : 'Staff · ${settings.activeStaffName}',
                 style: GallaType.body.copyWith(color: GallaColors.muted),
               ),
               trailing: const Icon(
@@ -72,108 +80,79 @@ class MoreScreen extends ConsumerWidget {
                 size: 16,
                 color: GallaColors.muted,
               ),
-              onTap: () => _editBusinessDialog(context, ref, settings),
+              onTap: () => context.push('/profile'),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: GallaSpacing.base),
 
-          // ── Primary Operations Group ──────────────────────────────────────
           _MenuGroup(
-            title: 'Business Management',
+            title: 'Business',
             items: [
               _MenuItem(
                 icon: Icons.storefront_outlined,
                 iconColor: GallaColors.brand,
-                title: 'Multi-Branch',
+                title: s.branches,
                 trailingText:
-                    '${branches.length} ${branches.length == 1 ? "Branch" : "Branches"}',
+                    '${branches.length} ${branches.length == 1 ? 'branch' : 'branches'}',
                 onTap: () => context.push('/business/branches'),
               ),
               _MenuItem(
                 icon: Icons.group_outlined,
                 iconColor: GallaColors.blue,
-                title: 'Staff & Users',
-                trailingText: '${staff.length} Active',
+                title: s.staffMembers,
+                trailingText: '${staff.length}',
                 onTap: () => context.push('/business/staff'),
               ),
               _MenuItem(
                 icon: Icons.receipt_long_outlined,
-                iconColor: GallaColors.amber,
-                title: 'Invoicing & Billing',
+                iconColor: GallaColors.goldDark,
+                title: s.invoices,
                 onTap: () => context.push('/invoices'),
-              ),
-              _MenuItem(
-                icon: Icons.inventory_2_outlined,
-                iconColor: GallaColors.moneyIn,
-                title: 'Stock & Inventory',
-                onTap: () => context.push('/inventory'),
               ),
               _MenuItem(
                 icon: Icons.tune_outlined,
                 iconColor: GallaColors.moneyOut,
-                title: 'Cash Reconciliation',
+                title: s.reconciliation,
                 onTap: () => context.push('/reconciliation'),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: GallaSpacing.base),
 
-          // ── Intelligence & Data ───────────────────────────────────────────
           _MenuGroup(
-            title: 'AI & Data Insights',
+            title: 'Data & security',
             items: [
+              // Real backup/export: share the ledger as CSV files.
               _MenuItem(
-                icon: Icons.auto_awesome_outlined,
-                iconColor: GallaColors.brand,
-                title: 'AI Assistant',
-                trailingText: 'Insights',
-                onTap: () => context.push('/ai-assistant'),
-              ),
-              _MenuItem(
-                icon: Icons.cloud_done_outlined,
+                icon: Icons.ios_share_rounded,
                 iconColor: GallaColors.moneyIn,
-                title: 'Backup & Sync',
-                trailingText: 'Offline First',
-                onTap: () => _showSyncDialog(context),
+                title: 'Export data (CSV)',
+                onTap: () => _exportCsv(context, ref, s),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // ── Settings & Security ───────────────────────────────────────────
-          _MenuGroup(
-            title: 'Settings & Security',
-            items: [
               _MenuItem(
                 icon: Icons.lock_outline_rounded,
                 iconColor: GallaColors.ink,
-                title: 'Switch Staff / Owner Mode',
+                title: s.switchStaffMode,
                 onTap: () => showDialog(
                   context: context,
                   builder: (_) => const StaffSwitchDialog(),
                 ),
               ),
               _MenuItem(
-                icon: Icons.settings_outlined,
-                iconColor: GallaColors.ink,
-                title: 'General Settings',
-                onTap: () => _showSettingsDialog(context, ref, settings),
-              ),
-              _MenuItem(
                 icon: Icons.help_outline_rounded,
                 iconColor: GallaColors.muted,
-                title: 'Help & Support',
+                title: 'Help & support',
                 onTap: () => _showHelpDialog(context),
               ),
               _MenuItem(
                 icon: Icons.share_outlined,
                 iconColor: GallaColors.brand,
-                title: 'Share Galla App',
+                title: 'Share Galla',
                 onTap: () => SharePlus.instance.share(
                   ShareParams(
                     text:
-                        'Galla — Smart digital ledger and khata for small shops. Download today!',
-                    subject: 'Galla Khata App',
+                        'Galla — a simple digital khata for small shops. Record sales, expenses and udhaar in seconds.',
+                    subject: 'Galla khata app',
                   ),
                 ),
               ),
@@ -184,106 +163,47 @@ class MoreScreen extends ConsumerWidget {
     );
   }
 
-  void _editBusinessDialog(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-  ) {
-    final nameCtrl = TextEditingController(text: settings.businessName);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit Business Profile'),
-        content: TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Business / Shop Name'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final newName = nameCtrl.text.trim();
-              if (newName.isNotEmpty) {
-                await ref
-                    .read(moreViewModelProvider.notifier)
-                    .updateSettings(settings.copyWith(businessName: newName));
-                if (context.mounted) Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
+  Future<void> _exportCsv(BuildContext context, WidgetRef ref, S s) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final repo = ref.read(repositoryProvider);
+      final branchId = ref.read(selectedBranchIdProvider);
+      final stamp = DateFormat('yyyyMMdd-HHmm').format(DateTime.now());
+      final dir = await getTemporaryDirectory();
 
-  void _showSettingsDialog(
-    BuildContext context,
-    WidgetRef ref,
-    AppSettings settings,
-  ) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Preferences'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Currency: ${settings.currency}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Estimated Tax: ${settings.taxRatePct}%',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Language: ${settings.locale == "ne" ? "Nepali" : "English"}',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+      final txnsCsv = await repo.exportTransactionsCsv(branchId: branchId);
+      final invsCsv = await repo.exportInvoicesCsv(branchId: branchId);
+
+      final txnFile = File('${dir.path}/galla-transactions-$stamp.csv');
+      final invFile = File('${dir.path}/galla-invoices-$stamp.csv');
+      await txnFile.writeAsString(txnsCsv);
+      await invFile.writeAsString(invsCsv);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile(txnFile.path, mimeType: 'text/csv'),
+            XFile(invFile.path, mimeType: 'text/csv'),
           ],
+          subject: 'Galla data export',
         ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSyncDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Data & Sync Status'),
-        content: const Text(
-          'All your business ledger records are safely stored on this device with SQLite (Offline First). Data is immediately accessible without internet.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Understood'),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(s.saveFailed)));
+    }
   }
 
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Galla Help & Guide'),
+        title: const Text('How Galla works'),
         content: const Text(
-          '• Cash Book (Galla): Record daily sales, expenses, and cash in hand.\n• Udhaar Ledger: Track customer credit and repayments.\n• Invoices: Generate professional bills.\n• Reconciliation: Audit physical cash drawer.',
+          '• Galla (home): your cash position for today.\n'
+          '• Khata: who owes you and whom you owe.\n'
+          '• Stock: what is on the shelf and what is running low.\n'
+          '• Reports: honest totals you can share as PDF or CSV.\n\n'
+          'Everything is saved on this phone as soon as you record it.',
         ),
         actions: [
           FilledButton(
@@ -316,7 +236,7 @@ class _MenuGroup extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: GallaColors.surface,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(GallaRadius.lg),
             border: Border.all(color: GallaColors.line),
           ),
           child: Column(

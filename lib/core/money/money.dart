@@ -20,6 +20,21 @@ class Money {
     return withSymbol ? '$symbol $formatted' : formatted;
   }
 
+  /// Compact form for dense UI (list rows, metrics): drops decimals when the
+  /// amount is a whole number, keeps them otherwise.
+  String formatCompact({bool withSymbol = true}) {
+    final pattern = minor % 100 == 0 ? '#,##,##0' : '#,##,##0.##';
+    final formatted = NumberFormat(pattern).format(major);
+    return withSymbol ? '$symbol $formatted' : formatted;
+  }
+
+  /// Signed compact form: explicit +/− prefix so state never relies on color
+  /// alone.
+  String formatSigned({bool withSymbol = true}) {
+    final sign = minor < 0 ? '−' : '+';
+    return '$sign ${Money(minor.abs(), currency: currency).formatCompact(withSymbol: withSymbol)}';
+  }
+
   static int parseToMinor(String raw) {
     final cleaned = raw.replaceAll(',', '').replaceAll(' ', '').trim();
     if (cleaned.isEmpty) return 0;

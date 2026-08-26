@@ -144,9 +144,8 @@ class _QuickAddFab extends StatefulWidget {
 }
 
 class _QuickAddFabState extends State<_QuickAddFab>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final AnimationController _press;
-  late final AnimationController _pulse;
   late final Animation<double> _scale;
 
   @override
@@ -160,96 +159,89 @@ class _QuickAddFabState extends State<_QuickAddFab>
       begin: 1.0,
       end: 0.90,
     ).animate(CurvedAnimation(parent: _press, curve: Curves.easeOut));
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _press.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _press.forward(),
-      onTapUp: (_) {
-        _press.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _press.reverse(),
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_scale, _pulse]),
-        builder: (_, _) {
-          final glow = 0.28 + (_pulse.value * 0.18);
-          return Transform.scale(
-            scale: _scale.value,
-            child: SizedBox(
-              width: 68,
-              height: 68,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: GallaColors.gold.withValues(alpha: glow),
-                          blurRadius: 18,
-                          spreadRadius: 1,
-                        ),
-                        BoxShadow(
-                          color: GallaColors.brand.withValues(alpha: 0.35),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 62,
-                    height: 62,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          GallaColors.goldLight,
-                          GallaColors.gold,
-                          GallaColors.goldDark,
+    return Semantics(
+      button: true,
+      label: 'Add transaction',
+      child: GestureDetector(
+        onTapDown: (_) => _press.forward(),
+        onTapUp: (_) {
+          _press.reverse();
+          widget.onTap();
+        },
+        onTapCancel: () => _press.reverse(),
+        child: AnimatedBuilder(
+          animation: _scale,
+          builder: (_, _) {
+            return Transform.scale(
+              scale: _scale.value,
+              child: SizedBox(
+                width: 68,
+                height: 68,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: GallaColors.brand.withValues(alpha: 0.35),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
                         ],
                       ),
                     ),
-                    padding: const EdgeInsets.all(3),
-                    child: Container(
-                      decoration: const BoxDecoration(
+                    Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [GallaColors.brandMid, GallaColors.brand],
+                          colors: [
+                            GallaColors.goldLight,
+                            GallaColors.gold,
+                            GallaColors.goldDark,
+                          ],
                         ),
                       ),
-                      child: const Icon(
-                        Icons.add_rounded,
-                        color: Colors.white,
-                        size: 32,
+                      padding: const EdgeInsets.all(3),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [GallaColors.brandMid, GallaColors.brand],
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -276,32 +268,40 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? GallaColors.brand : GallaColors.muted;
     return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                child: Icon(
-                  selected ? selectedIcon : icon,
-                  key: ValueKey(selected),
-                  color: color,
-                  size: 22,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(
+                    selected ? selectedIcon : icon,
+                    key: ValueKey(selected),
+                    color: color,
+                    size: 22,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GallaType.captionSm.copyWith(fontSize: 10, color: color),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GallaType.captionSm.copyWith(
+                    fontSize: 10,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

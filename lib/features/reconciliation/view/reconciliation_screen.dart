@@ -282,15 +282,47 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                   ? null
                   : () async {
                       HapticFeedback.mediumImpact();
-                      setState(() => _submitting = true);
                       final messenger = ScaffoldMessenger.of(context);
+
+                      // A reconciliation writes a real adjustment entry into
+                      // the books — always show exactly what will change
+                      // before it happens.
+                      if (discrepancyMinor != 0) {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text(s.acceptAdjustment),
+                            content: Text(
+                              'Counted cash differs from Galla by '
+                              '${discrepancyMinor > 0 ? '+' : '−'}'
+                              '${Money(discrepancyMinor.abs(), currency: currency).format()}.\n\n'
+                              'Saving will ${discrepancyMinor > 0 ? 'add a surplus' : 'record a shortage'} '
+                              'entry of ${Money(discrepancyMinor.abs(), currency: currency).format()} '
+                              'so your cash balance matches reality.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Review again'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Post adjustment'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true || !mounted) return;
+                      }
+
+                      setState(() => _submitting = true);
                       final repo = ref.read(repositoryProvider);
                       final branchId = ref.read(selectedBranchIdProvider);
                       final bankVal = int.tryParse(_bankController.text.trim());
 
                       await repo.performReconciliation(
                         countedCashMinor: countedCashMinor,
-                        bankBalanceMinor: bankVal != null
+                        bankBalanceMinor: bankVal != null && bankVal >= 0
                             ? bankVal * 100
                             : null,
                         expectedCashMinor: expectedCashMinor,
@@ -307,7 +339,7 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                             content: Text(
                               discrepancyMinor != 0
                                   ? 'Reconciliation completed & adjustment entry created.'
-                                  : 'Reconciliation completed with 0 discrepancy.',
+                                  : 'Reconciliation completed — books match your till.',
                             ),
                           ),
                         );

@@ -51,7 +51,7 @@ class InvoicesScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              // ── Filter Chips: All | Paid | Unpaid | Overdue ───────────────
+              // ── Filter Chips: All | Unpaid | Partial | Overdue | Paid ────
               Container(
                 height: 44,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -60,26 +60,32 @@ class InvoicesScreen extends ConsumerWidget {
                   children: [
                     GallaFilterChip(
                       label: 'All',
-                      selected: state.filter == null,
-                      onTap: () => vm.setFilter(null),
+                      selected: state.filter == InvoiceFilter.all,
+                      onTap: () => vm.setFilter(InvoiceFilter.all),
                     ),
                     const SizedBox(width: 8),
                     GallaFilterChip(
-                      label: 'Paid',
-                      selected: state.filter == InvoiceStatus.paid,
-                      onTap: () => vm.setFilter(InvoiceStatus.paid),
+                      label: s.unpaid,
+                      selected: state.filter == InvoiceFilter.unpaid,
+                      onTap: () => vm.setFilter(InvoiceFilter.unpaid),
                     ),
                     const SizedBox(width: 8),
                     GallaFilterChip(
-                      label: 'Unpaid',
-                      selected: state.filter == InvoiceStatus.unpaid,
-                      onTap: () => vm.setFilter(InvoiceStatus.unpaid),
+                      label: s.partiallyPaid,
+                      selected: state.filter == InvoiceFilter.partiallyPaid,
+                      onTap: () => vm.setFilter(InvoiceFilter.partiallyPaid),
                     ),
                     const SizedBox(width: 8),
                     GallaFilterChip(
-                      label: 'Overdue / Partial',
-                      selected: state.filter == InvoiceStatus.partiallyPaid,
-                      onTap: () => vm.setFilter(InvoiceStatus.partiallyPaid),
+                      label: s.overdue,
+                      selected: state.filter == InvoiceFilter.overdue,
+                      onTap: () => vm.setFilter(InvoiceFilter.overdue),
+                    ),
+                    const SizedBox(width: 8),
+                    GallaFilterChip(
+                      label: s.paid,
+                      selected: state.filter == InvoiceFilter.paid,
+                      onTap: () => vm.setFilter(InvoiceFilter.paid),
                     ),
                   ],
                 ),
@@ -147,52 +153,63 @@ class _InvoiceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: GallaColors.line),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        onTap: onTap,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(invoice.invoiceNumber, style: GallaType.numberSm),
-            Text(
-              Money(invoice.totalMinor, currency: currency).format(),
-              style: GallaType.numberSm,
-            ),
-          ],
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Row(
+      // ListTile paints ink on the nearest Material — without this the
+      // decorated background would swallow it.
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
+          ),
+          onTap: onTap,
+          title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    invoice.partyName ?? 'Walk-in Customer',
-                    style: GallaType.body.copyWith(color: GallaColors.muted),
-                  ),
-                  Text(
-                    DateFormat.yMMMd().format(invoice.issueDate),
-                    style: GallaType.captionSm,
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  status.name.toUpperCase(),
-                  style: GallaType.labelStrong.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: statusColor,
-                  ),
-                ),
+              Text(invoice.invoiceNumber, style: GallaType.numberSm),
+              Text(
+                Money(invoice.totalMinor, currency: currency).format(),
+                style: GallaType.numberSm,
               ),
             ],
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      invoice.partyName ?? 'Walk-in Customer',
+                      style: GallaType.body.copyWith(color: GallaColors.muted),
+                    ),
+                    Text(
+                      DateFormat.yMMMd().format(invoice.issueDate),
+                      style: GallaType.captionSm,
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    status.name.toUpperCase(),
+                    style: GallaType.labelStrong.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

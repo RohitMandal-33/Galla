@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
+import '../../../core/l10n/strings.dart';
 import '../../../core/money/money.dart';
 import '../../../core/parser/nl_parser.dart';
 import '../../../core/providers.dart';
@@ -16,6 +17,36 @@ import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
 import '../viewmodel/entry_viewmodel.dart';
+
+/// Post-save confirmation with an Undo affordance. Undo soft-deletes the
+/// just-created entry (append-only ledger: history is never hard-erased).
+/// Capture [undo] from a live context before popping the sheet.
+void showEntryUndo(
+  ScaffoldMessengerState messenger,
+  S s,
+  String label,
+  Txn txn,
+  String currency,
+  Future<void> Function() undo,
+) {
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(
+          '$label · ${Money(txn.amountMinor, currency: currency).formatCompact()}',
+        ),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: s.undo.toUpperCase(),
+          onPressed: () async {
+            await undo();
+            messenger.showSnackBar(SnackBar(content: Text(s.entryRemoved)));
+          },
+        ),
+      ),
+    );
+}
 
 // ── Master Launcher ────────────────────────────────────────────────────────────
 
@@ -109,8 +140,9 @@ class QuickAddSheet extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Record Transaction', style: GallaType.numberMd),
+              Text('Add transaction', style: GallaType.numberMd),
               IconButton(
+                tooltip: 'Close',
                 icon: const Icon(
                   Icons.close_rounded,
                   size: 20,
@@ -231,7 +263,7 @@ class QuickAddSheet extends ConsumerWidget {
               ),
               _ActionTile(
                 icon: Icons.mic_rounded,
-                label: 'Voice',
+                label: 'Speak',
                 color: GallaColors.brand,
                 bg: GallaColors.brandSoft,
                 onTap: () {
@@ -353,6 +385,7 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
   final _speech = SpeechToText();
   final _parser = NlParser();
   bool _isListening = false;
+  bool _failed = false;
   String _transcript = '';
   ParsedEntry? _parsed;
   late AnimationController _animCtrl;
@@ -360,11 +393,13 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
   @override
   void initState() {
     super.initState();
+    // A calm, single breathing pulse only while actually listening — no
+    // infinite idle animation.
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _startListening();
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startListening());
   }
 
   @override
@@ -375,51 +410,88 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
   }
 
   Future<void> _startListening() async {
-    final available = await _speech.initialize();
-    if (!available) return;
+    if (!mounted) return;
+    setState(() {
+      _failed = false;
+      _transcript = '';
+      _parsed = null;
+    });
+    bool available;
+    try {
+      available = await _speech.initialize();
+    } catch (_) {
+      available = false;
+    }
+    if (!mounted) return;
+    if (!available) {
+      // Speech is unavailable (no permission / unsupported device) — say so
+      // instead of leaving the user stuck on "Tap to speak".
+      setState(() => _failed = true);
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() => _isListening = true);
+    if (mounted && _isListening) _animCtrl.repeat(reverse: true);
 
     await _speech.listen(
       localeId:
-          'ne_NP', // Defaults to Nepali if supported, falls back automatically
+          'ne_NP', // Defaults to Nepali if supported, falls back automatically.
       onResult: (result) {
+        if (!mounted) return;
         setState(() {
           _transcript = result.recognizedWords;
           if (_transcript.trim().isNotEmpty) {
             _parsed = _parser.parse(_transcript);
           }
         });
-        if (result.finalResult) {
+        if (result.finalResult && mounted) {
           setState(() => _isListening = false);
+          _animCtrl.stop();
         }
       },
     );
   }
 
-  Future<void> _confirmAndSave() async {
-    if (_parsed == null || _parsed!.amountMinor == null) return;
-    final repo = ref.read(repositoryProvider);
-    final settings = ref.read(settingsProvider).valueOrNull;
+  void _stopListening() {
+    _speech.stop();
+    if (mounted) {
+      setState(() => _isListening = false);
+      _animCtrl.stop();
+    }
+  }
 
-    await repo.addEntry(
-      direction: _parsed!.direction ?? Direction.moneyIn,
-      amountMinor: _parsed!.amountMinor!,
-      partyName: _parsed!.partyName,
-      category: _parsed!.category,
+  Future<void> _confirmAndSave() async {
+    final parsed = _parsed;
+    if (parsed == null || parsed.amountMinor == null) return;
+    final repo = ref.read(repositoryProvider);
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const AppSettings();
+    final s = S(settings.locale);
+
+    final txn = await repo.addEntry(
+      direction: parsed.direction ?? Direction.moneyIn,
+      amountMinor: parsed.amountMinor!,
+      partyName: parsed.partyName,
+      category: parsed.category,
       note: _transcript,
-      isCredit: _parsed!.isCredit,
+      isCredit: parsed.isCredit,
       nlRaw: _transcript,
       aiInferred: true,
-      branchId: settings?.activeBranchId,
+      branchId: settings.activeBranchId,
     );
 
-    if (mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction recorded via Voice!')),
-      );
-    }
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    showEntryUndo(
+      messenger,
+      s,
+      '${s.entryAdded} · ${s.voiceEntry}',
+      txn,
+      settings.currency,
+      () => repo.softDeleteEntry(txn.id),
+    );
+    navigator.pop();
   }
 
   @override
@@ -448,11 +520,11 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
           ),
           const SizedBox(height: GallaSpacing.lg),
 
-          // Animated Voice Circle
+          // Mic circle — animates only while listening.
           AnimatedBuilder(
             animation: _animCtrl,
             builder: (context, child) {
-              final scale = _isListening ? 1.0 + (_animCtrl.value * 0.15) : 1.0;
+              final scale = _isListening ? 1.0 + (_animCtrl.value * 0.12) : 1.0;
               return Transform.scale(
                 scale: scale,
                 child: Container(
@@ -463,7 +535,6 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
                         ? GallaColors.brand
                         : GallaColors.brandSoft,
                     shape: BoxShape.circle,
-                    boxShadow: _isListening ? GallaElevation.hero : null,
                   ),
                   child: Icon(
                     _isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
@@ -477,17 +548,27 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
           const SizedBox(height: GallaSpacing.base),
 
           Text(
-            _isListening ? 'Listening...' : 'Tap to speak',
+            _failed
+                ? "Couldn't start speech recognition"
+                : _isListening
+                ? 'Listening…'
+                : _parsed == null
+                ? 'Speak'
+                : 'Check the details',
             style: GallaType.cardTitle,
           ),
           const SizedBox(height: GallaSpacing.xs),
           Text(
-            _transcript.isEmpty
+            _failed
+                ? 'Check the microphone permission in Settings, or add the entry by typing instead.'
+                : _transcript.isEmpty
                 ? 'Try saying: "Hari lai 500 ko saman udhar diye"'
                 : '"$_transcript"',
             style: GallaType.body.copyWith(
-              color: _transcript.isEmpty ? GallaColors.muted : GallaColors.ink,
-              fontStyle: _transcript.isEmpty
+              color: _transcript.isEmpty || _failed
+                  ? GallaColors.muted
+                  : GallaColors.ink,
+              fontStyle: _transcript.isEmpty && !_failed
                   ? FontStyle.italic
                   : FontStyle.normal,
             ),
@@ -495,92 +576,12 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
           ),
           const SizedBox(height: GallaSpacing.lg),
 
-          // Parsed Confirmation Card
+          // Parsed confirmation — the merchant confirms what the parser heard.
           if (_parsed != null && _parsed!.amountMinor != null) ...[
-            Container(
-              padding: const EdgeInsets.all(GallaSpacing.base),
-              decoration: BoxDecoration(
-                color: GallaColors.surface2,
-                borderRadius: BorderRadius.circular(GallaRadius.lg),
-                border: Border.all(color: GallaColors.line),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        size: 16,
-                        color: GallaColors.gold,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'Understood Transaction',
-                        style: GallaType.chipLabel.copyWith(
-                          color: GallaColors.gold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Type',
-                        style: GallaType.body.copyWith(
-                          color: GallaColors.muted,
-                        ),
-                      ),
-                      Text(
-                        _parsed!.isCredit
-                            ? 'Credit (Udhaar)'
-                            : (_parsed!.direction == Direction.moneyIn
-                                  ? 'Cash In'
-                                  : 'Cash Out'),
-                        style: GallaType.subtitleSm,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Amount',
-                        style: GallaType.body.copyWith(
-                          color: GallaColors.muted,
-                        ),
-                      ),
-                      Text(
-                        Money(
-                          _parsed!.amountMinor!,
-                          currency: settings.currency,
-                        ).format(),
-                        style: GallaType.numberSm.copyWith(
-                          color: GallaColors.brand,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_parsed!.partyName != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Party',
-                          style: GallaType.body.copyWith(
-                            color: GallaColors.muted,
-                          ),
-                        ),
-                        Text(_parsed!.partyName!, style: GallaType.subtitleSm),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+            VoicePreviewCard(
+              parsed: _parsed!,
+              currency: settings.currency,
+              transcript: _transcript,
             ),
             const SizedBox(height: GallaSpacing.base),
             Row(
@@ -605,6 +606,112 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
               onPressed: _startListening,
               icon: const Icon(Icons.refresh_rounded, size: 18),
               label: const Text('Speak Again'),
+            ),
+            if (!_isListening && !_failed) ...[
+              const SizedBox(height: GallaSpacing.sm),
+              TextButton(
+                onPressed: _stopListening,
+                child: const Text('Cancel'),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The parser's inference shown back to the merchant before committing.
+/// Extracted from the sheet so it can be widget-tested without a live
+/// speech engine. AI infers; the merchant confirms; the ledger stays exact.
+class VoicePreviewCard extends StatelessWidget {
+  const VoicePreviewCard({
+    super.key,
+    required this.parsed,
+    required this.currency,
+    required this.transcript,
+  });
+
+  final ParsedEntry parsed;
+  final String currency;
+  final String transcript;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(GallaSpacing.base),
+      decoration: BoxDecoration(
+        color: GallaColors.surface2,
+        borderRadius: BorderRadius.circular(GallaRadius.lg),
+        border: Border.all(color: GallaColors.gold.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.hearing_rounded, size: 16, color: GallaColors.gold),
+              const SizedBox(width: 6),
+              Text(
+                'Galla understood',
+                style: GallaType.chipLabel.copyWith(
+                  color: GallaColors.goldDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Type',
+                style: GallaType.body.copyWith(color: GallaColors.muted),
+              ),
+              Text(
+                parsed.isCredit
+                    ? 'Udhaar'
+                    : (parsed.direction == Direction.moneyIn
+                          ? 'Money In'
+                          : 'Money Out'),
+                style: GallaType.subtitleSm,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'Amount',
+                style: GallaType.body.copyWith(color: GallaColors.muted),
+              ),
+              Text(
+                Money(parsed.amountMinor ?? 0, currency: currency).format(),
+                style: GallaType.numberSm,
+              ),
+            ],
+          ),
+          if (parsed.partyName != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Party',
+                  style: GallaType.body.copyWith(color: GallaColors.muted),
+                ),
+                Flexible(
+                  child: Text(
+                    parsed.partyName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GallaType.subtitleSm,
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -643,23 +750,6 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
   final _noteController = TextEditingController();
   final _formScroll = ScrollController();
   final _chipKeys = <String, GlobalKey>{};
-
-  static const _incomeCategories = [
-    'Sales',
-    'Services',
-    'Customer Payment',
-    'Commission',
-    'Other Income',
-  ];
-
-  static const _expenseCategories = [
-    'Purchase / Stock',
-    'Rent',
-    'Staff / Salary',
-    'Electricity / Utility',
-    'Transport',
-    'Other Expense',
-  ];
 
   @override
   void initState() {
@@ -733,11 +823,15 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     final state = ref.watch(entryViewModelProvider(_seed));
     final vm = ref.read(entryViewModelProvider(_seed).notifier);
     final parties = ref.watch(partiesProvider).valueOrNull ?? const <Party>[];
+    final settings =
+        ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
+    final s = S(settings.locale);
     final isIncome = state.direction == Direction.moneyIn;
-    final categories = isIncome ? _incomeCategories : _expenseCategories;
+    final categories = isIncome ? incomeCategories : expenseCategories;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
     final activeColor = isIncome ? GallaColors.moneyIn : GallaColors.moneyOut;
+    final currencySymbol = Money(0, currency: settings.currency).symbol;
 
     // ── IME / window-inset strategy ────────────────────────────────────────
     // The activity runs with windowSoftInputMode=adjustResize, so the IME inset
@@ -828,7 +922,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                       cursorColor: activeColor,
                       style: GallaType.totalLg.copyWith(color: activeColor),
                       decoration: InputDecoration(
-                        prefixText: 'Rs. ',
+                        prefixText: '$currencySymbol ',
                         prefixStyle: GallaType.numberXl.copyWith(
                           fontWeight: FontWeight.w700,
                           color: activeColor.withValues(alpha: 0.7),
@@ -999,9 +1093,28 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
             FilledButton(
               onPressed: state.isValid && !state.saving
                   ? () async {
-                      final ok = await vm.save();
-                      if (ok && context.mounted) {
-                        Navigator.of(context).pop();
+                      final messenger = ScaffoldMessenger.of(context);
+                      final navigator = Navigator.of(context);
+                      final txn = await vm.save();
+                      if (txn != null) {
+                        showEntryUndo(
+                          messenger,
+                          s,
+                          '${s.entryAdded} · ${txn.category ?? (txn.direction == Direction.moneyIn ? s.typeSale : s.typeExpense)}',
+                          txn,
+                          settings.currency,
+                          () => ref
+                              .read(repositoryProvider)
+                              .softDeleteEntry(txn.id),
+                        );
+                        navigator.pop();
+                      } else if (!ref
+                          .read(entryViewModelProvider(_seed))
+                          .saving) {
+                        // Save failed — never fail silently.
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(s.saveFailed)),
+                        );
                       }
                     }
                   : null,
@@ -1010,8 +1123,12 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                 minimumSize: const Size.fromHeight(52),
               ),
               child: state.saving
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text('Save Entry', style: GallaType.cardTitle),
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : Text(s.save, style: GallaType.cardTitle),
             ),
           ],
         ),

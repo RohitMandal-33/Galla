@@ -142,7 +142,7 @@ class GallaRepository {
     final row = await (_db.select(
       _db.ledgerEntries,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (row == null) return null;
+    if (row == null || row.deletedAt != null) return null;
     String? name;
     if (row.partyId != null) {
       final p = await (_db.select(
@@ -287,6 +287,25 @@ class GallaRepository {
     }
     // Cash payment against a party: money in reduces what they owe.
     return t.direction == 'in' ? -t.amountMinor : t.amountMinor;
+  }
+
+  /// Updates mutable party fields. Null arguments leave the field unchanged;
+  /// pass an empty string for [phone] to clear it.
+  Future<void> updateParty(String id, {String? name, String? phone}) {
+    return (_db.update(_db.parties)..where((p) => p.id.equals(id))).write(
+      PartiesCompanion(
+        name: name == null ? const Value.absent() : Value(name),
+        phone: phone == null ? const Value.absent() : Value(phone),
+      ),
+    );
+  }
+
+  /// Soft-deletes a ledger entry (append-only model: history is never
+  /// hard-removed). Used for the undo affordance after saving.
+  Future<void> softDeleteEntry(String id) {
+    return (_db.update(_db.ledgerEntries)..where((t) => t.id.equals(id))).write(
+      LedgerEntriesCompanion(deletedAt: Value(DateTime.now())),
+    );
   }
 
   Future<void> setPartyReminder(
@@ -662,10 +681,53 @@ class GallaRepository {
     // ─── END TRANSACTION ──────────────────────────────────────────────────────
   }
 
-  Future<void> deleteInvoice(String id) async {
-    await (_db.update(_db.invoices)..where((i) => i.id.equals(id))).write(
-      InvoicesCompanion(deletedAt: Value(DateTime.now())),
-    );
+  /// Cancels an invoice and voids its original credit-sale ledger entry so
+  /// revenue and the party's outstanding balance are corrected. Only allowed
+  /// while nothing has been paid — payments are real cash events and must not
+  /// be silently erased.
+  Future<bool> cancelInvoice(String id) async {
+    final inv = await getInvoiceWithItems(id);
+    if (inv == null) return false;
+    if (inv.invoice.paidAmountMinor > 0) return false;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.invoices)..where((i) => i.id.equals(id))).write(
+        InvoicesCompanion(status: const Value('cancelled')),
+      );
+      // Void the credit-sale entry booked when the invoice was created.
+      await (_db.update(_db.ledgerEntries)..where(
+            (t) =>
+                t.invoiceId.equals(id) &
+                t.isCredit.equals(true) &
+                t.deletedAt.isNull(),
+          ))
+          .write(LedgerEntriesCompanion(deletedAt: Value(DateTime.now())));
+    });
+    return true;
+  }
+
+  /// Deletes a draft/unpaid invoice. Voids every linked ledger entry (the
+  /// credit sale) and restores deducted inventory stock, atomically. Refuses
+  /// when payments exist — those entries represent real money movements.
+  Future<bool> deleteInvoice(String id) async {
+    final inv = await getInvoiceWithItems(id);
+    if (inv == null) return false;
+    if (inv.invoice.paidAmountMinor > 0) return false;
+
+    await _db.transaction(() async {
+      await (_db.update(_db.invoices)..where((i) => i.id.equals(id))).write(
+        InvoicesCompanion(deletedAt: Value(DateTime.now())),
+      );
+      await (_db.update(_db.ledgerEntries)
+            ..where((t) => t.invoiceId.equals(id) & t.deletedAt.isNull()))
+          .write(LedgerEntriesCompanion(deletedAt: Value(DateTime.now())));
+      for (final item in inv.items) {
+        if (item.inventoryItemId != null && item.quantity != 0) {
+          await _adjustStockRelative(item.inventoryItemId!, item.quantity);
+        }
+      }
+    });
+    return true;
   }
 
   // ---------------------------------------------------------------------------
@@ -938,7 +1000,7 @@ class GallaRepository {
   }) async {
     final id = _uuid.v4();
     final now = DateTime.now();
-    final pinHash = pin != null && pin.isNotEmpty ? hashPin(pin) : null;
+    final pinHash = pin != null && pin.isNotEmpty ? hashPinSalted(pin) : null;
     await _db
         .into(_db.staffMembers)
         .insert(
@@ -986,7 +1048,7 @@ class GallaRepository {
       _db.staffMembers,
     )..where((s) => s.id.equals(staffId))).getSingleOrNull();
     if (staff == null || staff.pinHash == null) return false;
-    return staff.pinHash == hashPin(pin);
+    return verifyPinSalted(pin, staff.pinHash!);
   }
 
   // ---------------------------------------------------------------------------
@@ -1214,6 +1276,20 @@ class GallaRepository {
       await _remove('activeStaffName');
       await _put('activeStaffRole', 'owner');
     }
+  }
+
+  /// Sets the app-lock PIN using the salted hash and enables the lock.
+  Future<void> setAppPin(String pin) async {
+    final settings = await loadSettings();
+    await saveSettings(
+      settings.copyWith(pinHash: hashPinSalted(pin), lockEnabled: true),
+    );
+  }
+
+  /// Removes the app-lock PIN entirely (also disables the lock).
+  Future<void> removeAppPin() async {
+    await _put('lockEnabled', '0');
+    await _remove('pinHash');
   }
 
   Future<void> _put(String key, String value) {

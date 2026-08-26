@@ -188,228 +188,6 @@ class GallaBalanceCard extends StatelessWidget {
   }
 }
 
-// ── GallaMetricCard ────────────────────────────────────────────────────────────
-/// Financial metric tile for Revenue, Profit, Outstanding with trend % and color.
-
-class GallaMetricCard extends StatelessWidget {
-  const GallaMetricCard({
-    super.key,
-    required this.title,
-    required this.value,
-    this.trendPercent,
-    this.isPositiveTrend = true,
-    this.accentColor = GallaColors.brand,
-    this.icon,
-    this.onTap,
-  });
-
-  final String title;
-  final String value;
-  final double? trendPercent;
-  final bool isPositiveTrend;
-  final Color accentColor;
-  final IconData? icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: GallaColors.surface,
-          borderRadius: BorderRadius.circular(GallaRadius.lg),
-          border: Border.all(color: GallaColors.line),
-          boxShadow: GallaElevation.card,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: GallaType.labelSm,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (icon != null) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    icon,
-                    size: 14,
-                    color: accentColor.withValues(alpha: 0.7),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: GallaType.number.copyWith(letterSpacing: -0.4),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (trendPercent != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    isPositiveTrend
-                        ? Icons.arrow_upward_rounded
-                        : Icons.arrow_downward_rounded,
-                    size: 11,
-                    color: isPositiveTrend
-                        ? GallaColors.moneyIn
-                        : GallaColors.moneyOut,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    '${trendPercent!.toStringAsFixed(0)}%',
-                    style: GallaType.badge.copyWith(
-                      color: isPositiveTrend
-                          ? GallaColors.moneyIn
-                          : GallaColors.moneyOut,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── GallaActionCard ────────────────────────────────────────────────────────────
-/// Action Center recommendation tile with direct CTA.
-
-class GallaActionCard extends StatelessWidget {
-  const GallaActionCard({
-    super.key,
-    required this.title,
-    required this.badge,
-    this.subtitle,
-    required this.actionLabel,
-    required this.onAction,
-    this.icon = Icons.bolt_rounded,
-    this.badgeColor = GallaColors.udhaar,
-    this.badgeBgColor = GallaColors.udhaarSoft,
-    this.iconColor = GallaColors.brand,
-    this.iconBgColor = GallaColors.brandSoft,
-  });
-
-  final String title;
-  final String badge;
-  final String? subtitle;
-  final String actionLabel;
-  final VoidCallback onAction;
-  final IconData icon;
-  final Color badgeColor;
-  final Color badgeBgColor;
-  final Color iconColor;
-  final Color iconBgColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.lg),
-        border: Border.all(color: GallaColors.line),
-        boxShadow: GallaElevation.card,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBgColor,
-              borderRadius: BorderRadius.circular(GallaRadius.md),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: GallaType.subtitleSm,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: badgeBgColor,
-                        borderRadius: BorderRadius.circular(GallaRadius.xs),
-                      ),
-                      child: Text(
-                        badge,
-                        style: GallaType.badge.copyWith(color: badgeColor),
-                      ),
-                    ),
-                  ],
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: GallaType.captionSm,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: FilledButton(
-              onPressed: onAction,
-              style: FilledButton.styleFrom(
-                backgroundColor: GallaColors.brand,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                minimumSize: const Size(52, 34),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(GallaRadius.sm),
-                ),
-                textStyle: GallaType.labelStrong,
-              ),
-              child: Text(
-                actionLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── GallaPaymentBadge ──────────────────────────────────────────────────────────
 /// Visual badge identifying payment channels (Cash / Fonepay / eSewa / Khalti / Bank).
 
@@ -682,7 +460,8 @@ class GallaSectionHeader extends StatelessWidget {
 }
 
 // ── GallaPartyCard ─────────────────────────────────────────────────────────────
-/// Party list tile with initials avatar and balance display.
+/// Party list row: name over last-activity/phone on the left, balance state
+/// over amount on the right. Flat by design — lists provide dividers.
 
 class GallaPartyCard extends StatelessWidget {
   const GallaPartyCard({
@@ -690,17 +469,15 @@ class GallaPartyCard extends StatelessWidget {
     required this.party,
     required this.currency,
     required this.onTap,
-    this.daysOverdue,
     this.lastActivity,
-    this.onRemind,
   });
 
   final Party party;
   final String currency;
   final VoidCallback onTap;
-  final int? daysOverdue;
+
+  /// Pre-formatted "last activity" line (e.g. "3d ago" or a date).
   final String? lastActivity;
-  final VoidCallback? onRemind;
 
   @override
   Widget build(BuildContext context) {
@@ -725,26 +502,26 @@ class GallaPartyCard extends StatelessWidget {
     final avatarFg = owesMe
         ? GallaColors.udhaar
         : (iOweThem ? GallaColors.moneyOut : GallaColors.brand);
+    final balanceColor = owesMe
+        ? GallaColors.udhaar
+        : (iOweThem ? GallaColors.moneyOut : GallaColors.muted);
+
+    final metaLine = lastActivity ?? party.phone;
+    final hasMeta = metaLine != null && metaLine.isNotEmpty;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: GallaSpacing.base,
           vertical: GallaSpacing.md,
         ),
-        decoration: BoxDecoration(
-          color: GallaColors.surface,
-          borderRadius: BorderRadius.circular(GallaRadius.card),
-          border: Border.all(color: GallaColors.line),
-          boxShadow: GallaElevation.card,
-        ),
         child: Row(
           children: [
-            // Avatar
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 color: avatarBg,
                 shape: BoxShape.circle,
@@ -752,58 +529,36 @@ class GallaPartyCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 initials,
-                style: GallaType.numberSm.copyWith(color: avatarFg),
+                style: GallaType.labelStrong.copyWith(
+                  fontSize: 14,
+                  color: avatarFg,
+                ),
               ),
             ),
             const SizedBox(width: GallaSpacing.md),
-
-            // Name + phone + overdue pill
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          party.name,
-                          style: GallaType.tileTitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (daysOverdue != null && daysOverdue! > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: GallaColors.moneyOutSoft,
-                            borderRadius: BorderRadius.circular(GallaRadius.xs),
-                          ),
-                          child: Text(
-                            '${daysOverdue}d overdue',
-                            style: GallaType.badge.copyWith(
-                              fontSize: 9,
-                              color: GallaColors.moneyOut,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
+                  Text(
+                    party.name,
+                    style: GallaType.bodyStrong.copyWith(fontSize: 15),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 2),
-                  if (lastActivity != null)
-                    Text(lastActivity!, style: GallaType.caption)
-                  else if (party.phone != null && party.phone!.isNotEmpty)
-                    Text(party.phone!, style: GallaType.caption),
+                  if (hasMeta) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      metaLine,
+                      style: GallaType.caption.copyWith(fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ],
               ),
             ),
-
-            // Balance + Quick Action
+            const SizedBox(width: GallaSpacing.sm),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -814,28 +569,26 @@ class GallaPartyCard extends StatelessWidget {
                       ? 'They owe'
                       : 'You owe',
                   style: GallaType.labelSm.copyWith(
-                    fontSize: 10,
-                    letterSpacing: 0.2,
-                    color: settled
-                        ? GallaColors.muted
-                        : (owesMe ? GallaColors.udhaar : GallaColors.moneyOut),
+                    fontSize: 11,
+                    color: balanceColor,
                   ),
                 ),
-                if (!settled)
+                if (!settled) ...[
+                  const SizedBox(height: 2),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 120),
+                    constraints: const BoxConstraints(maxWidth: 130),
                     child: Text(
-                      Money(balanceMinor.abs(), currency: currency).format(),
+                      Money(
+                        balanceMinor.abs(),
+                        currency: currency,
+                      ).formatCompact(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.right,
-                      style: GallaType.numberSm.copyWith(
-                        color: owesMe
-                            ? GallaColors.udhaar
-                            : GallaColors.moneyOut,
-                      ),
+                      style: GallaType.number.copyWith(color: balanceColor),
                     ),
                   ),
+                ],
               ],
             ),
           ],
@@ -1049,6 +802,154 @@ class GallaEmptyState extends StatelessWidget {
               const SizedBox(height: GallaSpacing.xl),
               FilledButton(onPressed: onAction, child: Text(actionLabel!)),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── GallaStatBlock ─────────────────────────────────────────────────────────────
+/// Quiet typographic metric: label over amount. No container — grouping is
+/// done with whitespace and alignment. Use for supporting metrics under a hero
+/// figure or in report summaries.
+class GallaStatBlock extends StatelessWidget {
+  const GallaStatBlock({
+    super.key,
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.onTap,
+    this.alignment = CrossAxisAlignment.start,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final VoidCallback? onTap;
+  final CrossAxisAlignment alignment;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = Column(
+      crossAxisAlignment: alignment,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: GallaType.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: GallaSpacing.xs),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignment == CrossAxisAlignment.end
+              ? Alignment.centerRight
+              : Alignment.centerLeft,
+          child: Text(
+            value,
+            style: GallaType.numberLg.copyWith(
+              letterSpacing: -0.5,
+              color: valueColor,
+            ),
+          ),
+        ),
+      ],
+    );
+    if (onTap != null) {
+      content = Semantics(
+        button: true,
+        label: '$label $value',
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: content,
+        ),
+      );
+    }
+    return content;
+  }
+}
+
+// ── GallaAttentionRow ──────────────────────────────────────────────────────────
+/// Flat, single-line actionable item ("3 payments due", "2 products low").
+/// Deliberately NOT a card: attention items sit on the canvas with dividers,
+/// so only truly actionable content draws the eye.
+class GallaAttentionRow extends StatelessWidget {
+  const GallaAttentionRow({
+    super.key,
+    required this.title,
+    required this.actionLabel,
+    required this.onAction,
+    this.subtitle,
+    this.icon = Icons.bolt_rounded,
+    this.iconColor = GallaColors.brand,
+    this.iconBgColor = GallaColors.brandSoft,
+    this.onTap,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String actionLabel;
+  final VoidCallback onAction;
+  final VoidCallback? onTap;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBgColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap ?? onAction,
+      borderRadius: BorderRadius.circular(GallaRadius.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: GallaSpacing.md),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBgColor,
+                borderRadius: BorderRadius.circular(GallaRadius.sm),
+              ),
+              alignment: Alignment.center,
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
+            const SizedBox(width: GallaSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GallaType.bodyStrong.copyWith(fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle!,
+                      style: GallaType.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: GallaSpacing.sm),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                minimumSize: const Size(48, 44),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(actionLabel),
+            ),
           ],
         ),
       ),

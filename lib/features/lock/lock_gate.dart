@@ -10,7 +10,13 @@ import '../../data/galla_repository.dart';
 
 class LockGate extends ConsumerStatefulWidget {
   const LockGate({super.key, required this.child});
+
   final Widget child;
+
+  /// Tests run without platform channels where local_auth calls never
+  /// resolve; widget tests set this to false to exercise the PIN path only.
+  @visibleForTesting
+  static bool biometricsEnabled = true;
 
   @override
   ConsumerState<LockGate> createState() => _LockGateState();
@@ -44,10 +50,15 @@ class _LockGateState extends ConsumerState<LockGate>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+    if ((state == AppLifecycleState.paused ||
+            state == AppLifecycleState.inactive) &&
+        mounted) {
       final settings = ref.read(settingsProvider).valueOrNull;
-      if (settings?.lockEnabled == true) setState(() => _locked = true);
+      if (settings?.lockEnabled == true &&
+          settings?.pinHash != null &&
+          !_locked) {
+        setState(() => _locked = true);
+      }
     }
   }
 
@@ -59,19 +70,24 @@ class _LockGateState extends ConsumerState<LockGate>
   }
 
   Future<void> _tryBiometric() async {
+    if (!LockGate.biometricsEnabled) return;
     try {
       final auth = LocalAuthentication();
-      final ok = await auth.authenticate(
-        localizedReason: 'Unlock Galla',
-        options: const AuthenticationOptions(biometricOnly: false),
-      );
+      final ok = await auth
+          .authenticate(
+            localizedReason: 'Unlock Galla',
+            options: const AuthenticationOptions(biometricOnly: false),
+          )
+          .timeout(const Duration(seconds: 15), onTimeout: () => false);
       if (ok && mounted) {
         setState(() {
           _locked = false;
           _failedAttempts = 0;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      // Biometrics unavailable — the PIN path below remains.
+    }
   }
 
   Future<void> _submitPin() async {

@@ -1,30 +1,28 @@
+import 'dart:io';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart' show SharePlus, ShareParams, XFile;
 
 import '../../../core/l10n/strings.dart';
 import '../../../core/money/money.dart';
 import '../../../core/providers.dart';
-import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
+import '../../../core/theme/galla_theme.dart';
 import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
-import 'business_health_card.dart';
 import 'pdf_export.dart';
 import '../viewmodel/reports_viewmodel.dart';
 
-class ReportsScreen extends ConsumerStatefulWidget {
+class ReportsScreen extends ConsumerWidget {
   const ReportsScreen({super.key});
 
   @override
-  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
-}
-
-class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final settings =
         ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
     final s = S(settings.locale);
@@ -33,76 +31,69 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final currency = settings.currency;
     final parties = ref.watch(partiesProvider).valueOrNull ?? [];
 
-    return reportsAsync.when(
-      loading: () => Scaffold(
+    return Scaffold(
+      backgroundColor: GallaColors.canvas,
+      appBar: AppBar(
         backgroundColor: GallaColors.canvas,
-        appBar: AppBar(
-          backgroundColor: GallaColors.canvas,
-          title: Text(s.reportsTab),
-        ),
-        body: const Padding(
+        title: Text(s.reportsTab),
+        actions: [
+          reportsAsync.maybeWhen(
+            data: (state) => (state.hasData && state.report != null)
+                ? IconButton(
+                    tooltip: s.sharePdf,
+                    onPressed: () => PdfExport.shareReport(
+                      report: state.report!,
+                      businessName: settings.businessName,
+                      currency: settings.currency,
+                    ),
+                    icon: const Icon(Icons.ios_share_rounded, size: 20),
+                  )
+                : const SizedBox.shrink(),
+            orElse: () => const SizedBox.shrink(),
+          ),
+        ],
+      ),
+      body: reportsAsync.when(
+        loading: () => const Padding(
           padding: EdgeInsets.all(GallaSpacing.base),
           child: Column(
             children: [
               GallaSkeletonBlock(
                 width: double.infinity,
-                height: 180,
-                radius: GallaRadius.xl,
-              ),
-              SizedBox(height: 12),
-              GallaSkeletonBlock(
-                width: double.infinity,
-                height: 140,
+                height: 160,
                 radius: GallaRadius.lg,
               ),
-              SizedBox(height: 12),
+              SizedBox(height: GallaSpacing.md),
               GallaSkeletonBlock(
                 width: double.infinity,
-                height: 160,
+                height: 180,
                 radius: GallaRadius.lg,
               ),
             ],
           ),
         ),
-      ),
-      error: (e, _) => Scaffold(body: Center(child: Text('$e'))),
-      data: (state) {
-        final report = state.report;
-        final range = state.range;
-        final empty =
-            report == null ||
-            (report.moneyInMinor == 0 && report.moneyOutMinor == 0);
+        error: (e, _) => GallaEmptyState(
+          icon: Icons.error_outline_rounded,
+          headline: s.saveFailed,
+          body: '$e',
+          actionLabel: s.undo,
+          onAction: () => ref.invalidate(reportsViewModelProvider),
+        ),
+        data: (state) {
+          final report = state.report;
+          final range = state.range;
+          final netMinor =
+              (report?.moneyInMinor ?? 0) - (report?.moneyOutMinor ?? 0);
 
-        final netProfitMinor =
-            (report?.moneyInMinor ?? 0) - (report?.moneyOutMinor ?? 0);
-        final isProfit = netProfitMinor >= 0;
+          // Real udhaar outstanding across all customers.
+          final debtors = parties.where((p) => p.balanceMinor > 0).toList()
+            ..sort((a, b) => b.balanceMinor.compareTo(a.balanceMinor));
+          final totalUdhaarMinor = debtors.fold(
+            0,
+            (sum, p) => sum + p.balanceMinor,
+          );
 
-        // Udhaar totals
-        final udhaarParties = parties.where((p) => p.balanceMinor > 0).toList();
-        final totalUdhaarMinor = udhaarParties.fold(
-          0,
-          (sum, p) => sum + p.balanceMinor,
-        );
-
-        return Scaffold(
-          backgroundColor: GallaColors.canvas,
-          appBar: AppBar(
-            backgroundColor: GallaColors.canvas,
-            title: Text(s.reportsTab),
-            actions: [
-              if (!empty)
-                IconButton(
-                  tooltip: s.sharePdf,
-                  onPressed: () => PdfExport.shareReport(
-                    report: report,
-                    businessName: settings.businessName,
-                    currency: settings.currency,
-                  ),
-                  icon: const Icon(Icons.ios_share_rounded, size: 20),
-                ),
-            ],
-          ),
-          body: ListView(
+          return ListView(
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.fromLTRB(
               GallaSpacing.base,
@@ -112,352 +103,323 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                   GallaSpacing.shellBottomClearance,
             ),
             children: [
-              // ── Period filter chips ─────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: GallaFilterChip(
-                      label: 'This Week',
+              // ── Period chips ───────────────────────────────────────────
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _rangeChip(
+                      label: s.today,
+                      selected: range == ReportRange.today,
+                      onTap: () => vm.setRange(ReportRange.today),
+                    ),
+                    const SizedBox(width: 6),
+                    _rangeChip(
+                      label: s.thisWeek,
                       selected: range == ReportRange.week,
                       onTap: () => vm.setRange(ReportRange.week),
-                      fullWidth: true,
                     ),
-                  ),
-                  const SizedBox(width: GallaSpacing.sm),
-                  Expanded(
-                    child: GallaFilterChip(
-                      label: 'This Month',
+                    const SizedBox(width: 6),
+                    _rangeChip(
+                      label: s.thisMonth,
                       selected: range == ReportRange.month,
                       onTap: () => vm.setRange(ReportRange.month),
-                      fullWidth: true,
                     ),
-                  ),
-                  const SizedBox(width: GallaSpacing.sm),
-                  Expanded(
-                    child: GallaFilterChip(
-                      label: 'This Year',
+                    const SizedBox(width: 6),
+                    _rangeChip(
+                      label: range == ReportRange.year ? 'This year' : 'Year',
                       selected: range == ReportRange.year,
                       onTap: () => vm.setRange(ReportRange.year),
-                      fullWidth: true,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    _rangeChip(
+                      label:
+                          range == ReportRange.custom &&
+                              state.customStart != null
+                          ? '${DateFormat.MMMd().format(state.customStart!)} – ${DateFormat.MMMd().format(state.customEnd!)}'
+                          : s.custom,
+                      selected: range == ReportRange.custom,
+                      onTap: () async {
+                        final now = DateTime.now();
+                        final picked = await showDateRangePicker(
+                          context: context,
+                          firstDate: DateTime(now.year - 5),
+                          lastDate: now,
+                          initialDateRange: DateTimeRange(
+                            start:
+                                state.customStart ??
+                                now.subtract(const Duration(days: 7)),
+                            end: state.customEnd ?? now,
+                          ),
+                        );
+                        if (picked != null) {
+                          vm.setCustomRange(picked.start, picked.end);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: GallaSpacing.base),
 
-              // ── Business Summary hero ───────────────────────────────────
-              _BusinessSummaryCard(
+              // ── Summary ────────────────────────────────────────────────
+              _SummaryBlock(
                 moneyInMinor: report?.moneyInMinor ?? 0,
                 moneyOutMinor: report?.moneyOutMinor ?? 0,
-                netProfitMinor: netProfitMinor,
-                isProfit: isProfit,
+                cashInMinor: report?.cashInMinor ?? 0,
+                creditGivenMinor: report?.udhaarGivenMinor ?? 0,
+                netMinor: netMinor,
                 currency: currency,
-                periodLabel: _periodLabel(report, range),
+                periodLabel: report == null
+                    ? ''
+                    : '${DateFormat.MMMd().format(report.period.start)} – ${DateFormat.MMMd().format(report.period.end.subtract(const Duration(days: 1)))}',
+                s: s,
               ),
-              const SizedBox(height: GallaSpacing.md),
-
-              // ── Udhaar card ─────────────────────────────────────────────
-              if (udhaarParties.isNotEmpty) ...[
-                GallaUdhaarCard(
-                  totalUdhaarMinor: totalUdhaarMinor,
-                  partyCount: udhaarParties.length,
-                  currency: currency,
-                  onTap: () {},
-                ),
-                const SizedBox(height: GallaSpacing.md),
-              ],
-
-              // ── Chart ───────────────────────────────────────────────────
-              if (!empty) ...[
-                _IncomeExpenseChart(report: report, currency: currency),
-                const SizedBox(height: GallaSpacing.md),
-              ],
-
-              // ── Business Health ─────────────────────────────────────────
-              const BusinessHealthCard(),
               const SizedBox(height: GallaSpacing.base),
 
-              // ── Export CSV ──────────────────────────────────────────────
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(GallaRadius.button),
+              // ── Outstanding udhaar ─────────────────────────────────────
+              if (debtors.isNotEmpty) ...[
+                GallaUdhaarCard(
+                  totalUdhaarMinor: totalUdhaarMinor,
+                  partyCount: debtors.length,
+                  currency: currency,
+                  onTap: () => context.go('/ledger'),
+                ),
+                const SizedBox(height: GallaSpacing.md),
+              ],
+
+              // ── Chart — only real series, only when meaningful ─────────
+              if (state.buckets.isNotEmpty && state.txnCount > 0) ...[
+                _IncomeExpenseChart(
+                  buckets: state.buckets,
+                  currency: currency,
+                  s: s,
+                ),
+                const SizedBox(height: GallaSpacing.md),
+              ] else if (!state.hasData) ...[
+                Container(
+                  padding: const EdgeInsets.all(GallaSpacing.xl),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: GallaColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(GallaRadius.lg),
+                    border: Border.all(color: GallaColors.lineSoft),
                   ),
-                ),
-                onPressed: () async {
-                  final branchId = ref.read(selectedBranchIdProvider);
-                  final csv = await ref
-                      .read(repositoryProvider)
-                      .exportTransactionsCsv(branchId: branchId);
-                  await SharePlus.instance.share(
-                    ShareParams(text: csv, subject: 'Galla-Transactions.csv'),
-                  );
-                },
-                icon: const Icon(Icons.table_chart_outlined, size: 18),
-                label: Text(s.exportTransactionsCsv),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  String _periodLabel(SimpleReport? report, ReportRange range) {
-    if (report == null) return '';
-    return '${DateFormat.MMMd().format(report.period.start)} – ${DateFormat.MMMd().format(report.period.end.subtract(const Duration(days: 1)))}';
-  }
-}
-
-// ── Period Selector ────────────────────────────────────────────────────────────
-
-class _BusinessSummaryCard extends StatelessWidget {
-  const _BusinessSummaryCard({
-    required this.moneyInMinor,
-    required this.moneyOutMinor,
-    required this.netProfitMinor,
-    required this.isProfit,
-    required this.currency,
-    required this.periodLabel,
-  });
-
-  final int moneyInMinor;
-  final int moneyOutMinor;
-  final int netProfitMinor;
-  final bool isProfit;
-  final String currency;
-  final String periodLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    String m(int v) => Money(v, currency: currency).format();
-
-    return Container(
-      padding: const EdgeInsets.all(GallaSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.card),
-        border: Border.all(color: GallaColors.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Business Summary',
-                  style: GallaType.tileTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (periodLabel.isNotEmpty)
-                Flexible(
-                  child: Text(
-                    periodLabel,
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GallaType.labelSm.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: GallaSpacing.base),
-
-          // Sales + Expenses row
-          Row(
-            children: [
-              Expanded(
-                child: _ReportFigure(
-                  label: 'Sales',
-                  value: m(moneyInMinor),
-                  color: GallaColors.moneyIn,
-                  bgColor: GallaColors.moneyInSoft,
-                  icon: Icons.arrow_downward_rounded,
-                ),
-              ),
-              const SizedBox(width: GallaSpacing.sm),
-              Expanded(
-                child: _ReportFigure(
-                  label: 'Expenses',
-                  value: m(moneyOutMinor),
-                  color: GallaColors.moneyOut,
-                  bgColor: GallaColors.moneyOutSoft,
-                  icon: Icons.arrow_upward_rounded,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: GallaSpacing.md),
-
-          // Divider
-          Container(height: 1, color: GallaColors.line),
-          const SizedBox(height: GallaSpacing.md),
-
-          // Net profit / loss
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Net Profit', style: GallaType.caption),
-                    const SizedBox(height: 3),
-                    Text(
-                      m(netProfitMinor.abs()),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GallaType.total.copyWith(
-                        color: isProfit
-                            ? GallaColors.moneyIn
-                            : GallaColors.moneyOut,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isProfit
-                      ? GallaColors.moneyInSoft
-                      : GallaColors.moneyOutSoft,
-                  borderRadius: BorderRadius.circular(GallaRadius.sm),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isProfit
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      size: 16,
-                      color: isProfit
-                          ? GallaColors.moneyIn
-                          : GallaColors.moneyOut,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      isProfit ? 'Profitable' : 'Net Loss',
-                      style: GallaType.chipLabel.copyWith(
-                        color: isProfit
-                            ? GallaColors.moneyIn
-                            : GallaColors.moneyOut,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReportFigure extends StatelessWidget {
-  const _ReportFigure({
-    required this.label,
-    required this.value,
-    required this.color,
-    required this.bgColor,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-  final Color bgColor;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(GallaSpacing.md),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(GallaRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 12, color: color),
-              const SizedBox(width: 4),
-              Text(label, style: GallaType.labelSm.copyWith(color: color)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GallaType.number.copyWith(color: color),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Income vs Expense Chart ────────────────────────────────────────────────────
-
-class _IncomeExpenseChart extends StatelessWidget {
-  const _IncomeExpenseChart({required this.report, required this.currency});
-  final SimpleReport? report;
-  final String currency;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(GallaSpacing.cardPadding),
-      decoration: BoxDecoration(
-        color: GallaColors.surface,
-        borderRadius: BorderRadius.circular(GallaRadius.card),
-        border: Border.all(color: GallaColors.line),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Income vs Expense',
-                  style: GallaType.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  child: Column(
                     children: [
-                      _ChartLegend(color: GallaColors.moneyIn, label: 'Income'),
-                      const SizedBox(width: GallaSpacing.sm),
-                      _ChartLegend(
-                        color: GallaColors.moneyOut,
-                        label: 'Expense',
+                      Text(
+                        s.noTxnsTitle,
+                        style: GallaType.subtitle,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: GallaSpacing.xs),
+                      Text(
+                        'Record sales and expenses to see reports here.',
+                        style: GallaType.body.copyWith(
+                          color: GallaColors.muted,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: GallaSpacing.md),
+              ],
+
+              // ── Export ─────────────────────────────────────────────────
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () => _shareCsv(context, ref, s),
+                icon: const Icon(Icons.table_chart_outlined, size: 18),
+                label: Text(s.exportTransactionsCsv),
               ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _rangeChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GallaFilterChip(label: label, selected: selected, onTap: onTap);
+  }
+
+  Future<void> _shareCsv(BuildContext context, WidgetRef ref, S s) async {
+    try {
+      final branchId = ref.read(selectedBranchIdProvider);
+      final csv = await ref
+          .read(repositoryProvider)
+          .exportTransactionsCsv(branchId: branchId);
+      // Share as a REAL file so it can be opened in Excel/Sheets — not as a
+      // wall of text in a chat bubble.
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/galla-transactions-${DateFormat('yyyyMMdd-HHmm').format(DateTime.now())}.csv',
+      );
+      await file.writeAsString(csv);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'text/csv')],
+          subject: 'Galla transactions',
+        ),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(s.saveFailed)));
+    }
+  }
+}
+
+// ── Numeric summary ────────────────────────────────────────────────────────────
+
+class _SummaryBlock extends StatelessWidget {
+  const _SummaryBlock({
+    required this.moneyInMinor,
+    required this.moneyOutMinor,
+    required this.cashInMinor,
+    required this.creditGivenMinor,
+    required this.netMinor,
+    required this.currency,
+    required this.periodLabel,
+    required this.s,
+  });
+
+  final int moneyInMinor;
+  final int moneyOutMinor;
+  final int cashInMinor;
+  final int creditGivenMinor;
+  final int netMinor;
+  final String currency;
+  final String periodLabel;
+  final S s;
+
+  @override
+  Widget build(BuildContext context) {
+    String m(int v) => Money(v, currency: currency).formatCompact();
+
+    return Container(
+      padding: const EdgeInsets.all(GallaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: GallaColors.surface,
+        borderRadius: BorderRadius.circular(GallaRadius.card),
+        border: Border.all(color: GallaColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: GallaStatBlock(
+                  label: s.sales,
+                  value: m(moneyInMinor),
+                  valueColor: GallaColors.moneyIn,
+                ),
+              ),
+              GallaStatBlock(
+                label: s.expenses,
+                value: m(moneyOutMinor),
+                alignment: CrossAxisAlignment.end,
+              ),
+            ],
+          ),
+          const Divider(height: GallaSpacing.xl),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: GallaStatBlock(
+                  label: 'Cash received',
+                  value: m(cashInMinor),
+                ),
+              ),
+              GallaStatBlock(
+                label: s.creditGiven,
+                value: m(creditGivenMinor),
+                valueColor: creditGivenMinor > 0 ? GallaColors.udhaar : null,
+                alignment: CrossAxisAlignment.end,
+              ),
+            ],
+          ),
+          const Divider(height: GallaSpacing.xl),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('Net result · Sales − Expenses', style: GallaType.caption),
+              const Spacer(),
+              Text(
+                '${netMinor < 0 ? '−' : '+'} ${Money(netMinor.abs(), currency: currency).formatCompact()}',
+                style: GallaType.numberLg.copyWith(
+                  letterSpacing: -0.5,
+                  color: netMinor < 0 ? GallaColors.moneyOut : null,
+                ),
+              ),
+            ],
+          ),
+          if (periodLabel.isNotEmpty) ...[
+            const SizedBox(height: GallaSpacing.sm),
+            Text(periodLabel, style: GallaType.captionSm),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Real income-vs-expense time series ─────────────────────────────────────────
+
+class _IncomeExpenseChart extends StatelessWidget {
+  const _IncomeExpenseChart({
+    required this.buckets,
+    required this.currency,
+    required this.s,
+  });
+
+  final List<ReportBucket> buckets;
+  final String currency;
+  final S s;
+
+  double get _maxMajor {
+    var maxMinor = 0;
+    for (final b in buckets) {
+      if (b.inMinor > maxMinor) maxMinor = b.inMinor;
+      if (b.outMinor > maxMinor) maxMinor = b.outMinor;
+    }
+    return (maxMinor / 100) * 1.25;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(GallaSpacing.cardPadding),
+      decoration: BoxDecoration(
+        color: GallaColors.surface,
+        borderRadius: BorderRadius.circular(GallaRadius.card),
+        border: Border.all(color: GallaColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Income vs Expense', style: GallaType.subtitle),
+              ),
+              _ChartLegend(color: GallaColors.moneyIn, label: s.sales),
+              const SizedBox(width: GallaSpacing.sm),
+              _ChartLegend(color: GallaColors.moneyOut, label: s.expenses),
             ],
           ),
           const SizedBox(height: GallaSpacing.xl),
@@ -466,25 +428,46 @@ class _IncomeExpenseChart extends StatelessWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY:
-                    ((report?.moneyInMinor ?? 0) > (report?.moneyOutMinor ?? 0)
-                        ? (report?.moneyInMinor ?? 10000)
-                        : (report?.moneyOutMinor ?? 10000)) /
-                    100 *
-                    1.3,
-                barTouchData: BarTouchData(enabled: true),
+                maxY: _maxMajor <= 0 ? 10 : _maxMajor,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, gi, rod, ri) {
+                      final bucketIndex = group.x.toInt();
+                      if (bucketIndex < 0 || bucketIndex >= buckets.length) {
+                        return null;
+                      }
+                      final b = buckets[bucketIndex];
+                      final isIn = ri == 0;
+                      final v = isIn ? b.inMinor : b.outMinor;
+                      return BarTooltipItem(
+                        '${b.label} · ${isIn ? "+" : "−"}${Money(v, currency: currency).formatCompact()}',
+                        GallaType.labelStrong.copyWith(color: Colors.white),
+                      );
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
-                  show: true,
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      getTitlesWidget: (val, meta) => Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          'W${val.toInt()}',
-                          style: GallaType.captionSm.copyWith(fontSize: 10),
-                        ),
-                      ),
+                      reservedSize: 22,
+                      getTitlesWidget: (val, meta) {
+                        final i = val.toInt();
+                        if (i < 0 || i >= buckets.length) {
+                          return const SizedBox.shrink();
+                        }
+                        // Thin out labels when there are many buckets.
+                        if (buckets.length > 10 && i % 3 != 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            buckets[i].label,
+                            style: GallaType.captionSm.copyWith(fontSize: 10),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   leftTitles: const AxisTitles(
@@ -505,36 +488,35 @@ class _IncomeExpenseChart extends StatelessWidget {
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: [
-                  _barGroup(1, 0.7, 0.5),
-                  _barGroup(2, 0.9, 0.6),
-                  _barGroup(3, 1.0, 0.4),
+                  for (var i = 0; i < buckets.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: buckets[i].inMinor / 100,
+                          color: GallaColors.moneyIn,
+                          width: 12,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(3),
+                          ),
+                        ),
+                        BarChartRodData(
+                          toY: buckets[i].outMinor / 100,
+                          color: GallaColors.moneyOut,
+                          width: 12,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(3),
+                          ),
+                        ),
+                      ],
+                      barsSpace: 3,
+                    ),
                 ],
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  BarChartGroupData _barGroup(int x, double inFactor, double outFactor) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: (report?.moneyInMinor ?? 0) / 100 * inFactor,
-          color: GallaColors.moneyIn,
-          width: 14,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-        ),
-        BarChartRodData(
-          toY: (report?.moneyOutMinor ?? 0) / 100 * outFactor,
-          color: GallaColors.moneyOut,
-          width: 14,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-        ),
-      ],
-      barsSpace: 3,
     );
   }
 }
@@ -547,31 +529,19 @@ class _ChartLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 10,
           height: 10,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(width: 4),
-        Text(
-          label,
-          style: GallaType.labelSm.copyWith(fontWeight: FontWeight.w500),
-        ),
+        Text(label, style: GallaType.labelSm),
       ],
     );
   }
-}
-
-// Shim ReportViewScreen for router compatibility
-class ReportViewScreen extends StatelessWidget {
-  const ReportViewScreen({super.key, required this.kind, required this.range});
-  final String kind;
-  final String range;
-
-  @override
-  Widget build(BuildContext context) => const ReportsScreen();
 }

@@ -16,59 +16,62 @@ void main() {
   tearDown(() => db.close());
 
   group('Version 2: Invoicing & Billing', () {
-    test('createInvoice generates sequential number, calculates tax, and updates inventory & party balance', () async {
-      // 1. Add inventory item
-      final item = await repo.addInventoryItem(
-        name: 'Basmati Rice 25kg',
-        initialQuantity: 10.0,
-        lowStockThreshold: 3.0,
-        costPriceMinor: 200000,
-        salePriceMinor: 250000,
-      );
+    test(
+      'createInvoice generates sequential number, calculates tax, and updates inventory & party balance',
+      () async {
+        // 1. Add inventory item
+        final item = await repo.addInventoryItem(
+          name: 'Basmati Rice 25kg',
+          initialQuantity: 10.0,
+          lowStockThreshold: 3.0,
+          costPriceMinor: 200000,
+          salePriceMinor: 250000,
+        );
 
-      // 2. Create invoice with 2 bags of rice
-      final invWithItems = await repo.createInvoice(
-        partyName: 'Sita Store',
-        items: [
-          (
-            description: item.name,
-            quantity: 2.0,
-            unitPriceMinor: 250000,
-            inventoryItemId: item.id,
-          ),
-        ],
-        taxRatePct: 10.0,
-      );
+        // 2. Create invoice with 2 bags of rice
+        final invWithItems = await repo.createInvoice(
+          partyName: 'Sita Store',
+          items: [
+            (
+              description: item.name,
+              quantity: 2.0,
+              unitPriceMinor: 250000,
+              inventoryItemId: item.id,
+            ),
+          ],
+          taxRatePct: 10.0,
+        );
 
-      final invoice = invWithItems.invoice;
-      expect(invoice.invoiceNumber, 'INV-0001');
-      expect(invoice.subtotalMinor, 500000); // 2 * 2500.00
-      expect(invoice.taxMinor, 50000); // 10%
-      expect(invoice.totalMinor, 550000);
-      expect(invoice.status, InvoiceStatus.unpaid);
+        final invoice = invWithItems.invoice;
+        expect(invoice.invoiceNumber, 'INV-0001');
+        expect(invoice.subtotalMinor, 500000); // 2 * 2500.00
+        expect(invoice.taxMinor, 50000); // 10%
+        expect(invoice.totalMinor, 550000);
+        expect(invoice.status, InvoiceStatus.unpaid);
 
-      // 3. Verify inventory auto-decremented from 10 to 8
-      final updatedInv = await repo.watchInventory().first;
-      expect(updatedInv.first.currentQuantity, 8.0);
+        // 3. Verify inventory auto-decremented from 10 to 8
+        final updatedInv = await repo.watchInventory().first;
+        expect(updatedInv.first.currentQuantity, 8.0);
 
-      // 4. Verify party balance
-      final parties = await repo.partiesWithBalances();
-      expect(parties.single.name, 'Sita Store');
-      expect(parties.single.balanceMinor, 550000);
+        // 4. Verify party balance
+        final parties = await repo.partiesWithBalances();
+        expect(parties.single.name, 'Sita Store');
+        expect(parties.single.balanceMinor, 550000);
 
-      // 5. Record partial payment of 3000.00 (300000 minor)
-      await repo.recordInvoicePayment(invoice.id, 300000);
-      final refreshedInv = await repo.getInvoiceWithItems(invoice.id);
-      expect(refreshedInv!.invoice.status, InvoiceStatus.partiallyPaid);
-      expect(refreshedInv.invoice.paidAmountMinor, 300000);
-      expect(refreshedInv.invoice.dueAmountMinor, 250000);
+        // 5. Record partial payment of 3000.00 (300000 minor)
+        await repo.recordInvoicePayment(invoice.id, 300000);
+        final refreshedInv = await repo.getInvoiceWithItems(invoice.id);
+        expect(refreshedInv!.invoice.status, InvoiceStatus.partiallyPaid);
+        expect(refreshedInv.invoice.paidAmountMinor, 300000);
+        expect(refreshedInv.invoice.dueAmountMinor, 250000);
 
-      // 6. Record remaining payment of 2500.00
-      await repo.recordInvoicePayment(invoice.id, 250000);
-      final finalInv = await repo.getInvoiceWithItems(invoice.id);
-      expect(finalInv!.invoice.status, InvoiceStatus.paid);
-      expect(finalInv.invoice.isFullyPaid, true);
-    });
+        // 6. Record remaining payment of 2500.00
+        await repo.recordInvoicePayment(invoice.id, 250000);
+        final finalInv = await repo.getInvoiceWithItems(invoice.id);
+        expect(finalInv!.invoice.status, InvoiceStatus.paid);
+        expect(finalInv.invoice.isFullyPaid, true);
+      },
+    );
   });
 
   group('Version 2: Inventory Lite', () {
@@ -92,33 +95,36 @@ void main() {
   });
 
   group('Version 2: Guided Cash Reconciliation', () {
-    test('Reconciliation detects discrepancy and creates explicit adjustment entry', () async {
-      // Add initial sale of 1000.00
-      await repo.addEntry(
-        direction: Direction.moneyIn,
-        amountMinor: 100000,
-        category: 'Sales',
-      );
+    test(
+      'Reconciliation detects discrepancy and creates explicit adjustment entry',
+      () async {
+        // Add initial sale of 1000.00
+        await repo.addEntry(
+          direction: Direction.moneyIn,
+          amountMinor: 100000,
+          category: 'Sales',
+        );
 
-      final summary = await repo.summaryFor(DateTime.now());
-      expect(summary.cashOnHandMinor, 100000);
+        final summary = await repo.summaryFor(DateTime.now());
+        expect(summary.cashOnHandMinor, 100000);
 
-      // Physical cash count is 950.00 (shortage of 50.00 / 5000 minor)
-      final rec = await repo.performReconciliation(
-        countedCashMinor: 95000,
-        expectedCashMinor: summary.cashOnHandMinor,
-        createAdjustmentEntry: true,
-        note: 'End of day till audit',
-      );
+        // Physical cash count is 950.00 (shortage of 50.00 / 5000 minor)
+        final rec = await repo.performReconciliation(
+          countedCashMinor: 95000,
+          expectedCashMinor: summary.cashOnHandMinor,
+          createAdjustmentEntry: true,
+          note: 'End of day till audit',
+        );
 
-      expect(rec.hasDiscrepancy, true);
-      expect(rec.discrepancyMinor, -5000);
-      expect(rec.adjustmentTxnId, isNotNull);
+        expect(rec.hasDiscrepancy, true);
+        expect(rec.discrepancyMinor, -5000);
+        expect(rec.adjustmentTxnId, isNotNull);
 
-      // Verify adjusted cash on hand is now exactly 950.00
-      final updatedSummary = await repo.summaryFor(DateTime.now());
-      expect(updatedSummary.cashOnHandMinor, 95000);
-    });
+        // Verify adjusted cash on hand is now exactly 950.00
+        final updatedSummary = await repo.summaryFor(DateTime.now());
+        expect(updatedSummary.cashOnHandMinor, 95000);
+      },
+    );
   });
 
   group('Version 2: Multi-Branch & Staff', () {
@@ -190,7 +196,10 @@ void main() {
       );
 
       final csv = await repo.exportTransactionsCsv();
-      expect(csv.contains('ID,Date,Direction,Amount,Party,Category,Note'), true);
+      expect(
+        csv.contains('ID,Date,Direction,Amount,Party,Category,Note'),
+        true,
+      );
       expect(csv.contains('500.0'), true);
       expect(csv.contains('Hari'), true);
     });

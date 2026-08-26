@@ -99,4 +99,76 @@ class S {
   // CSV Exports
   String get exportTransactionsCsv =>
       isNe ? 'कारोबारको CSV' : 'Transactions CSV';
+
+  // ── Redesign vocabulary (consistent merchant terms) ─────────────────────────
+  String get typeSale => isNe ? 'बिक्री' : 'Sale';
+  String get typeExpense => isNe ? 'खर्च' : 'Expense';
+  String get creditGiven => isNe ? 'उधारो दिइयो' : 'Credit given';
+  String get creditTaken => isNe ? 'उधारो लिइयो' : 'Credit taken';
+  String get writeOff => isNe ? 'माफ गरियो' : 'Write-off';
+  String get cashAvailable => isNe ? 'हातमा नगद' : 'Cash available';
+  String get sales => isNe ? 'बिक्री' : 'Sales';
+  String get expenses => isNe ? 'खर्च' : 'Expenses';
+  String get toCollect => isNe ? 'असुल बाँकी' : 'To collect';
+  String get youWillReceive => isNe ? 'तपाईंले पाउनुहुने' : 'You will receive';
+  String get youWillPay => isNe ? 'तपाईंले तिर्नुपर्ने' : 'You will pay';
+  String get people => isNe ? 'जना' : 'people';
+  String get suppliers => isNe ? 'सप्लायरहरू' : 'suppliers';
+  String get addTransaction => isNe ? 'कारोबार थप्नुहोस्' : 'Add transaction';
+  String get speak => isNe ? 'बोल्नुहोस्' : 'Speak';
+  String get voiceEntry => isNe ? 'बोलेर लेख्नुहोस्' : 'Voice entry';
+  String get today => isNe ? 'आज' : 'Today';
+  String get thisWeek => isNe ? 'यो हप्ता' : 'This week';
+  String get thisMonth => isNe ? 'यो महिना' : 'This month';
+  String get custom => isNe ? 'अरू मिति' : 'Custom';
+  String get attention => isNe ? 'ध्यान दिनुहोस्' : 'Needs attention';
+  String get todaysActivity => isNe ? 'आजको कारोबार' : "Today's activity";
+  String get noTxnsTitle =>
+      isNe ? 'अझै कुनै कारोबार छैन' : 'No transactions yet';
+  String get noTxnsBody => isNe
+      ? 'पहिलो बिक्री वा खर्च थप्नुहोस् — आजको हिसाब सुरु हुन्छ।'
+      : "Add your first sale or expense to start today's record.";
+  String get receivePayment => isNe ? 'भुक्तानी लिनुहोस्' : 'Receive payment';
+  String get payNow => isNe ? 'तिर्नुहोस्' : 'Pay';
+  String get giveUdhaar => isNe ? 'उधारो दिनुहोस्' : 'Give udhaar';
+  String get takeUdhaar => isNe ? 'उधारो लिनुहोस्' : 'Take udhaar';
+  String get remindSent => isNe ? 'सम्झना दिइयो' : 'Marked as reminded';
+  String get cancelInvoiceAction =>
+      isNe ? 'बिल रद्द गर्नुहोस्' : 'Cancel invoice';
+  String get invoiceCancelled => isNe ? 'बिल रद्द भयो' : 'Invoice cancelled';
+  String get overdue => isNe ? 'म्याद नाघेको' : 'Overdue';
+  String get notEnoughDataChart => isNe
+      ? 'चार्ट देखाउन पर्याप्त तथ्याङ्क छैन — तलको जम्मा हेर्नुहोस्।'
+      : 'Not enough data for a chart yet — see the totals below.';
+  String get undo => isNe ? 'फिर्ता' : 'Undo';
+  String get entryAdded => isNe ? 'इन्ट्री थपियो' : 'Entry added';
+  String get entryRemoved => isNe ? 'इन्ट्री हटाइयो' : 'Entry removed';
+  String get removeEntry => isNe ? 'इन्ट्री हटाउनुहोस्' : 'Remove entry';
+  String get saveFailed => isNe
+      ? 'सेभ गर्न सकिएन — फेरि प्रयास गर्नुहोस्'
+      : "Couldn't save — try again";
+  String get recordedJustNow => isNe ? 'भर्खरै' : 'just now';
+
+  // ── Profile & language control ──────────────────────────────────────────────
+  String get language => isNe ? 'भाषा' : 'Language';
+  String get english => isNe ? 'अंग्रेजी' : 'English';
+  String get nepali => 'नेपाली';
+  String get alerts => isNe ? 'सूचना र सतर्कता' : 'Alerts & reminders';
+  String get paymentReminders =>
+      isNe ? 'उधारो सम्झना (ग्राहकलाई)' : 'Udhaar payment reminders';
+  String get paymentRemindersSub => isNe
+      ? 'बाँकी रकम भएका ग्राहकहरूलाई सम्झना दिनुहोस्'
+      : 'Remind customers with outstanding balances';
+  String get lowCashAlert => isNe ? 'नगद कम भएको सूचना' : 'Low cash alert';
+  String get lowCashAlertSub => isNe
+      ? 'दैनिक नगद सीमा मुनि झर्दा जानकारी दिनुहोस्'
+      : 'Notify when cash on hand falls below your threshold';
+  String get lowStockAlert =>
+      isNe ? 'मौज्दात कम भएको सूचना' : 'Low stock alerts';
+  String get lowStockAlertSub => isNe
+      ? 'सामान सीमा मुनि पुग्दा घरको पृष्ठमा देखाउनुहोस्'
+      : 'Show restock items on the home screen';
+  String get lowCashThresholdLabel =>
+      isNe ? 'न्यूनतम नगद सीमा (ऐच्छिक)' : 'Minimum cash threshold (optional)';
+  String get profileUpdated => isNe ? 'प्रोफाइल अपडेट भयो' : 'Profile updated';
 }

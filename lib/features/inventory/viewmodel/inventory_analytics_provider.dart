@@ -12,7 +12,7 @@ class InventoryInsight {
     required this.daysUntilStockout,
     required this.recommendedReorder,
     required this.movement,
-    required this.grossMarginPct,
+    this.grossMarginPct,
   });
 
   final InventoryItem item;
@@ -20,7 +20,9 @@ class InventoryInsight {
   final double? daysUntilStockout;
   final double recommendedReorder;
   final ItemMovement movement;
-  final double grossMarginPct;
+
+  /// Null when cost or sale price is unknown — never guess a margin.
+  final double? grossMarginPct;
 }
 
 final inventoryAnalyticsProvider = Provider<Map<String, InventoryInsight>>((
@@ -52,11 +54,16 @@ final inventoryAnalyticsProvider = Provider<Map<String, InventoryInsight>>((
       stockoutDays = 0.0;
     }
 
-    // Recommended reorder = 14 days of supply + low stock buffer
-    final recommendedReorder = (avgDaily * 14.0).clamp(
-      item.lowStockThreshold * 2,
-      100.0,
-    );
+    // Recommended reorder = 14 days of supply, floored at twice the low-stock
+    // threshold and capped at 100. Bounds are ordered defensively — Dart's
+    // num.clamp throws when lower > upper (thresholds are free-text input),
+    // which used to take down the whole Inventory tab.
+    final targetQty = avgDaily * 14.0;
+    final floorQty = item.lowStockThreshold * 2.0;
+    final safeFloor = floorQty.clamp(0.0, 100.0);
+    final recommendedReorder = targetQty < safeFloor
+        ? safeFloor
+        : (targetQty > 100.0 ? 100.0 : targetQty);
 
     // Movement classification
     final ItemMovement movement;
@@ -71,12 +78,14 @@ final inventoryAnalyticsProvider = Provider<Map<String, InventoryInsight>>((
       movement = ItemMovement.normal;
     }
 
-    // Margin %
-    double margin = 0.0;
+    // Margin % — unknown (not zero!) when prices are not recorded.
+    final double? margin;
     if (item.salePriceMinor > 0 && item.costPriceMinor > 0) {
       margin =
           ((item.salePriceMinor - item.costPriceMinor) / item.salePriceMinor) *
           100.0;
+    } else {
+      margin = null;
     }
 
     result[item.id] = InventoryInsight(

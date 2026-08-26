@@ -56,45 +56,95 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
   }
 
   Future<void> _submit() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final name = _name.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Give the item a name first')),
+      );
+      return;
+    }
+
+    double parsePositive(String raw, double fallback) {
+      final v = double.tryParse(raw.trim());
+      if (v == null || v < 0) return fallback;
+      return v;
+    }
 
     final repo = ref.read(repositoryProvider);
     final branchId = ref.read(selectedBranchIdProvider);
-    final qty = double.tryParse(_quantity.text.trim()) ?? 0.0;
-    final thres = double.tryParse(_threshold.text.trim()) ?? 5.0;
-    final cost = (int.tryParse(_cost.text.trim()) ?? 0) * 100;
-    final sale = (int.tryParse(_sale.text.trim()) ?? 0) * 100;
+    // Negative stock/prices are never valid input — fall back instead of
+    // silently writing impossible numbers into the books.
+    final qty = parsePositive(_quantity.text.trim(), 0.0);
+    final thres = parsePositive(_threshold.text.trim(), 5.0);
+    final cost = (int.tryParse(_cost.text.trim()) ?? 0) < 0
+        ? 0
+        : (int.tryParse(_cost.text.trim()) ?? 0) * 100;
+    final sale = (int.tryParse(_sale.text.trim()) ?? 0) < 0
+        ? 0
+        : (int.tryParse(_sale.text.trim()) ?? 0) * 100;
 
-    if (widget.item == null) {
-      await repo.addInventoryItem(
-        name: name,
-        sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
-        unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
-        initialQuantity: qty,
-        lowStockThreshold: thres,
-        costPriceMinor: cost,
-        salePriceMinor: sale,
-        branchId: branchId,
-      );
-    } else {
-      final updated = InventoryItem(
-        id: widget.item!.id,
-        name: name,
-        sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
-        unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
-        currentQuantity: qty,
-        lowStockThreshold: thres,
-        costPriceMinor: cost,
-        salePriceMinor: sale,
-        branchId: widget.item!.branchId,
-        createdAt: widget.item!.createdAt,
-        updatedAt: DateTime.now(),
-      );
-      await repo.updateInventoryItem(updated);
+    try {
+      if (widget.item == null) {
+        await repo.addInventoryItem(
+          name: name,
+          sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
+          unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
+          initialQuantity: qty,
+          lowStockThreshold: thres,
+          costPriceMinor: cost,
+          salePriceMinor: sale,
+          branchId: branchId,
+        );
+      } else {
+        final updated = InventoryItem(
+          id: widget.item!.id,
+          name: name,
+          sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
+          unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
+          currentQuantity: qty,
+          lowStockThreshold: thres,
+          costPriceMinor: cost,
+          salePriceMinor: sale,
+          branchId: widget.item!.branchId,
+          createdAt: widget.item!.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await repo.updateInventoryItem(updated);
+      }
+      if (mounted) navigator.pop();
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(S('en').saveFailed)));
     }
+  }
 
-    if (mounted) Navigator.pop(context);
+  Future<void> _delete() async {
+    final item = widget.item!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete item?'),
+        content: Text('"${item.name}" will be removed from your stock list.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: GallaColors.moneyOut,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await ref.read(repositoryProvider).deleteInventoryItem(item.id);
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   @override
@@ -232,6 +282,12 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
         ),
       ),
       actions: [
+        if (isEdit)
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: GallaColors.moneyOut),
+            onPressed: _delete,
+            child: const Text('Delete'),
+          ),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),

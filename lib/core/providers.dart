@@ -20,11 +20,6 @@ final partiesProvider = StreamProvider<List<Party>>((ref) {
   return ref.watch(repositoryProvider).watchParties();
 });
 
-final selectedDayProvider = StateProvider<DateTime>((ref) {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day);
-});
-
 final stringsLocaleProvider = Provider<String>((ref) {
   return ref.watch(settingsProvider).valueOrNull?.locale ?? 'en';
 });
@@ -38,11 +33,6 @@ final invoicesProvider = StreamProvider<List<Invoice>>((ref) {
 final inventoryProvider = StreamProvider<List<InventoryItem>>((ref) {
   final branchId = ref.watch(selectedBranchIdProvider);
   return ref.watch(repositoryProvider).watchInventory(branchId: branchId);
-});
-
-final lowStockItemsProvider = Provider<List<InventoryItem>>((ref) {
-  final items = ref.watch(inventoryProvider).valueOrNull ?? [];
-  return items.where((i) => i.isLowStock).toList();
 });
 
 final branchesProvider = StreamProvider<List<Branch>>((ref) {

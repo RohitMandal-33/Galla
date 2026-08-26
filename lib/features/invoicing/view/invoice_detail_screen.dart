@@ -48,102 +48,55 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
     String currency,
     S s,
   ) async {
-    final amountCtrl = TextEditingController(
-      text: (inv.dueAmountMinor / 100).toStringAsFixed(0),
-    );
-    final noteCtrl = TextEditingController();
-
-    await showModalBottomSheet(
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            20,
-            20,
-            MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                s.recordInvoicePayment,
-                style: GallaType.numberMd.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Total Due: ${Money(inv.dueAmountMinor, currency: currency).format()}',
-                style: const TextStyle(color: GallaColors.muted),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountCtrl,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: '${s.amount} ($currency)',
-                  filled: true,
-                  fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: noteCtrl,
-                decoration: InputDecoration(
-                  labelText: s.noteHint,
-                  hintText: 'Cash / Bank Transfer / Digital Pay',
-                  filled: true,
-                  fillColor: GallaColors.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final val = int.tryParse(amountCtrl.text.trim()) ?? 0;
-                    if (val <= 0) return;
-                    final repo = ref.read(repositoryProvider);
-                    await repo.recordInvoicePayment(
-                      inv.id,
-                      val * 100,
-                      note: noteCtrl.text.trim().isEmpty
-                          ? null
-                          : noteCtrl.text.trim(),
-                    );
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    await _load();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: GallaColors.moneyIn,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: Text(
-                    s.save,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PaymentSheet(invoice: inv, currency: currency, s: s),
     );
+    if (saved == true) await _load();
+  }
+
+  Future<void> _cancelInvoice(Invoice inv, S s) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final router = GoRouter.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.cancelInvoiceAction),
+        content: const Text(
+          'The invoice will be marked cancelled and its amount removed from '
+          'your udhaar. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: GallaColors.moneyOut,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(s.cancelInvoiceAction),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ok = await ref.read(repositoryProvider).cancelInvoice(inv.id);
+    if (!ok) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Only invoices without payments can be cancelled'),
+        ),
+      );
+      return;
+    }
+    await _load();
+    messenger.showSnackBar(SnackBar(content: Text(s.invoiceCancelled)));
+    router.pop();
   }
 
   @override
@@ -181,37 +134,61 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
               currency: currency,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () async {
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Delete Invoice?'),
-                  content: const Text(
-                    'Are you sure you want to delete this invoice?',
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
+          if (inv.status != InvoiceStatus.paid &&
+              inv.status != InvoiceStatus.cancelled)
+            IconButton(
+              icon: const Icon(Icons.block_rounded, size: 20),
+              tooltip: s.cancelInvoiceAction,
+              onPressed: () => _cancelInvoice(inv, s),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              tooltip: 'Delete',
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final router = GoRouter.of(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Delete Invoice?'),
+                    content: Text(
+                      inv.status == InvoiceStatus.cancelled
+                          ? 'The cancelled invoice and its entry will be removed.'
+                          : 'Only unpaid invoices can be deleted. Its stock deduction will be restored.',
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text(
-                        'Delete',
-                        style: TextStyle(color: Colors.red),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm != true || !mounted) return;
+                final ok = await ref
+                    .read(repositoryProvider)
+                    .deleteInvoice(inv.id);
+                if (!ok) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Invoices with payments cannot be deleted — cancel the invoice instead',
                       ),
                     ),
-                  ],
-                ),
-              );
-              if (confirm == true) {
-                await ref.read(repositoryProvider).deleteInvoice(inv.id);
-                if (mounted) context.pop();
-              }
-            },
-          ),
+                  );
+                  return;
+                }
+                router.pop();
+              },
+            ),
         ],
       ),
       body: ListView(
@@ -491,6 +468,163 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label, style: GallaType.chipLabel.copyWith(color: fg)),
+    );
+  }
+}
+
+// ── Payment sheet ──────────────────────────────────────────────────────────────
+/// Payment entry with a hard cap at the amount due — the ledger must never
+/// record more cash than is owed.
+
+class _PaymentSheet extends ConsumerStatefulWidget {
+  const _PaymentSheet({
+    required this.invoice,
+    required this.currency,
+    required this.s,
+  });
+
+  final Invoice invoice;
+  final String currency;
+  final S s;
+
+  @override
+  ConsumerState<_PaymentSheet> createState() => _PaymentSheetState();
+}
+
+class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
+  late final TextEditingController _amountCtrl;
+  final _noteCtrl = TextEditingController();
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefill the exact due amount (whole rupees; paisa shown in the label).
+    _amountCtrl = TextEditingController(
+      text: (widget.invoice.dueAmountMinor / 100).toStringAsFixed(0),
+    );
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_saving) return;
+    final val = int.tryParse(_amountCtrl.text.trim()) ?? 0;
+    final dueMajor = widget.invoice.dueAmountMinor / 100;
+    setState(() {
+      if (val <= 0) {
+        _error = 'Enter an amount greater than zero';
+        return;
+      }
+      if (val > dueMajor + 0.009) {
+        _error =
+            'More than the amount due (${Money(widget.invoice.dueAmountMinor, currency: widget.currency).format()})';
+        return;
+      }
+      _error = null;
+    });
+    if (_error != null) return;
+
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(repositoryProvider)
+          .recordInvoicePayment(
+            widget.invoice.id,
+            val * 100,
+            note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+          );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(widget.s.saveFailed)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inv = widget.invoice;
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: GallaColors.surface,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(GallaRadius.bottomSheet),
+          ),
+        ),
+        padding: const EdgeInsets.all(GallaSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.s.recordInvoicePayment, style: GallaType.numberMd),
+            const SizedBox(height: GallaSpacing.xs),
+            Text(
+              'Due: ${Money(inv.dueAmountMinor, currency: widget.currency).format()}',
+              style: GallaType.body.copyWith(color: GallaColors.muted),
+            ),
+            const SizedBox(height: GallaSpacing.base),
+            TextField(
+              controller: _amountCtrl,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+              decoration: InputDecoration(
+                labelText: '${widget.s.amount} (${widget.currency})',
+                errorText: _error,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.md),
+            TextField(
+              controller: _noteCtrl,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                labelText: widget.s.noteHint,
+                hintText: 'Cash / Bank Transfer / Digital Pay',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.base),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: GallaColors.moneyIn,
+                ),
+                onPressed: _saving ? null : () => _submit(),
+                icon: _saving
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(color: Colors.white),
+                      )
+                    : const Icon(Icons.payments_outlined, size: 18),
+                label: Text(widget.s.save),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
