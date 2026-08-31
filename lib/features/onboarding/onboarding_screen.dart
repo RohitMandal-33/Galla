@@ -170,7 +170,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           _step == 0
                               ? 'Get Started'
                               : (_step == 3 ? 'Launch My Galla' : 'Continue'),
-                          style: GallaType.cardTitle,
                         ),
                       ),
                     ),
