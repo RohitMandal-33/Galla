@@ -89,6 +89,13 @@ class MoreScreen extends ConsumerWidget {
             title: 'Business',
             items: [
               _MenuItem(
+                icon: Icons.insights_rounded,
+                iconColor: GallaColors.brand,
+                title: 'Analytics',
+                trailingText: 'Graphs',
+                onTap: () => context.push('/analytics'),
+              ),
+              _MenuItem(
                 icon: Icons.storefront_outlined,
                 iconColor: GallaColors.brand,
                 title: s.branches,
@@ -158,6 +165,26 @@ class MoreScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: GallaSpacing.base),
+          _MenuGroup(
+            title: 'Account',
+            items: [
+              if (settings.isLoggedIn)
+                _MenuItem(
+                  icon: Icons.logout_rounded,
+                  iconColor: GallaColors.moneyOut,
+                  title: 'Sign out (${settings.authEmail ?? ''})',
+                  onTap: () => _signOut(context, ref),
+                ),
+              if (!settings.isLoggedIn)
+                _MenuItem(
+                  icon: Icons.login_rounded,
+                  iconColor: GallaColors.brand,
+                  title: 'Sign in',
+                  onTap: () => context.go('/login'),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -193,6 +220,32 @@ class MoreScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _signOut(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You will need to sign in again to access your khata.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(repositoryProvider).logout();
+    ref.invalidate(settingsProvider);
+    if (context.mounted) context.go('/login');
+  }
+
   void _showHelpDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -202,7 +255,8 @@ class MoreScreen extends ConsumerWidget {
           '• Galla (home): your cash position for today.\n'
           '• Khata: who owes you and whom you owe.\n'
           '• Stock: what is on the shelf and what is running low.\n'
-          '• Reports: honest totals you can share as PDF or CSV.\n\n'
+          '• Reports: honest totals you can share as PDF or CSV.\n'
+          '• Analytics: graphs for last 7/14/30 days.\n\n'
           'Everything is saved on this phone as soon as you record it.',
         ),
         actions: [

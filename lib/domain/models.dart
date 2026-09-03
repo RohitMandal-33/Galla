@@ -367,6 +367,9 @@ class AppSettings {
     this.lockEnabled = false,
     this.pinHash,
     this.onboardingDone = false,
+    this.isLoggedIn = false,
+    this.authEmail,
+    this.authIsDemo = false,
     this.notifyPaymentDue = true,
     this.notifyLowCash = true,
     this.notifyLowStock = true,
@@ -385,6 +388,9 @@ class AppSettings {
   final bool lockEnabled;
   final String? pinHash;
   final bool onboardingDone;
+  final bool isLoggedIn;
+  final String? authEmail;
+  final bool authIsDemo;
   final bool notifyPaymentDue;
   final bool notifyLowCash;
   final bool notifyLowStock;
@@ -405,6 +411,9 @@ class AppSettings {
     bool? lockEnabled,
     String? pinHash,
     bool? onboardingDone,
+    bool? isLoggedIn,
+    String? authEmail,
+    bool? authIsDemo,
     bool? notifyPaymentDue,
     bool? notifyLowCash,
     bool? notifyLowStock,
@@ -423,6 +432,9 @@ class AppSettings {
       lockEnabled: lockEnabled ?? this.lockEnabled,
       pinHash: pinHash ?? this.pinHash,
       onboardingDone: onboardingDone ?? this.onboardingDone,
+      isLoggedIn: isLoggedIn ?? this.isLoggedIn,
+      authEmail: authEmail ?? this.authEmail,
+      authIsDemo: authIsDemo ?? this.authIsDemo,
       notifyPaymentDue: notifyPaymentDue ?? this.notifyPaymentDue,
       notifyLowCash: notifyLowCash ?? this.notifyLowCash,
       notifyLowStock: notifyLowStock ?? this.notifyLowStock,

@@ -1,3 +1,4 @@
+import '../../core/money/amount_parser.dart';
 import '../../domain/models.dart';
 
 class NlParser {
@@ -77,13 +78,11 @@ class NlParser {
   int? _extractAmount(String lower) {
     final lakh = RegExp(r'(\d+(?:[.,]\d+)?)\s*(lakh|lac)').firstMatch(lower);
     if (lakh != null) {
-      final n = double.tryParse(lakh.group(1)!.replaceAll(',', '')) ?? 0;
-      return (n * 100000 * 100).round();
+      return parseAmountToMinor('${lakh.group(1)} lakh');
     }
     final k = RegExp(r'(\d+(?:[.,]\d+)?)\s*k\b').firstMatch(lower);
     if (k != null) {
-      final n = double.tryParse(k.group(1)!.replaceAll(',', '')) ?? 0;
-      return (n * 1000 * 100).round();
+      return parseAmountToMinor('${k.group(1)} k');
     }
     final numbered = RegExp(
       r'(?:rs\.?|₹|\$)?\s*(\d{1,3}(?:,\d{2,3})+|\d+)(?:\.(\d{1,2}))?',

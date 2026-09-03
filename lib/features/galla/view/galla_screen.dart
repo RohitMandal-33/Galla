@@ -126,6 +126,63 @@ class GallaScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: GallaSpacing.md),
 
+                    // ── Analytics shortcut (graphs) — only when there is data so the empty-state
+                    // remains on-stage for the trust-loop widget test and for a clean first-run.
+                    if (vm.txns.isNotEmpty || toCollect > 0) ...[
+                      GestureDetector(
+                        onTap: () => context.push('/analytics'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GallaColors.surface,
+                            borderRadius: BorderRadius.circular(GallaRadius.md),
+                            border: Border.all(color: GallaColors.line),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: GallaColors.brandSoft,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.insights_rounded,
+                                  size: 18,
+                                  color: GallaColors.brand,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Analytics · Graphs',
+                                      style: GallaType.subtitleSm,
+                                    ),
+                                    Text(
+                                      'Sales trend, categories & cash pulse',
+                                      style: GallaType.captionSm,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 14,
+                                color: GallaColors.muted,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: GallaSpacing.md),
+                    ],
+
                     // ── Attention items (only when actionable) ────────────
                     if (actions.isNotEmpty) ...[
                       const GallaSectionHeader(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/analytics/view/analytics_screen.dart';
+import '../../features/auth/view/login_screen.dart';
 import '../../features/business/view/branches_screen.dart';
 import '../../features/business/view/business_profile_screen.dart';
 import '../../features/business/view/staff_screen.dart';
@@ -30,17 +32,33 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final settings = ref.read(settingsProvider).valueOrNull;
       if (settings == null) return null;
-      final onboardingRoute = state.matchedLocation.startsWith('/onboarding');
-      if (!settings.onboardingDone && !onboardingRoute) return '/onboarding';
-      if (settings.onboardingDone &&
-          onboardingRoute &&
-          state.matchedLocation == '/onboarding') {
+      final loc = state.matchedLocation;
+      final isLoginRoute = loc.startsWith('/login');
+      final isOnboardingRoute = loc.startsWith('/onboarding');
+
+      // Auth gate — demo account required before anything else.
+      if (!settings.isLoggedIn && !isLoginRoute) return '/login';
+      if (settings.isLoggedIn && isLoginRoute) return '/galla';
+
+      // Onboarding gate — demo login auto-completes onboarding, but keep for fresh installs.
+      if (settings.isLoggedIn &&
+          !settings.onboardingDone &&
+          !isOnboardingRoute &&
+          !isLoginRoute) {
+        return '/onboarding';
+      }
+      if (settings.isLoggedIn &&
+          settings.onboardingDone &&
+          isOnboardingRoute &&
+          loc == '/onboarding') {
         return '/galla';
       }
       return null;
     },
     routes: [
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/analytics', builder: (_, _) => const AnalyticsScreen()),
 
       // Business profile & security — reached from More and the home header.
       GoRoute(

@@ -55,6 +55,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     if (loadDemo) {
       await DemoSeeder.seedNepaliKirana(repo);
+      // Demo seeding already marks onboardingDone; ensure demo auth as well.
+      final s = await repo.loadSettings();
+      if (!s.isLoggedIn) {
+        await repo.saveSettings(
+          s.copyWith(
+            isLoggedIn: true,
+            authEmail: GallaRepository.demoEmail,
+            authIsDemo: true,
+          ),
+        );
+      }
     } else {
       final current = await repo.loadSettings();
       await repo.saveSettings(
@@ -65,6 +76,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           currency: _currency,
           locale: _locale,
           onboardingDone: true,
+          isLoggedIn: true,
+          authEmail: current.authEmail ?? 'guest@local',
         ),
       );
 

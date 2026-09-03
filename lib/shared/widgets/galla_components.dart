@@ -16,7 +16,6 @@ class GallaBalanceCard extends StatelessWidget {
     required this.currency,
     this.onViewReport,
     this.label = 'Today\'s Cash',
-    this.trendPercent,
   });
 
   final int cashOnHandMinor;
@@ -25,7 +24,6 @@ class GallaBalanceCard extends StatelessWidget {
   final String currency;
   final VoidCallback? onViewReport;
   final String label;
-  final double? trendPercent;
 
   @override
   Widget build(BuildContext context) {
@@ -42,61 +40,16 @@ class GallaBalanceCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row: label + trend + view report ─────────────────────────
+          // ── Top row: label + view report ─────────────────────────────────
           Row(
             children: [
               Expanded(
-                child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    Text(
-                      label,
-                      style: GallaType.label.copyWith(
-                        letterSpacing: 0.3,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    if (trendPercent != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color:
-                              (trendPercent! >= 0
-                                      ? GallaColors.moneyInOnDark
-                                      : GallaColors.moneyOutOnDark)
-                                  .withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(GallaRadius.xs),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              trendPercent! >= 0
-                                  ? Icons.arrow_upward_rounded
-                                  : Icons.arrow_downward_rounded,
-                              size: 10,
-                              color: trendPercent! >= 0
-                                  ? GallaColors.moneyInOnDark
-                                  : GallaColors.moneyOutOnDark,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${trendPercent!.abs().toStringAsFixed(1)}% vs yest.',
-                              style: GallaType.badge.copyWith(
-                                color: trendPercent! >= 0
-                                    ? GallaColors.moneyInOnDark
-                                    : GallaColors.moneyOutOnDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  label,
+                  style: GallaType.label.copyWith(
+                    letterSpacing: 0.3,
+                    color: Colors.white70,
+                  ),
                 ),
               ),
               if (onViewReport != null) ...[
@@ -184,75 +137,6 @@ class GallaBalanceCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── GallaPaymentBadge ──────────────────────────────────────────────────────────
-/// Visual badge identifying payment channels (Cash / Fonepay / eSewa / Khalti / Bank).
-
-class GallaPaymentBadge extends StatelessWidget {
-  const GallaPaymentBadge({super.key, required this.method});
-  final String method;
-
-  @override
-  Widget build(BuildContext context) {
-    final lower = method.toLowerCase();
-    final Color bg;
-    final Color fg;
-    final String label;
-
-    if (lower.contains('esewa')) {
-      bg = GallaColors.esewaSoft;
-      fg = GallaColors.esewa;
-      label = 'eSewa';
-    } else if (lower.contains('khalti')) {
-      bg = GallaColors.khaltiSoft;
-      fg = GallaColors.khalti;
-      label = 'Khalti';
-    } else if (lower.contains('fonepay') || lower.contains('qr')) {
-      bg = GallaColors.fonepaySoft;
-      fg = GallaColors.fonepay;
-      label = 'QR/Fonepay';
-    } else if (lower.contains('bank')) {
-      bg = GallaColors.blueSoft;
-      fg = GallaColors.blue;
-      label = 'Bank';
-    } else {
-      bg = GallaColors.brandSoft;
-      fg = GallaColors.brand;
-      label = 'Cash';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(GallaRadius.xs),
-      ),
-      child: Text(label, style: GallaType.badge.copyWith(color: fg)),
-    );
-  }
-}
-
-// ── GallaStatusDot ────────────────────────────────────────────────────────────
-
-class GallaStatusDot extends StatelessWidget {
-  const GallaStatusDot({
-    super.key,
-    this.color = GallaColors.moneyIn,
-    this.size = 7,
-  });
-
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -593,95 +477,6 @@ class GallaPartyCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// ── GallaStatusBadge ───────────────────────────────────────────────────────────
-/// Small chip showing payment method or udhaar status.
-
-enum GallaBadgeType {
-  cash,
-  qr,
-  bank,
-  udhaar,
-  income,
-  expense,
-  pending,
-  settled,
-}
-
-class GallaStatusBadge extends StatelessWidget {
-  const GallaStatusBadge({super.key, required this.type});
-  final GallaBadgeType type;
-
-  @override
-  Widget build(BuildContext context) {
-    final (label, bg, fg, icon) = switch (type) {
-      GallaBadgeType.cash => (
-        'Cash',
-        GallaColors.brandSofter,
-        GallaColors.brand,
-        Icons.payments_outlined,
-      ),
-      GallaBadgeType.qr => (
-        'QR',
-        GallaColors.fonepaySoft,
-        GallaColors.fonepay,
-        Icons.qr_code_2_rounded,
-      ),
-      GallaBadgeType.bank => (
-        'Bank',
-        GallaColors.blueSoft,
-        GallaColors.blue,
-        Icons.account_balance_outlined,
-      ),
-      GallaBadgeType.udhaar => (
-        'Udhaar',
-        GallaColors.udhaarSoft,
-        GallaColors.udhaar,
-        Icons.pending_outlined,
-      ),
-      GallaBadgeType.income => (
-        'Income',
-        GallaColors.moneyInSoft,
-        GallaColors.moneyIn,
-        Icons.add_rounded,
-      ),
-      GallaBadgeType.expense => (
-        'Expense',
-        GallaColors.moneyOutSoft,
-        GallaColors.moneyOut,
-        Icons.remove_rounded,
-      ),
-      GallaBadgeType.pending => (
-        'Pending',
-        GallaColors.udhaarSoft,
-        GallaColors.udhaar,
-        Icons.schedule_rounded,
-      ),
-      GallaBadgeType.settled => (
-        'Settled',
-        GallaColors.moneyInSoft,
-        GallaColors.moneyIn,
-        Icons.check_rounded,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(GallaRadius.xs),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: fg),
-          const SizedBox(width: 3),
-          Text(label, style: GallaType.badge.copyWith(color: fg)),
-        ],
       ),
     );
   }
@@ -1201,55 +996,6 @@ class _GallaQuickActionButtonState extends State<GallaQuickActionButton>
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── GallaMoneyDisplay ──────────────────────────────────────────────────────────
-/// Standalone hero financial number display — currency symbol + amount.
-
-class GallaMoneyDisplay extends StatelessWidget {
-  const GallaMoneyDisplay({
-    super.key,
-    required this.minor,
-    required this.currency,
-    this.direction,
-    this.fontSize = 40,
-    this.color,
-    this.showSign = false,
-  });
-
-  final int minor;
-  final String currency;
-  final Direction? direction;
-  final double fontSize;
-  final Color? color;
-  final bool showSign;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveColor =
-        color ??
-        switch (direction) {
-          Direction.moneyIn => GallaColors.moneyIn,
-          Direction.moneyOut => GallaColors.moneyOut,
-          null => GallaColors.ink,
-        };
-
-    final formatted = Money(minor, currency: currency).format();
-    final sign = showSign && direction != null
-        ? (direction == Direction.moneyIn ? '+' : '−')
-        : '';
-
-    return Text(
-      '$sign$formatted',
-      style: TextStyle(
-        fontSize: fontSize,
-        fontWeight: FontWeight.w800,
-        color: effectiveColor,
-        letterSpacing: -1.2,
-        height: 1.0,
       ),
     );
   }

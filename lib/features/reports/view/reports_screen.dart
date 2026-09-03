@@ -37,6 +37,11 @@ class ReportsScreen extends ConsumerWidget {
         backgroundColor: GallaColors.canvas,
         title: Text(s.reportsTab),
         actions: [
+          IconButton(
+            tooltip: 'Analytics',
+            icon: const Icon(Icons.insights_rounded, size: 20),
+            onPressed: () => context.push('/analytics'),
+          ),
           reportsAsync.maybeWhen(
             data: (state) => (state.hasData && state.report != null)
                 ? IconButton(
@@ -225,6 +230,17 @@ class ReportsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: GallaSpacing.md),
               ],
+
+              // ── Analytics shortcut ───────────────────────────────────────
+              FilledButton.tonalIcon(
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () => context.push('/analytics'),
+                icon: const Icon(Icons.insights_rounded, size: 18),
+                label: const Text('Open analytics — graphs'),
+              ),
+              const SizedBox(height: 10),
 
               // ── Export ─────────────────────────────────────────────────
               OutlinedButton.icon(

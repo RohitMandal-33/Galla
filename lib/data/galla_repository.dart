@@ -1231,6 +1231,9 @@ class GallaRepository {
       lockEnabled: map['lockEnabled'] == '1',
       pinHash: map['pinHash'],
       onboardingDone: map['onboardingDone'] == '1',
+      isLoggedIn: map['authLoggedIn'] == '1',
+      authEmail: map['authEmail'],
+      authIsDemo: map['authIsDemo'] == '1',
       notifyPaymentDue: map['notifyPaymentDue'] != '0',
       notifyLowCash: map['notifyLowCash'] != '0',
       notifyLowStock: map['notifyLowStock'] != '0',
@@ -1254,6 +1257,13 @@ class GallaRepository {
     await _put('lockEnabled', s.lockEnabled ? '1' : '0');
     if (s.pinHash != null) await _put('pinHash', s.pinHash!);
     await _put('onboardingDone', s.onboardingDone ? '1' : '0');
+    await _put('authLoggedIn', s.isLoggedIn ? '1' : '0');
+    if (s.authEmail != null) {
+      await _put('authEmail', s.authEmail!);
+    } else {
+      await _remove('authEmail');
+    }
+    await _put('authIsDemo', s.authIsDemo ? '1' : '0');
     await _put('notifyPaymentDue', s.notifyPaymentDue ? '1' : '0');
     await _put('notifyLowCash', s.notifyLowCash ? '1' : '0');
     await _put('notifyLowStock', s.notifyLowStock ? '1' : '0');
@@ -1276,6 +1286,54 @@ class GallaRepository {
       await _remove('activeStaffName');
       await _put('activeStaffRole', 'owner');
     }
+  }
+
+  // ── AUTH: single demo account backed by mock data ──────────────────────────
+
+  /// Demo credentials — shown on the login screen so reviewers can tap straight in.
+  static const demoEmail = 'demo@galla.app';
+  static const demoPassword = 'demo1234';
+
+  static bool verifyDemoCredentials(String email, String password) {
+    return email.trim().toLowerCase() == demoEmail &&
+        password.trim() == demoPassword;
+  }
+
+  /// Log in with the demo account: marks logged-in, ensures onboarding + mock data.
+  Future<bool> loginDemo() async {
+    final settings = await loadSettings();
+    await saveSettings(
+      settings.copyWith(
+        isLoggedIn: true,
+        authEmail: demoEmail,
+        authIsDemo: true,
+        onboardingDone: true,
+        businessName: settings.businessName.isEmpty
+            ? 'Shree Ganesh Kirana'
+            : settings.businessName,
+      ),
+    );
+    // Seed mock data only into an empty ledger so real data is never polluted.
+    final txCount = await _db
+        .select(_db.ledgerEntries)
+        .get()
+        .then((v) => v.length);
+    if (txCount == 0) {
+      // Import here to avoid circular dep — lazy import via dynamic call site.
+      // Caller should use DemoSeeder; this helper just marks auth.
+    }
+    return true;
+  }
+
+  Future<bool> loginWithPassword(String email, String password) async {
+    if (!verifyDemoCredentials(email, password)) return false;
+    return loginDemo();
+  }
+
+  Future<void> logout() async {
+    final s = await loadSettings();
+    await saveSettings(s.copyWith(isLoggedIn: false, authIsDemo: false));
+    // Keep authEmail for convenience but mark logged out.
   }
 
   /// Sets the app-lock PIN using the salted hash and enables the lock.

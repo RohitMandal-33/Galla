@@ -20,14 +20,11 @@ class GallaColors {
   // Borders & Dividers
   static const line = Color(0xFFEAE4DA);
   static const lineSoft = Color(0xFFF0EBE2);
-  static const lineFocus = Color(0xFF1A3B2E);
 
   // Brand — Deep Forest Green
   static const brand = Color(0xFF1A3B2E); // Dark forest green (main)
   static const brandMid = Color(0xFF2D5A40); // Medium brand for buttons
-  static const brandLight = Color(0xFF3D7A57); // Lighter brand for accents
   static const brandSoft = Color(0xFFE6F0EA); // Soft brand background
-  static const brandSofter = Color(0xFFF0F7F2); // Very soft brand background
 
   /// Gradient for hero surfaces (balance card, FAB face).
   static const heroGradient = LinearGradient(
@@ -39,16 +36,12 @@ class GallaColors {
   // Accent — Warm Gold (Trust & Prosperity)
   static const gold = Color(0xFFB8962E);
   static const goldLight = Color(0xFFE8C547);
-  static const goldMid = Color(0xFFD4AF37);
   static const goldDark = Color(0xFF8C7018);
   static const goldSoft = Color(0xFFFDF8EB);
-  static const goldSofter = Color(0xFFFFFDF5);
 
   // Income — Green (semantic)
   static const moneyIn = Color(0xFF1B7A3E);
-  static const moneyInMid = Color(0xFF22994D);
   static const moneyInSoft = Color(0xFFEAF5ED);
-  static const moneyInTag = Color(0xFF1B7A3E);
 
   // Income/Expense variants for dark (brand) surfaces
   static const moneyInOnDark = Color(0xFF6EDB96);
@@ -56,32 +49,19 @@ class GallaColors {
 
   // Expense — Muted Red (semantic)
   static const moneyOut = Color(0xFFC0392B);
-  static const moneyOutMid = Color(0xFFD44333);
   static const moneyOutSoft = Color(0xFFFDEBEA);
-  static const moneyOutTag = Color(0xFFC0392B);
 
   // Udhaar / Pending — Amber (semantic)
   static const udhaar = Color(0xFFB45309); // Deep amber — trust-building
-  static const udhaarMid = Color(0xFFCA6A09);
   static const udhaarSoft = Color(0xFFFEF3E2);
   static const udhaarSofter = Color(0xFFFEF8EF);
 
   // Deprecated — kept for backwards compat
   static const amber = Color(0xFFB45309);
-  static const amberSoft = Color(0xFFFEF3E2);
 
   // Blue — Informational / Secondary
   static const blue = Color(0xFF1D4ED8);
-  static const blueMid = Color(0xFF2563EB);
   static const blueSoft = Color(0xFFEFF4FF);
-
-  // Nepal Payment Methods
-  static const fonepay = Color(0xFFE51A24);
-  static const fonepaySoft = Color(0xFFFDECEE);
-  static const esewa = Color(0xFF60BB46);
-  static const esewaSoft = Color(0xFFEFF8EC);
-  static const khalti = Color(0xFF5C2D91);
-  static const khaltiSoft = Color(0xFFF3EDFA);
 }
 
 // ── Animations Scale ───────────────────────────────────────────────────────────
@@ -89,9 +69,6 @@ class GallaColors {
 class GallaAnimations {
   static const fast = Duration(milliseconds: 150);
   static const base = Duration(milliseconds: 250);
-  static const slow = Duration(milliseconds: 400);
-  static const spring = Cubic(0.175, 0.885, 0.32, 1.275);
-  static const easeOut = Curves.easeOutCubic;
 }
 
 // ── Typography ─────────────────────────────────────────────────────────────────
@@ -151,7 +128,6 @@ class GallaType {
   static final caption = _s(12, FontWeight.w400, null, GallaColors.muted);
   static final captionSm = _s(11, FontWeight.w400, null, GallaColors.muted);
   static final badge = _s(10, FontWeight.w700, null, GallaColors.ink);
-  static final overline = _s(11, FontWeight.w700, 0.6, GallaColors.muted);
 }
 
 // ── Elevation & Shadows ────────────────────────────────────────────────────────
@@ -201,12 +177,8 @@ class GallaSpacing {
   static const double huge = 48;
 
   // Semantic spacing
-  static const double sectionGap = 20;
   static const double cardPadding = 18;
-  static const double tileVertical = 10;
-  static const double pageHorizontal = 16;
   static const double bottomNavHeight = 64;
-  static const double fabSize = 62;
 
   /// Vertical clearance tab content must keep from the screen bottom so the
   /// last items never sit under the center-docked FAB, its protrusion above
@@ -217,12 +189,10 @@ class GallaSpacing {
 // ── Radius Scale ───────────────────────────────────────────────────────────────
 
 class GallaRadius {
-  static const double xs = 6;
   static const double sm = 8;
   static const double md = 12;
   static const double lg = 16;
   static const double xl = 20;
-  static const double xxl = 24;
   static const double pill = 100;
 
   // Semantic radii
@@ -230,8 +200,6 @@ class GallaRadius {
   static const double button = 14;
   static const double chip = 8;
   static const double bottomSheet = 24;
-  static const double avatar = 100;
-  static const double badge = 8;
 }
 
 // ── Theme Builder ──────────────────────────────────────────────────────────────

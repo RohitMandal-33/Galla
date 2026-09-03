@@ -1,5 +1,7 @@
 import 'package:intl/intl.dart';
 
+import 'amount_parser.dart';
+
 class Money {
   const Money(this.minor, {this.currency = 'NPR'});
 
@@ -35,20 +37,5 @@ class Money {
     return '$sign ${Money(minor.abs(), currency: currency).formatCompact(withSymbol: withSymbol)}';
   }
 
-  static int parseToMinor(String raw) {
-    final cleaned = raw.replaceAll(',', '').replaceAll(' ', '').trim();
-    if (cleaned.isEmpty) return 0;
-    final lower = cleaned.toLowerCase();
-    var multiplier = 1.0;
-    var numberPart = lower;
-    if (lower.endsWith('lakh') || lower.endsWith('lac')) {
-      multiplier = 100000;
-      numberPart = lower.replaceAll(RegExp(r'(lakh|lac)$'), '');
-    } else if (lower.endsWith('k')) {
-      multiplier = 1000;
-      numberPart = lower.substring(0, lower.length - 1);
-    }
-    final value = double.tryParse(numberPart) ?? 0;
-    return (value * multiplier * 100).round();
-  }
+  static int parseToMinor(String raw) => parseAmountToMinor(raw);
 }
