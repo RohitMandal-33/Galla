@@ -51,6 +51,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 padding: const EdgeInsets.all(GallaSpacing.xl),
                 child: GallaEmptyState(
                   icon: Icons.insights_outlined,
+                  imageUrl:
+                      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=200&q=80',
                   headline: 'No data for analytics yet',
                   body:
                       'Sign in with the demo account to load Shree Ganesh Kirana mock data, or add your first sale/expense. Graphs populate instantly.',
@@ -240,7 +242,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       children: [
                         _HealthDot(
                           label: 'Sales',
-                          value: '${(kpis.sales / 100).toStringAsFixed(0)}',
+                          value: (kpis.sales / 100).toStringAsFixed(0),
                           color: GallaColors.moneyIn,
                         ),
                         const SizedBox(width: 12),
@@ -526,8 +528,9 @@ class _PulseLineChart extends StatelessWidget {
               getTitlesWidget: (v, meta) {
                 final i = v.toInt();
                 if (i < 0 || i >= daily.length) return const SizedBox.shrink();
-                if (daily.length > 14 && i % 3 != 0)
+                if (daily.length > 14 && i % 3 != 0) {
                   return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
@@ -645,8 +648,9 @@ class _DailyBarChart extends StatelessWidget {
               getTitlesWidget: (v, meta) {
                 final i = v.toInt();
                 if (i < 0 || i >= daily.length) return const SizedBox.shrink();
-                if (daily.length > 14 && i % 2 != 0)
+                if (daily.length > 14 && i % 2 != 0) {
                   return const SizedBox.shrink();
+                }
                 return Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(

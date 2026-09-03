@@ -219,7 +219,7 @@ class GallaRepository {
 
   Stream<List<Party>> watchParties() {
     return _db
-        .select(_db.parties)
+        .customSelect('SELECT 1', readsFrom: {_db.parties, _db.ledgerEntries})
         .watch()
         .asyncMap((_) => partiesWithBalances());
   }

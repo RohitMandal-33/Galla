@@ -69,9 +69,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
 
     setState(() => _loading = false);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('Business profile updated')),
-    );
+    showGallaSnackBar(messenger, 'Business profile updated');
     router.pop();
   }
 
@@ -127,8 +125,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           GallaRepository.verifyPinSalted(current, settings.pinHash!);
       if (!ok) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Current PIN is incorrect')),
+        showGallaSnackBar(
+          ScaffoldMessenger.of(context),
+          'Current PIN is incorrect',
         );
         return;
       }
@@ -139,14 +138,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
     await repo.setAppPin(newPin);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isChange
-              ? 'PIN changed — lock is on'
-              : 'PIN set — Galla will now lock when you leave the app',
-        ),
-      ),
+    showGallaSnackBar(
+      ScaffoldMessenger.of(context),
+      isChange
+          ? 'PIN changed — lock is on'
+          : 'PIN set — Galla will now lock when you leave the app',
     );
   }
 
@@ -198,13 +194,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     if (txns.isNotEmpty) {
       // Never mix demo rows into real books.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Demo data can only be loaded into an empty ledger so your real '
-            'records are never mixed with sample data',
-          ),
-        ),
+      showGallaSnackBar(
+        ScaffoldMessenger.of(context),
+        'Demo data can only be loaded into an empty ledger so your real '
+        'records are never mixed with sample data',
       );
       return;
     }
@@ -362,7 +355,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   ),
                   const SizedBox(height: GallaSpacing.md),
                   DropdownButtonFormField<String>(
-                    value: settings.currency,
+                    initialValue: settings.currency,
                     decoration: const InputDecoration(
                       labelText: 'Currency',
                       prefixIcon: Icon(Icons.currency_exchange_outlined),

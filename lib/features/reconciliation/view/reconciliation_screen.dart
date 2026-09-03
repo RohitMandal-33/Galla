@@ -69,8 +69,10 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
     }
 
     final expectedCashMinor = _todaySummary?.cashOnHandMinor ?? 0;
-    final countedVal = int.tryParse(_cashController.text.trim());
-    final countedCashMinor = countedVal != null ? countedVal * 100 : null;
+    final cashText = _cashController.text.trim();
+    final countedCashMinor = cashText.isNotEmpty
+        ? Money.parseToMinor(cashText)
+        : null;
     final discrepancyMinor = countedCashMinor != null
         ? countedCashMinor - expectedCashMinor
         : null;
@@ -318,12 +320,15 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                       setState(() => _submitting = true);
                       final repo = ref.read(repositoryProvider);
                       final branchId = ref.read(selectedBranchIdProvider);
-                      final bankVal = int.tryParse(_bankController.text.trim());
+                      final bankText = _bankController.text.trim();
+                      final bankMinor = bankText.isNotEmpty
+                          ? Money.parseToMinor(bankText)
+                          : null;
 
                       await repo.performReconciliation(
                         countedCashMinor: countedCashMinor,
-                        bankBalanceMinor: bankVal != null && bankVal >= 0
-                            ? bankVal * 100
+                        bankBalanceMinor: bankMinor != null && bankMinor >= 0
+                            ? bankMinor
                             : null,
                         expectedCashMinor: expectedCashMinor,
                         note: _noteController.text.trim().isEmpty
@@ -334,14 +339,11 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                       );
 
                       if (mounted) {
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              discrepancyMinor != 0
-                                  ? 'Reconciliation completed & adjustment entry created.'
-                                  : 'Reconciliation completed — books match your till.',
-                            ),
-                          ),
+                        showGallaSnackBar(
+                          messenger,
+                          discrepancyMinor != 0
+                              ? 'Reconciliation completed & adjustment entry created.'
+                              : 'Reconciliation completed — books match your till.',
                         );
                         _cashController.clear();
                         _bankController.clear();

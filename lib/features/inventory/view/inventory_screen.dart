@@ -6,6 +6,8 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
+import '../../../shared/widgets/galla_network_image.dart';
+import '../data/product_image_resolver.dart';
 import '../viewmodel/inventory_analytics_provider.dart';
 import 'add_edit_item_dialog.dart';
 import 'stock_adjustment_dialog.dart';
@@ -253,6 +255,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                     ? Center(
                         child: GallaEmptyState(
                           icon: Icons.inventory_2_outlined,
+                          imageUrl:
+                              'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=200&q=80',
                           headline: 'No Products Found',
                           body:
                               'Add your store products to track stock, profit margins, and automated reorder alerts.',
@@ -345,22 +349,44 @@ class _ProductCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.isLowStock
-                      ? GallaColors.moneyOutSoft
-                      : GallaColors.brandSoft,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.shopping_bag_outlined,
-                  color: item.isLowStock
-                      ? GallaColors.moneyOut
-                      : GallaColors.brand,
-                  size: 22,
-                ),
+              Builder(
+                builder: (context) {
+                  final imageUrl = ProductImageResolver.resolveImageUrl(item.name);
+                  if (imageUrl != null) {
+                    return GallaNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      cacheWidth: 120,
+                      cacheHeight: 120,
+                      fallbackIcon: Icons.shopping_bag_outlined,
+                      fallbackColor: item.isLowStock
+                          ? GallaColors.moneyOut
+                          : GallaColors.brand,
+                      fallbackBgColor: item.isLowStock
+                          ? GallaColors.moneyOutSoft
+                          : GallaColors.brandSoft,
+                    );
+                  }
+                  return Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: item.isLowStock
+                          ? GallaColors.moneyOutSoft
+                          : GallaColors.brandSoft,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.shopping_bag_outlined,
+                      color: item.isLowStock
+                          ? GallaColors.moneyOut
+                          : GallaColors.brand,
+                      size: 22,
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 12),
               Expanded(

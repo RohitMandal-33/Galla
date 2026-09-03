@@ -10,6 +10,7 @@ import '../../data/demo_seeder.dart';
 import '../../data/galla_repository.dart';
 import '../../domain/models.dart';
 import '../../shared/widgets/galla_components.dart';
+import '../../shared/widgets/galla_network_image.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -31,14 +32,46 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   bool _loading = false;
 
   static const _businessTypes = [
-    ('Kirana / Retail', Icons.storefront_outlined),
-    ('Wholesale', Icons.inventory_2_outlined),
-    ('Restaurant / Cafe', Icons.restaurant_outlined),
-    ('Hardware', Icons.build_outlined),
-    ('Clothing / Apparel', Icons.checkroom_outlined),
-    ('Electronics', Icons.devices_outlined),
-    ('Pharmacy', Icons.local_pharmacy_outlined),
-    ('Service / Other', Icons.business_center_outlined),
+    (
+      'Kirana / Retail',
+      Icons.storefront_outlined,
+      'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Wholesale',
+      Icons.inventory_2_outlined,
+      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Restaurant / Cafe',
+      Icons.restaurant_outlined,
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Hardware',
+      Icons.build_outlined,
+      'https://images.unsplash.com/photo-1581783342308-f792dbdd27c5?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Clothing / Apparel',
+      Icons.checkroom_outlined,
+      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Electronics',
+      Icons.devices_outlined,
+      'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Pharmacy',
+      Icons.local_pharmacy_outlined,
+      'https://images.unsplash.com/photo-1586015555751-63c25aa26388?auto=format&fit=crop&w=300&q=80',
+    ),
+    (
+      'Service / Other',
+      Icons.business_center_outlined,
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=300&q=80',
+    ),
   ];
 
   @override
@@ -200,11 +233,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 104,
-            height: 104,
+            height: 120,
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 20),
+            child: GallaNetworkImage(
+              imageUrl: 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?auto=format&fit=crop&w=600&q=80',
+              borderRadius: 20,
+              fit: BoxFit.cover,
+              cacheWidth: 600,
+              overlayGradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  GallaColors.canvas.withValues(alpha: 0.9),
+                ],
+              ),
+              fallbackIcon: Icons.storefront_rounded,
+            ),
+          ),
+          Container(
+            width: 88,
+            height: 88,
             decoration: BoxDecoration(
               color: GallaColors.brandSoft,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               boxShadow: GallaElevation.card,
             ),
             padding: const EdgeInsets.all(12),
@@ -213,7 +266,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
           Text(
             'Your Business Operating System',
             style: GallaType.numberXl,
@@ -337,12 +390,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          item.$2,
-                          size: 20,
-                          color: isSelected
+                        GallaNetworkImage(
+                          imageUrl: item.$3,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          cacheWidth: 100,
+                          cacheHeight: 100,
+                          fallbackIcon: item.$2,
+                          fallbackColor: isSelected
                               ? GallaColors.brand
                               : GallaColors.muted,
+                          fallbackBgColor: isSelected
+                              ? GallaColors.brandSoft
+                              : GallaColors.surface2,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -352,6 +413,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               color: isSelected
                                   ? GallaColors.brand
                                   : GallaColors.ink,
+                              fontWeight: isSelected ? FontWeight.w600 : null,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

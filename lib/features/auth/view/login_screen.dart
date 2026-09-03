@@ -6,6 +6,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/demo_seeder.dart';
 import '../../../data/galla_repository.dart';
+import '../../../shared/widgets/galla_network_image.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -88,24 +89,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Column(
                     children: [
                       Container(
-                        width: 72,
-                        height: 72,
+                        height: 100,
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: GallaNetworkImage(
+                          imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
+                          borderRadius: GallaRadius.lg,
+                          fit: BoxFit.cover,
+                          cacheWidth: 600,
+                          overlayGradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              GallaColors.canvas.withValues(alpha: 0.85),
+                            ],
+                          ),
+                          fallbackIcon: Icons.storefront_rounded,
+                        ),
+                      ),
+                      Container(
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
                           color: GallaColors.brandSoft,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(18),
                         ),
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8),
                         child: Image.asset(
                           'assets/images/galla_logo.png',
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, _, _) => const Icon(
                             Icons.storefront_rounded,
                             size: 32,
                             color: GallaColors.brand,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
                       Text(
                         'Welcome to Galla',
                         style: GallaType.numberXl,

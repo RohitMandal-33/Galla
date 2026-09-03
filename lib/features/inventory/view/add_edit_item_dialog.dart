@@ -6,6 +6,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
 
 class AddEditItemDialog extends ConsumerStatefulWidget {
   const AddEditItemDialog({super.key, this.item});
@@ -60,9 +61,7 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
     final navigator = Navigator.of(context);
     final name = _name.text.trim();
     if (name.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Give the item a name first')),
-      );
+      showGallaSnackBar(messenger, 'Give the item a name first');
       return;
     }
 
@@ -115,7 +114,7 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
       }
       if (mounted) navigator.pop();
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(S('en').saveFailed)));
+      showGallaSnackBar(messenger, S('en').saveFailed);
     }
   }
 

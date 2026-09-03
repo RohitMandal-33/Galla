@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/widgets/galla_components.dart';
+
 import '../../features/analytics/view/analytics_screen.dart';
 import '../../features/auth/view/login_screen.dart';
 import '../../features/business/view/branches_screen.dart';
@@ -29,6 +31,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/galla',
     refreshListenable: refresh,
+    observers: [GallaSnackBarClearObserver()],
     redirect: (context, state) {
       final settings = ref.read(settingsProvider).valueOrNull;
       if (settings == null) return null;

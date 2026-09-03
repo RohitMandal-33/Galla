@@ -9,6 +9,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
 
 class CreateInvoiceScreen extends ConsumerStatefulWidget {
   const CreateInvoiceScreen({super.key});
@@ -73,18 +74,13 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
 
   Future<void> _saveInvoice() async {
     final partyName = _partyController.text.trim();
+    final messenger = ScaffoldMessenger.of(context);
     if (partyName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter or select a customer name')),
-      );
+      showGallaSnackBar(messenger, 'Please enter or select a customer name');
       return;
     }
     if (_dueDate != null && _dueDate!.isBefore(_issueDate)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Due date cannot be before the issue date'),
-        ),
-      );
+      showGallaSnackBar(messenger, 'Due date cannot be before the issue date');
       return;
     }
 
@@ -103,22 +99,16 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
     }
 
     if (validItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please add at least one line item with description and price',
-          ),
-        ),
+      showGallaSnackBar(
+        messenger,
+        'Please add at least one line item with description and price',
       );
       return;
     }
     if (skipped > 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '$skipped incomplete item${skipped == 1 ? '' : 's'} not added',
-          ),
-        ),
+      showGallaSnackBar(
+        messenger,
+        '$skipped incomplete item${skipped == 1 ? '' : 's'} not added',
       );
     }
 
@@ -155,9 +145,10 @@ class _CreateInvoiceScreenState extends ConsumerState<CreateInvoiceScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        showGallaSnackBar(
+          ScaffoldMessenger.of(context),
+          'Error: $e',
+        );
       }
     } finally {
       if (mounted) setState(() => _saving = false);

@@ -6,6 +6,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
 
 class StockAdjustmentDialog extends ConsumerStatefulWidget {
   const StockAdjustmentDialog({super.key, required this.item});
@@ -131,10 +132,9 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
             if (qty < 0) {
               // A negative physical count is impossible — reject it loudly
               // instead of writing impossible stock into the books.
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Counted quantity cannot be negative'),
-                ),
+              showGallaSnackBar(
+                ScaffoldMessenger.of(context),
+                'Counted quantity cannot be negative',
               );
               return;
             }

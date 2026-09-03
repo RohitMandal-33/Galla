@@ -9,6 +9,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
 import 'invoice_pdf_generator.dart';
 
 class InvoiceDetailScreen extends ConsumerStatefulWidget {
@@ -87,15 +88,14 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
 
     final ok = await ref.read(repositoryProvider).cancelInvoice(inv.id);
     if (!ok) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Only invoices without payments can be cancelled'),
-        ),
+      showGallaSnackBar(
+        messenger,
+        'Only invoices without payments can be cancelled',
       );
       return;
     }
     await _load();
-    messenger.showSnackBar(SnackBar(content: Text(s.invoiceCancelled)));
+    showGallaSnackBar(messenger, s.invoiceCancelled);
     router.pop();
   }
 
@@ -177,12 +177,9 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
                     .read(repositoryProvider)
                     .deleteInvoice(inv.id);
                 if (!ok) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Invoices with payments cannot be deleted — cancel the invoice instead',
-                      ),
-                    ),
+                  showGallaSnackBar(
+                    messenger,
+                    'Invoices with payments cannot be deleted — cancel the invoice instead',
                   );
                   return;
                 }
@@ -515,14 +512,13 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
 
   Future<void> _submit() async {
     if (_saving) return;
-    final val = int.tryParse(_amountCtrl.text.trim()) ?? 0;
-    final dueMajor = widget.invoice.dueAmountMinor / 100;
+    final valMinor = Money.parseToMinor(_amountCtrl.text);
     setState(() {
-      if (val <= 0) {
+      if (valMinor <= 0) {
         _error = 'Enter an amount greater than zero';
         return;
       }
-      if (val > dueMajor + 0.009) {
+      if (valMinor > widget.invoice.dueAmountMinor) {
         _error =
             'More than the amount due (${Money(widget.invoice.dueAmountMinor, currency: widget.currency).format()})';
         return;
@@ -537,7 +533,7 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
           .read(repositoryProvider)
           .recordInvoicePayment(
             widget.invoice.id,
-            val * 100,
+            valMinor,
             note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
           );
       if (!mounted) return;
@@ -545,9 +541,10 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(widget.s.saveFailed)));
+      showGallaSnackBar(
+        ScaffoldMessenger.of(context),
+        widget.s.saveFailed,
+      );
     }
   }
 

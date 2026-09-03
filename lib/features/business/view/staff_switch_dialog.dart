@@ -80,41 +80,46 @@ class _StaffSwitchDialogState extends ConsumerState<StaffSwitchDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RadioListTile<bool>(
-              value: true,
-              groupValue: _asOwner,
-              title: Text(
-                s.ownerRole,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: const Text('Full access to reports & settings'),
-              onChanged: (v) {
-                setState(() {
-                  _asOwner = true;
-                  _selectedStaff = null;
-                });
-              },
-            ),
-            const Divider(),
-            ...staffList.map((m) {
-              return RadioListTile<bool>(
-                value: false,
-                groupValue: _asOwner
-                    ? null
-                    : (_selectedStaff?.id == m.id ? false : null),
-                title: Text(
-                  m.name,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text('Role: ${m.role.name.toUpperCase()}'),
-                onChanged: (v) {
+            RadioGroup<String>(
+              groupValue: _asOwner ? 'owner' : (_selectedStaff?.id ?? ''),
+              onChanged: (val) {
+                if (val == 'owner') {
+                  setState(() {
+                    _asOwner = true;
+                    _selectedStaff = null;
+                  });
+                } else {
+                  final staff = staffList.where((m) => m.id == val).firstOrNull;
                   setState(() {
                     _asOwner = false;
-                    _selectedStaff = m;
+                    _selectedStaff = staff;
                   });
-                },
-              );
-            }),
+                }
+              },
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    value: 'owner',
+                    title: Text(
+                      s.ownerRole,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text('Full access to reports & settings'),
+                  ),
+                  const Divider(),
+                  ...staffList.map((m) {
+                    return RadioListTile<String>(
+                      value: m.id,
+                      title: Text(
+                        m.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text('Role: ${m.role.name.toUpperCase()}'),
+                    );
+                  }),
+                ],
+              ),
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _pinController,

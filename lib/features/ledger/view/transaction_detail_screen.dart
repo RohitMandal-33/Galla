@@ -78,7 +78,7 @@ class _TransactionDetailScreenState
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     await ref.read(repositoryProvider).softDeleteEntry(txn.id);
-    messenger.showSnackBar(SnackBar(content: Text(s.entryRemoved)));
+    showGallaSnackBar(messenger, s.entryRemoved);
     navigator.pop();
   }
 

@@ -16,6 +16,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
 import '../viewmodel/entry_viewmodel.dart';
 
 /// Post-save confirmation with an Undo affordance. Undo soft-deletes the
@@ -29,23 +30,17 @@ void showEntryUndo(
   String currency,
   Future<void> Function() undo,
 ) {
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(
-          '$label · ${Money(txn.amountMinor, currency: currency).formatCompact()}',
-        ),
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: s.undo.toUpperCase(),
-          onPressed: () async {
-            await undo();
-            messenger.showSnackBar(SnackBar(content: Text(s.entryRemoved)));
-          },
-        ),
-      ),
-    );
+  showGallaSnackBar(
+    messenger,
+    '$label · ${Money(txn.amountMinor, currency: currency).formatCompact()}',
+    action: SnackBarAction(
+      label: s.undo.toUpperCase(),
+      onPressed: () async {
+        await undo();
+        showGallaSnackBar(messenger, s.entryRemoved);
+      },
+    ),
+  );
 }
 
 // ── Master Launcher ────────────────────────────────────────────────────────────
@@ -434,8 +429,9 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
     if (mounted && _isListening) _animCtrl.repeat(reverse: true);
 
     await _speech.listen(
-      localeId:
-          'ne_NP', // Defaults to Nepali if supported, falls back automatically.
+      listenOptions: SpeechListenOptions(
+        localeId: 'ne_NP',
+      ), // Defaults to Nepali if supported, falls back automatically.
       onResult: (result) {
         if (!mounted) return;
         setState(() {
@@ -1112,9 +1108,7 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
                           .read(entryViewModelProvider(_seed))
                           .saving) {
                         // Save failed — never fail silently.
-                        messenger.showSnackBar(
-                          SnackBar(content: Text(s.saveFailed)),
-                        );
+                        showGallaSnackBar(messenger, s.saveFailed);
                       }
                     }
                   : null,

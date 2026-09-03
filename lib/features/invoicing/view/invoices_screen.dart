@@ -96,6 +96,8 @@ class InvoicesScreen extends ConsumerWidget {
                 child: invoices.isEmpty
                     ? GallaEmptyState(
                         icon: Icons.receipt_long_outlined,
+                        imageUrl:
+                            'https://images.unsplash.com/photo-1554415707-9e4466b88730?auto=format&fit=crop&w=200&q=80',
                         headline: 'No invoices found',
                         body:
                             'Create your first invoice to start billing customers.',

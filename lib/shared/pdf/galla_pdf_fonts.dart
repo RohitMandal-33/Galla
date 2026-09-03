@@ -27,7 +27,7 @@ class GallaPdfFonts {
       theme: pw.ThemeData.withFont(
         base: base,
         bold: bold ?? base,
-        fontFallback: [if (devanagari != null) devanagari],
+        fontFallback: [?devanagari],
       ),
     );
   }

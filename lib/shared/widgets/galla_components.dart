@@ -3,6 +3,57 @@ import 'package:flutter/material.dart';
 import '../../core/money/money.dart';
 import '../../core/theme/galla_theme.dart';
 import '../../domain/models.dart';
+import 'galla_network_image.dart';
+
+// ── SnackBar utilities ─────────────────────────────────────────────────────────
+
+/// Shows a consistently-styled SnackBar that:
+/// - Auto-dismisses after 5 seconds.
+/// - Can be swiped away horizontally.
+/// - Replaces any currently visible SnackBar (no stacking).
+///
+/// [action] is an optional action button. Use [ScaffoldMessenger.of(context)]
+/// to obtain [messenger] before any async gap.
+void showGallaSnackBar(
+  ScaffoldMessengerState messenger,
+  String message, {
+  SnackBarAction? action,
+}) {
+  messenger
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 5),
+        dismissDirection: DismissDirection.horizontal,
+        action: action,
+      ),
+    );
+}
+
+/// [NavigatorObserver] that clears any visible SnackBar whenever the route
+/// changes. Attach this to [GoRouter.observers] so notifications never bleed
+/// into the next screen.
+class GallaSnackBarClearObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _clear(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _clear(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _clear(newRoute);
+
+  void _clear(Route<dynamic>? route) {
+    final ctx = route?.navigator?.context;
+    if (ctx != null && ctx.mounted) {
+      ScaffoldMessenger.maybeOf(ctx)?.clearSnackBars();
+    }
+  }
+}
 
 // ── GallaBalanceCard ───────────────────────────────────────────────────────────
 /// Dark brand-green hero card showing daily financial summary.
@@ -548,6 +599,7 @@ class GallaEmptyState extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.iconColor,
+    this.imageUrl,
   });
 
   final IconData icon;
@@ -556,6 +608,7 @@ class GallaEmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final Color? iconColor;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -569,15 +622,33 @@ class GallaEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: fg.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(GallaRadius.xl),
+            if (imageUrl != null)
+              Container(
+                width: 80,
+                height: 80,
+                margin: const EdgeInsets.only(bottom: GallaSpacing.base),
+                child: GallaNetworkImage(
+                  imageUrl: imageUrl!,
+                  width: 80,
+                  height: 80,
+                  borderRadius: 20,
+                  cacheWidth: 160,
+                  cacheHeight: 160,
+                  fallbackIcon: icon,
+                  fallbackColor: fg,
+                  fallbackBgColor: fg.withValues(alpha: 0.08),
+                ),
+              )
+            else
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: fg.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(GallaRadius.xl),
+                ),
+                child: Icon(icon, size: 34, color: fg.withValues(alpha: 0.5)),
               ),
-              child: Icon(icon, size: 34, color: fg.withValues(alpha: 0.5)),
-            ),
             const SizedBox(height: GallaSpacing.base),
             Text(
               headline,

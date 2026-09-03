@@ -1,10 +1,21 @@
+String normalizeDevanagariDigits(String input) {
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  var result = input;
+  for (var i = 0; i < devanagariDigits.length; i++) {
+    result = result.replaceAll(devanagariDigits[i], '$i');
+  }
+  return result;
+}
+
 int parseAmountToMinor(String raw) {
-  final cleaned = raw
-      .replaceAll(',', '')
-      .replaceAll(' ', '')
-      .trim()
-      .toLowerCase();
+  var cleaned = normalizeDevanagariDigits(
+    raw,
+  ).replaceAll(',', '').replaceAll(' ', '').trim().toLowerCase();
+
+  // Strip common currency prefixes
+  cleaned = cleaned.replaceAll(RegExp(r'^(rs\.?|npr|रु\.?|₹|\$)'), '');
   if (cleaned.isEmpty) return 0;
+
   var multiplier = 1.0;
   var numberPart = cleaned;
   if (cleaned.endsWith('lakh') || cleaned.endsWith('lac')) {

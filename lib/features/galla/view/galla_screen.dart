@@ -84,10 +84,9 @@ class GallaScreen extends ConsumerWidget {
                   delegate: SliverChildListDelegate([
                     _DayNavRow(
                       day: vm.selectedDay,
-                      onPrevious: () =>
-                          ref.read(gallaSelectedDayProvider.notifier).state = vm
-                              .selectedDay
-                              .subtract(const Duration(days: 1)),
+                      onPrevious: () => ref
+                          .read(gallaViewModelProvider.notifier)
+                          .goToYesterday(),
                       onNext: () => ref
                           .read(gallaViewModelProvider.notifier)
                           .goToTomorrow(),

@@ -30,9 +30,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
     HapticFeedback.lightImpact();
     await ref.read(repositoryProvider).markReminded(party.id);
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(s.remindSent)));
+    showGallaSnackBar(ScaffoldMessenger.of(context), s.remindSent);
   }
 
   void _openEntry(
@@ -68,9 +66,7 @@ class _PartyDetailScreenState extends ConsumerState<PartyDetailScreen> {
       builder: (_) => _EditPartySheet(party: party),
     );
     if (saved == null || !mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(s.saved)));
+    showGallaSnackBar(ScaffoldMessenger.of(context), s.saved);
   }
 
   @override
@@ -512,9 +508,10 @@ class _EditPartySheetState extends ConsumerState<_EditPartySheet> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(S('en').saveFailed)));
+      showGallaSnackBar(
+        ScaffoldMessenger.of(context),
+        S('en').saveFailed,
+      );
     }
   }
 

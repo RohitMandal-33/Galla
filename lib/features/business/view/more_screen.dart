@@ -12,6 +12,8 @@ import '../../../core/providers.dart';
 import '../../../data/galla_repository.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../domain/models.dart';
+import '../../../shared/widgets/galla_components.dart';
+import '../../../shared/widgets/galla_network_image.dart';
 import 'staff_switch_dialog.dart';
 
 /// Secondary navigation — everything low-frequency lives here so the four
@@ -48,39 +50,61 @@ class MoreScreen extends ConsumerWidget {
         children: [
           // ── Profile — opens the full business profile screen ────────────
           Container(
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: GallaColors.surface,
+              color: GallaColors.brand,
               borderRadius: BorderRadius.circular(GallaRadius.lg),
-              border: Border.all(color: GallaColors.line),
+              boxShadow: GallaElevation.card,
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(GallaSpacing.base),
-              leading: CircleAvatar(
-                radius: 26,
-                backgroundColor: GallaColors.brandSoft,
-                child: Text(
-                  initials,
-                  style: GallaType.number.copyWith(color: GallaColors.brand),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: GallaNetworkImage(
+                    imageUrl: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=600&q=80',
+                    borderRadius: 0,
+                    fit: BoxFit.cover,
+                    cacheWidth: 600,
+                    overlayGradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        GallaColors.brand.withValues(alpha: 0.94),
+                        GallaColors.brandMid.withValues(alpha: 0.88),
+                      ],
+                    ),
+                    fallbackIcon: Icons.storefront_rounded,
+                  ),
                 ),
-              ),
-              title: Text(
-                settings.businessName.isNotEmpty
-                    ? settings.businessName
-                    : s.businessName,
-                style: GallaType.number,
-              ),
-              subtitle: Text(
-                settings.activeStaffRole == StaffRole.owner
-                    ? 'Owner'
-                    : 'Staff · ${settings.activeStaffName}',
-                style: GallaType.body.copyWith(color: GallaColors.muted),
-              ),
-              trailing: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: GallaColors.muted,
-              ),
-              onTap: () => context.push('/profile'),
+                ListTile(
+                  contentPadding: const EdgeInsets.all(GallaSpacing.base),
+                  leading: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    child: Text(
+                      initials,
+                      style: GallaType.number.copyWith(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    settings.businessName.isNotEmpty
+                        ? settings.businessName
+                        : s.businessName,
+                    style: GallaType.number.copyWith(color: Colors.white),
+                  ),
+                  subtitle: Text(
+                    settings.activeStaffRole == StaffRole.owner
+                        ? 'Owner'
+                        : 'Staff · ${settings.activeStaffName}',
+                    style: GallaType.body.copyWith(color: Colors.white70),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: Colors.white70,
+                  ),
+                  onTap: () => context.push('/profile'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: GallaSpacing.base),
@@ -216,7 +240,7 @@ class MoreScreen extends ConsumerWidget {
         ),
       );
     } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(s.saveFailed)));
+      showGallaSnackBar(messenger, s.saveFailed);
     }
   }
 

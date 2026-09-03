@@ -71,7 +71,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<StaffRole>(
-                  value: _selectedRole,
+                  initialValue: _selectedRole,
                   decoration: InputDecoration(
                     labelText: s.staffRole,
                     filled: true,

@@ -287,9 +287,7 @@ class ReportsScreen extends ConsumerWidget {
       );
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(s.saveFailed)));
+      showGallaSnackBar(ScaffoldMessenger.of(context), s.saveFailed);
     }
   }
 }
