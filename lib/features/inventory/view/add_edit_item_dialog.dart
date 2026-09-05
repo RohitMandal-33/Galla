@@ -17,13 +17,30 @@ class AddEditItemDialog extends ConsumerStatefulWidget {
 }
 
 class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
+  static const _defaultUnits = [
+    'pcs',
+    'kg',
+    'gm',
+    'ltr',
+    'ml',
+    'packet',
+    'box',
+    'bottle',
+    'dozen',
+    'bag',
+    'can',
+    'meter',
+  ];
+
   final _name = TextEditingController();
-  final _sku = TextEditingController();
-  final _unit = TextEditingController(text: 'pcs');
+  final _customUnit = TextEditingController();
   final _quantity = TextEditingController(text: '0');
   final _threshold = TextEditingController(text: '5');
   final _cost = TextEditingController(text: '0');
   final _sale = TextEditingController(text: '0');
+
+  String _selectedUnit = 'pcs';
+  bool _isCustomUnit = false;
 
   @override
   void initState() {
@@ -31,8 +48,14 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
     if (widget.item != null) {
       final i = widget.item!;
       _name.text = i.name;
-      _sku.text = i.sku ?? '';
-      _unit.text = i.unit;
+      if (_defaultUnits.contains(i.unit)) {
+        _selectedUnit = i.unit;
+        _isCustomUnit = false;
+      } else {
+        _selectedUnit = 'custom';
+        _isCustomUnit = true;
+        _customUnit.text = i.unit;
+      }
       _quantity.text = i.currentQuantity == i.currentQuantity.toInt()
           ? '${i.currentQuantity.toInt()}'
           : '${i.currentQuantity}';
@@ -47,8 +70,7 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
   @override
   void dispose() {
     _name.dispose();
-    _sku.dispose();
-    _unit.dispose();
+    _customUnit.dispose();
     _quantity.dispose();
     _threshold.dispose();
     _cost.dispose();
@@ -64,6 +86,10 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
       showGallaSnackBar(messenger, 'Give the item a name first');
       return;
     }
+
+    final unit = _isCustomUnit
+        ? (_customUnit.text.trim().isEmpty ? 'pcs' : _customUnit.text.trim())
+        : _selectedUnit;
 
     double parsePositive(String raw, double fallback) {
       final v = double.tryParse(raw.trim());
@@ -88,8 +114,8 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
       if (widget.item == null) {
         await repo.addInventoryItem(
           name: name,
-          sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
-          unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
+          sku: null,
+          unit: unit,
           initialQuantity: qty,
           lowStockThreshold: thres,
           costPriceMinor: cost,
@@ -100,8 +126,8 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
         final updated = InventoryItem(
           id: widget.item!.id,
           name: name,
-          sku: _sku.text.trim().isEmpty ? null : _sku.text.trim(),
-          unit: _unit.text.trim().isEmpty ? 'pcs' : _unit.text.trim(),
+          sku: widget.item!.sku,
+          unit: unit,
           currentQuantity: qty,
           lowStockThreshold: thres,
           costPriceMinor: cost,
@@ -173,38 +199,50 @@ class _AddEditItemDialogState extends ConsumerState<AddEditItemDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _sku,
-                    decoration: InputDecoration(
-                      labelText: 'SKU / Code',
-                      filled: true,
-                      fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedUnit,
+              decoration: InputDecoration(
+                labelText: 'Unit *',
+                filled: true,
+                fillColor: GallaColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _unit,
-                    decoration: InputDecoration(
-                      labelText: 'Unit',
-                      hintText: 'pcs, kg, bag',
-                      filled: true,
-                      fillColor: GallaColors.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
+              ),
+              items: [
+                ..._defaultUnits.map(
+                  (u) => DropdownMenuItem(value: u, child: Text(u)),
+                ),
+                const DropdownMenuItem(
+                  value: 'custom',
+                  child: Text('Custom (enter manually)...'),
                 ),
               ],
+              onChanged: (val) {
+                if (val != null) {
+                  setState(() {
+                    _selectedUnit = val;
+                    _isCustomUnit = val == 'custom';
+                  });
+                }
+              },
             ),
+            if (_isCustomUnit) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _customUnit,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Custom Unit Name *',
+                  hintText: 'e.g. bundle, roll, sack, tin',
+                  filled: true,
+                  fillColor: GallaColors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [

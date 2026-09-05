@@ -239,6 +239,63 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     }
   }
 
+  Future<void> _signOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sign out?'),
+        content: const Text(
+          'You will need to sign in again to access your business ledger.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: GallaColors.moneyOut),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Sign out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(repositoryProvider).logout();
+      ref.invalidate(settingsProvider);
+      if (mounted) context.go('/login');
+    }
+  }
+
+  Future<void> _switchAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Switch Account?'),
+        content: const Text(
+          'You will be taken to the sign-in screen to choose or enter another account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Switch Account'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(repositoryProvider).logout();
+      ref.invalidate(settingsProvider);
+      if (mounted) context.go('/login');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings =
@@ -533,6 +590,89 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            GallaSectionHeader(
+              title: 'Account & Session',
+              topPadding: 0,
+            ),
+            Container(
+              padding: const EdgeInsets.all(GallaSpacing.base),
+              decoration: BoxDecoration(
+                color: GallaColors.surface,
+                borderRadius: BorderRadius.circular(GallaRadius.lg),
+                border: Border.all(color: GallaColors.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: GallaColors.brand.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.account_circle_outlined,
+                          color: GallaColors.brand,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              settings.authEmail?.isNotEmpty == true
+                                  ? settings.authEmail!
+                                  : (settings.authIsDemo
+                                      ? 'Demo Account (Shree Ganesh Kirana)'
+                                      : 'Local Account'),
+                              style: GallaType.bodyStrong,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              settings.authIsDemo
+                                  ? 'Local offline demo mode'
+                                  : 'Active Account',
+                              style: GallaType.captionSm,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: GallaSpacing.base),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _loading ? null : _switchAccount,
+                          icon: const Icon(Icons.swap_horiz_rounded, size: 18),
+                          label: const Text('Switch Account'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: GallaColors.brand,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _loading ? null : _signOut,
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: const Text('Sign out'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: GallaColors.moneyOut,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: GallaSpacing.lg),

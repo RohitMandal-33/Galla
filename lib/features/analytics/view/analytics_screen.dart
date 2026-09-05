@@ -338,7 +338,8 @@ Map<String, int> _categorySplit(List<Txn> all, DateTime start) {
   for (final t in all) {
     if (t.direction != Direction.moneyOut) continue;
     if (t.occurredAt.isBefore(start)) continue;
-    final cat = (t.category ?? 'Other').trim().isEmpty ? 'Other' : t.category!;
+    final rawCat = t.category?.trim();
+    final cat = (rawCat == null || rawCat.isEmpty) ? 'Other' : rawCat;
     m[cat] = (m[cat] ?? 0) + t.amountMinor;
   }
   // Top 5
@@ -591,7 +592,9 @@ class _PulseLineChart extends StatelessWidget {
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
             getTooltipItems: (spots) => spots.map((s) {
-              final d = daily[s.x.toInt()];
+              final idx = s.x.toInt();
+              if (idx < 0 || idx >= daily.length) return null;
+              final d = daily[idx];
               final label = DateFormat('MMM d').format(d.date);
               final isIn = s.barIndex == 0;
               final isOut = s.barIndex == 1;
@@ -631,7 +634,9 @@ class _DailyBarChart extends StatelessWidget {
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (g, gi, rod, ri) {
-              final d = daily[g.x.toInt()];
+              final idx = g.x.toInt();
+              if (idx < 0 || idx >= daily.length) return null;
+              final d = daily[idx];
               final isIn = ri == 0;
               return BarTooltipItem(
                 '${DateFormat('MMM d').format(d.date)} · ${isIn ? "+" : "−"}${Money(isIn ? d.inMinor : d.outMinor, currency: currency).formatCompact()}',
@@ -715,6 +720,7 @@ class _CategoryPie extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = data.values.fold(0, (a, b) => a + b);
+    if (total <= 0) return const SizedBox.shrink();
     final colors = [
       GallaColors.moneyOut,
       GallaColors.udhaar,

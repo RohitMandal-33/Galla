@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/database/app_database.dart';
@@ -326,6 +327,21 @@ class GallaRepository {
   Future<void> markReminded(String id) {
     return (_db.update(_db.parties)..where((p) => p.id.equals(id))).write(
       PartiesCompanion(lastRemindedAt: Value(DateTime.now())),
+    );
+  }
+
+  Future<void> upsertPartyFromRemote(Party party) async {
+    await _db.into(_db.parties).insertOnConflictUpdate(
+      PartiesCompanion.insert(
+        id: party.id,
+        name: party.name,
+        phone: Value(party.phone),
+        createdAt: party.createdAt,
+        remindEnabled: Value(party.remindEnabled),
+        remindEveryDays: Value(party.remindEveryDays),
+        lastRemindedAt: Value(party.lastRemindedAt),
+        settledAt: Value(party.settledAt),
+      ),
     );
   }
 
@@ -1332,8 +1348,16 @@ class GallaRepository {
 
   Future<void> logout() async {
     final s = await loadSettings();
-    await saveSettings(s.copyWith(isLoggedIn: false, authIsDemo: false));
-    // Keep authEmail for convenience but mark logged out.
+    await saveSettings(s.copyWith(
+      isLoggedIn: false,
+      authIsDemo: false,
+      authEmail: null,
+    ));
+    try {
+      if (Supabase.instance.client.auth.currentUser != null) {
+        await Supabase.instance.client.auth.signOut();
+      }
+    } catch (_) {}
   }
 
   /// Sets the app-lock PIN using the salted hash and enables the lock.

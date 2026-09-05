@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'core/l10n/locale.dart';
 import 'core/notifications/reminder_engine.dart';
 import 'core/router/app_router.dart';
+import 'core/supabase/supabase_config.dart';
 import 'core/theme/galla_theme.dart';
 import 'data/galla_repository.dart';
 import 'features/lock/lock_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase backend
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    publishableKey: SupabaseConfig.anonKey,
+  );
+
   // Load intl date symbols before the first frame so DateFormat calls in
   // build methods never hit uninitialized locale data.
   await applyAppLocale('en');

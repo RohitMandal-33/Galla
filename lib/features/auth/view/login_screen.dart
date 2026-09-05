@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../data/demo_seeder.dart';
 import '../../../data/galla_repository.dart';
+import '../../../data/supabase_sync_service.dart';
 import '../../../shared/widgets/galla_network_image.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -20,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController(text: GallaRepository.demoPassword);
   bool _obscure = true;
   bool _loading = false;
+  bool _isSignUp = false;
   String? _error;
 
   @override
@@ -38,32 +41,80 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final email = _emailCtrl.text.trim();
     final pass = _passCtrl.text;
 
-    final ok = await repo.loginWithPassword(email, pass);
-    if (!ok) {
+    // Check if using the local offline demo account
+    if (email == GallaRepository.demoEmail && pass == GallaRepository.demoPassword) {
+      final ok = await repo.loginWithPassword(email, pass);
+      if (!ok) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = 'Invalid demo credentials.';
+        });
+        return;
+      }
+
+      final existing = await repo.watchTransactions().first;
+      if (existing.isEmpty) {
+        await DemoSeeder.seedNepaliKirana(repo);
+      }
+
+      ref.invalidate(settingsProvider);
+      ref.invalidate(transactionsProvider);
+      ref.invalidate(partiesProvider);
+      ref.invalidate(inventoryProvider);
+      ref.invalidate(invoicesProvider);
+
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _error = 'Invalid email or password. Use the demo account below.';
-      });
+      setState(() => _loading = false);
+      context.go('/galla');
       return;
     }
 
-    // Seed demo data if ledger is empty — this is the mock data the PRD reviewer expects.
-    final existing = await repo.watchTransactions().first;
-    if (existing.isEmpty) {
-      await DemoSeeder.seedNepaliKirana(repo);
+    // Authenticate with Supabase Backend
+    try {
+      final supabase = ref.read(supabaseClientProvider);
+      if (_isSignUp) {
+        final res = await supabase.auth.signUp(email: email, password: pass);
+        if (res.user == null) {
+          throw 'Sign up was not completed. Please verify email and password.';
+        }
+      } else {
+        await supabase.auth.signInWithPassword(email: email, password: pass);
+      }
+
+      final user = supabase.auth.currentUser;
+      if (user != null) {
+        final current = await repo.loadSettings();
+        await repo.saveSettings(current.copyWith(
+          isLoggedIn: true,
+          authEmail: user.email ?? email,
+          authIsDemo: false,
+          onboardingDone: true,
+        ));
+
+        // Start background sync
+        ref.read(syncServiceProvider).init();
+      }
+
+      ref.invalidate(settingsProvider);
+      ref.invalidate(transactionsProvider);
+      ref.invalidate(partiesProvider);
+      ref.invalidate(inventoryProvider);
+      ref.invalidate(invoicesProvider);
+
+      if (!mounted) return;
+      setState(() => _loading = false);
+      context.go('/galla');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e
+            .toString()
+            .replaceAll('Exception: ', '')
+            .replaceAll('AuthException: ', '');
+      });
     }
-
-    // Refresh providers so router redirect picks up the new settings.
-    ref.invalidate(settingsProvider);
-    ref.invalidate(transactionsProvider);
-    ref.invalidate(partiesProvider);
-    ref.invalidate(inventoryProvider);
-    ref.invalidate(invoicesProvider);
-
-    if (!mounted) return;
-    setState(() => _loading = false);
-    context.go('/galla');
   }
 
   Future<void> _useDemo() async {
@@ -227,8 +278,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Sign in'),
+                              : Text(_isSignUp ? 'Create Cloud Account' : 'Sign in'),
                         ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _loading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _isSignUp = !_isSignUp;
+                                    _error = null;
+                                  });
+                                },
+                          child: Text(
+                            _isSignUp
+                                ? 'Already have an account? Sign in'
+                                : "Don't have an account? Sign up with email",
+                            style: GallaType.caption.copyWith(
+                              color: GallaColors.brand,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         const SizedBox(height: 10),
                         OutlinedButton.icon(
                           onPressed: _loading ? null : _useDemo,

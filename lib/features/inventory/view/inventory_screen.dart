@@ -190,7 +190,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 ),
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search products by name or SKU...',
+                    hintText: 'Search products by name...',
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
