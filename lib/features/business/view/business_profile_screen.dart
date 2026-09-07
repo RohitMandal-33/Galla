@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../../../core/l10n/locale.dart';
 import '../../../core/l10n/strings.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
+import '../../../core/utils/url_utils.dart';
 import '../../../data/demo_seeder.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
@@ -592,6 +594,98 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: GallaSpacing.lg),
+
+            // ── Galla on Web ─────────────────────────────────────────────
+            GallaSectionHeader(title: 'Galla on Web', topPadding: 0),
+            Container(
+              padding: const EdgeInsets.all(GallaSpacing.base),
+              decoration: BoxDecoration(
+                color: GallaColors.surface,
+                borderRadius: BorderRadius.circular(GallaRadius.lg),
+                border: Border.all(color: GallaColors.line),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: GallaColors.brandSoft,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.language_rounded,
+                          color: GallaColors.brand,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Web Version',
+                              style: GallaType.bodyStrong,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Manage your shop from any desktop or browser at $kGallaWebDomain',
+                              style: GallaType.caption,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: GallaSpacing.base),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () async {
+                            final ok = await launchGallaWeb();
+                            if (!ok && context.mounted) {
+                              showGallaSnackBar(
+                                ScaffoldMessenger.of(context),
+                                'Could not open $kGallaWebDomain',
+                              );
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.open_in_browser_rounded,
+                            size: 18,
+                          ),
+                          label: const Text('Open $kGallaWebDomain'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: GallaColors.brand,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.outlined(
+                        tooltip: 'Copy link',
+                        onPressed: () {
+                          Clipboard.setData(
+                            const ClipboardData(text: kGallaWebUrl),
+                          );
+                          showGallaSnackBar(
+                            ScaffoldMessenger.of(context),
+                            'Link copied to clipboard',
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.lg),
+
             GallaSectionHeader(
               title: 'Account & Session',
               topPadding: 0,

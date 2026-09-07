@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/galla_theme.dart';
+import '../../../core/utils/url_utils.dart';
 import '../../../data/demo_seeder.dart';
 import '../../../data/galla_repository.dart';
 import '../../../data/supabase_sync_service.dart';
@@ -399,6 +400,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         style: GallaType.captionSm,
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 14),
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () => launchGallaWeb(),
+                      icon: const Icon(Icons.language_rounded, size: 16),
+                      label: const Text('Prefer desktop? Open $kGallaWebDomain'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: GallaColors.brand,
+                        textStyle: GallaType.captionSm.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -14,6 +14,7 @@ import '../../../core/theme/galla_theme.dart';
 import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
 import '../../../shared/widgets/galla_network_image.dart';
+import '../../../core/utils/url_utils.dart';
 import 'staff_switch_dialog.dart';
 
 /// Secondary navigation — everything low-frequency lives here so the four
@@ -176,6 +177,21 @@ class MoreScreen extends ConsumerWidget {
                 onTap: () => _showHelpDialog(context),
               ),
               _MenuItem(
+                icon: Icons.language_rounded,
+                iconColor: GallaColors.blue,
+                title: 'Galla Web',
+                trailingText: 'gallaweb.vercel.app',
+                onTap: () async {
+                  final ok = await launchGallaWeb();
+                  if (!ok && context.mounted) {
+                    showGallaSnackBar(
+                      ScaffoldMessenger.of(context),
+                      'Could not open $kGallaWebDomain',
+                    );
+                  }
+                },
+              ),
+              _MenuItem(
                 icon: Icons.share_outlined,
                 iconColor: GallaColors.brand,
                 title: 'Share Galla',
@@ -280,7 +296,8 @@ class MoreScreen extends ConsumerWidget {
           '• Khata: who owes you and whom you owe.\n'
           '• Stock: what is on the shelf and what is running low.\n'
           '• Reports: honest totals you can share as PDF or CSV.\n'
-          '• Analytics: graphs for last 7/14/30 days.\n\n'
+          '• Analytics: graphs for last 7/14/30 days.\n'
+          '• Web: manage from desktop at gallaweb.vercel.app.\n\n'
           'Everything is saved on this phone as soon as you record it.',
         ),
         actions: [
