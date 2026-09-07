@@ -177,16 +177,15 @@ class MoreScreen extends ConsumerWidget {
                 onTap: () => _showHelpDialog(context),
               ),
               _MenuItem(
-                icon: Icons.language_rounded,
+                icon: Icons.laptop_mac_rounded,
                 iconColor: GallaColors.blue,
-                title: 'Galla Web',
-                trailingText: 'gallaweb.vercel.app',
+                title: 'Galla Desktop',
                 onTap: () async {
                   final ok = await launchGallaWeb();
                   if (!ok && context.mounted) {
                     showGallaSnackBar(
                       ScaffoldMessenger.of(context),
-                      'Could not open $kGallaWebDomain',
+                      'Could not open Galla Desktop',
                     );
                   }
                 },
@@ -297,7 +296,7 @@ class MoreScreen extends ConsumerWidget {
           '• Stock: what is on the shelf and what is running low.\n'
           '• Reports: honest totals you can share as PDF or CSV.\n'
           '• Analytics: graphs for last 7/14/30 days.\n'
-          '• Web: manage from desktop at gallaweb.vercel.app.\n\n'
+          '• Galla Desktop: access and manage from your computer.\n\n'
           'Everything is saved on this phone as soon as you record it.',
         ),
         actions: [

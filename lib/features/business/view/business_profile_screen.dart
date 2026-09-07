@@ -596,8 +596,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             ),
             const SizedBox(height: GallaSpacing.lg),
 
-            // ── Galla on Web ─────────────────────────────────────────────
-            GallaSectionHeader(title: 'Galla on Web', topPadding: 0),
+            // ── Galla Desktop ───────────────────────────────────────────
+            GallaSectionHeader(title: 'Galla Desktop', topPadding: 0),
             Container(
               padding: const EdgeInsets.all(GallaSpacing.base),
               decoration: BoxDecoration(
@@ -617,7 +617,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
-                          Icons.language_rounded,
+                          Icons.laptop_mac_rounded,
                           color: GallaColors.brand,
                           size: 24,
                         ),
@@ -628,12 +628,12 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Web Version',
+                              'Galla Desktop',
                               style: GallaType.bodyStrong,
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Manage your shop from any desktop or browser at $kGallaWebDomain',
+                              'Manage your shop and khata on a larger screen',
                               style: GallaType.caption,
                             ),
                           ],
@@ -651,7 +651,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                             if (!ok && context.mounted) {
                               showGallaSnackBar(
                                 ScaffoldMessenger.of(context),
-                                'Could not open $kGallaWebDomain',
+                                'Could not open Galla Desktop',
                               );
                             }
                           },
@@ -659,7 +659,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                             Icons.open_in_browser_rounded,
                             size: 18,
                           ),
-                          label: const Text('Open $kGallaWebDomain'),
+                          label: const Text('Open Galla Desktop'),
                           style: FilledButton.styleFrom(
                             backgroundColor: GallaColors.brand,
                           ),
@@ -667,14 +667,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       ),
                       const SizedBox(width: 8),
                       IconButton.outlined(
-                        tooltip: 'Copy link',
+                        tooltip: 'Copy desktop link',
                         onPressed: () {
                           Clipboard.setData(
                             const ClipboardData(text: kGallaWebUrl),
                           );
                           showGallaSnackBar(
                             ScaffoldMessenger.of(context),
-                            'Link copied to clipboard',
+                            'Desktop link copied to clipboard',
                           );
                         },
                         icon: const Icon(Icons.copy_rounded, size: 18),

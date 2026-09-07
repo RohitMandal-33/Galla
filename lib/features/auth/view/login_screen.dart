@@ -405,8 +405,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Center(
                     child: TextButton.icon(
                       onPressed: () => launchGallaWeb(),
-                      icon: const Icon(Icons.language_rounded, size: 16),
-                      label: const Text('Prefer desktop? Open $kGallaWebDomain'),
+                      icon: const Icon(Icons.laptop_mac_rounded, size: 16),
+                      label: const Text('Prefer a computer? Open Galla Desktop'),
                       style: TextButton.styleFrom(
                         foregroundColor: GallaColors.brand,
                         textStyle: GallaType.captionSm.copyWith(
