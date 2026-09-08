@@ -19,8 +19,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _emailCtrl = TextEditingController(text: GallaRepository.demoEmail);
-  final _passCtrl = TextEditingController(text: GallaRepository.demoPassword);
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
   bool _isSignUp = false;
@@ -301,86 +301,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         OutlinedButton.icon(
                           onPressed: _loading ? null : _useDemo,
                           icon: const Icon(Icons.bolt_rounded, size: 18),
-                          label: const Text('Use demo account — one tap'),
+                          label: const Text('Take Demo'),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: GallaColors.gold),
+                            side: const BorderSide(
+                              color: GallaColors.gold,
+                              width: 1.2,
+                            ),
                             foregroundColor: GallaColors.goldDark,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(GallaRadius.md),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Demo credentials card — explicit per spec
-                  Container(
-                    padding: const EdgeInsets.all(GallaSpacing.base),
-                    decoration: BoxDecoration(
-                      color: GallaColors.goldSoft,
-                      borderRadius: BorderRadius.circular(GallaRadius.md),
-                      border: Border.all(
-                        color: GallaColors.gold.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.auto_fix_high_rounded,
-                              size: 16,
-                              color: GallaColors.goldDark,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Demo account (mock data)',
-                              style: GallaType.labelStrong.copyWith(
-                                color: GallaColors.goldDark,
-                              ),
-                            ),
-                            const Spacer(),
-                            GestureDetector(
-                              onTap: _useDemo,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: GallaColors.brand,
-                                  borderRadius: BorderRadius.circular(
-                                    GallaRadius.pill,
-                                  ),
-                                ),
-                                child: Text(
-                                  'Tap to fill',
-                                  style: GallaType.badge.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        _CredRow(
-                          label: 'Email',
-                          value: GallaRepository.demoEmail,
-                        ),
-                        _CredRow(
-                          label: 'Password',
-                          value: GallaRepository.demoPassword,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Loads Shree Ganesh Kirana mock data: 6 inventory items, 5 parties, 10+ transactions, 1 invoice — graphs become populated instantly.',
-                          style: GallaType.captionSm,
                         ),
                       ],
                     ),
@@ -406,7 +343,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: TextButton.icon(
                       onPressed: () => launchGallaWeb(),
                       icon: const Icon(Icons.laptop_mac_rounded, size: 16),
-                      label: const Text('Prefer a computer? Open Galla Desktop'),
+                      label: const Text('Prefer a browser? Open Galla Desktop'),
                       style: TextButton.styleFrom(
                         foregroundColor: GallaColors.brand,
                         textStyle: GallaType.captionSm.copyWith(
@@ -420,38 +357,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CredRow extends StatelessWidget {
-  const _CredRow({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          SizedBox(width: 72, child: Text(label, style: GallaType.captionSm)),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: GallaColors.line),
-              ),
-              child: Text(
-                value,
-                style: GallaType.bodyStrong.copyWith(fontSize: 13),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/money/money.dart';
 import '../../core/theme/galla_theme.dart';
@@ -56,7 +58,8 @@ class GallaSnackBarClearObserver extends NavigatorObserver {
 }
 
 // ── GallaBalanceCard ───────────────────────────────────────────────────────────
-/// Dark brand-green hero card showing daily financial summary.
+/// Premium hero card displaying the merchant's real-time "Cash in Hand" balance
+/// backed by a Himalayan mountain landscape image and calibrated legibility gradients.
 
 class GallaBalanceCard extends StatelessWidget {
   const GallaBalanceCard({
@@ -66,7 +69,8 @@ class GallaBalanceCard extends StatelessWidget {
     required this.moneyOutMinor,
     required this.currency,
     this.onViewReport,
-    this.label = 'Today\'s Cash',
+    this.onCountTill,
+    this.label = 'Cash in Hand',
   });
 
   final int cashOnHandMinor;
@@ -74,6 +78,7 @@ class GallaBalanceCard extends StatelessWidget {
   final int moneyOutMinor;
   final String currency;
   final VoidCallback? onViewReport;
+  final VoidCallback? onCountTill;
   final String label;
 
   @override
@@ -81,110 +86,307 @@ class GallaBalanceCard extends StatelessWidget {
     String m(int v) => Money(v, currency: currency).format();
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
       decoration: BoxDecoration(
-        color: GallaColors.brand,
-        borderRadius: BorderRadius.circular(GallaRadius.xl),
-        boxShadow: GallaElevation.hero,
-        gradient: GallaColors.heroGradient,
+        color: const Color(0xFF102D22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF234D3A),
+          width: 1,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40123023), // rgba(18, 48, 35, 0.25)
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
         children: [
-          // ── Top row: label + view report ─────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: GallaType.label.copyWith(
-                    letterSpacing: 0.3,
-                    color: Colors.white70,
-                  ),
+          // ── Layer 0 (Bottom): Mountain landscape image ────────────────────
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/cash_hero_bg.jpg',
+              fit: BoxFit.cover,
+              alignment: const Alignment(0.35, -0.4),
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+
+          // ── Layer 1a (Overlay): Horizontal multi-stop contrast gradient ───
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: const [0.0, 0.35, 0.60, 0.85, 1.0],
+                  colors: [
+                    const Color(0xFF102D22), // 0%: solid #102D22 (100%)
+                    const Color(0xF0102D22), // 35%: rgba(16, 45, 34, 0.94)
+                    const Color(0x99102D22), // 60%: rgba(16, 45, 34, 0.60)
+                    const Color(0x33102D22), // 85%: rgba(16, 45, 34, 0.20)
+                    const Color(0x14102D22), // 100%: rgba(16, 45, 34, 0.08)
+                  ],
                 ),
               ),
-              if (onViewReport != null) ...[
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: onViewReport,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+            ),
+          ),
+
+          // ── Layer 1b (Overlay): Vertical gradient for footer readability ─
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  stops: const [0.0, 0.35, 1.0],
+                  colors: [
+                    const Color(0xD90C2219), // 0% bottom: rgba(12, 34, 25, 0.85)
+                    const Color(0x000C2219), // 35%: rgba(12, 34, 25, 0.00)
+                    const Color(0x000C2219), // 100%
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── Layer 2 & 3: Foreground Content & Footer ─────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Row: Eyebrow + Live Badge + Report Action
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.08 * 11,
+                          color: Color(0xB3F8F4EB), // rgba(248, 244, 235, 0.70)
+                        ),
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(GallaRadius.sm),
-                    ),
-                    child: Text(
-                      'Report',
-                      style: GallaType.labelSm.copyWith(color: Colors.white),
+                    if (onViewReport != null)
+                      GestureDetector(
+                        onTap: onViewReport,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.14),
+                            borderRadius:
+                                BorderRadius.circular(GallaRadius.pill),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.20),
+                              width: 0.75,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Report',
+                                style: GallaType.labelSm.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                // Balance Amount (H2)
+                AnimatedSwitcher(
+                  duration: GallaAnimations.base,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.08),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
                     ),
                   ),
+                  child: FittedBox(
+                    key: ValueKey(cashOnHandMinor),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      m(cashOnHandMinor),
+                      style: GoogleFonts.outfit(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.05,
+                        shadows: const [
+                          Shadow(
+                            color:
+                                Color(0x80000000), // 0 2px 8px rgba(0,0,0,0.5)
+                            blurRadius: 8,
+                            offset: Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // Sub-badge: Live balance · updated now
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6EE7B7).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(GallaRadius.pill),
+                        border: Border.all(
+                          color:
+                              const Color(0xFF6EE7B7).withValues(alpha: 0.30),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF6EE7B7),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Live balance · updated now',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6EE7B7),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Supporting Money in / out row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _BalanceFigure(
+                        label: 'Cash In',
+                        value: m(moneyInMinor),
+                        icon: Icons.arrow_downward_rounded,
+                        color: GallaColors.moneyInOnDark,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                    Expanded(
+                      child: _BalanceFigure(
+                        label: 'Cash Out',
+                        value: m(moneyOutMinor),
+                        icon: Icons.arrow_upward_rounded,
+                        color: GallaColors.moneyOutOnDark,
+                        leftAlign: false,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Layer 3 (Footer): Subtle divider + reconciliation shortcut
+                Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.10),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Based on all recorded transactions',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: onCountTill ??
+                          () => context.push('/reconciliation'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 9,
+                          vertical: 3.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius:
+                              BorderRadius.circular(GallaRadius.pill),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            width: 0.75,
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Count till',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(width: 3),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // ── Hero balance ─────────────────────────────────────────────────
-          AnimatedSwitcher(
-            duration: GallaAnimations.base,
-            transitionBuilder: (child, animation) => FadeTransition(
-              opacity: animation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.1),
-                  end: Offset.zero,
-                ).animate(animation),
-                child: child,
-              ),
             ),
-            child: FittedBox(
-              key: ValueKey(cashOnHandMinor),
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                m(cashOnHandMinor),
-                style: GallaType.hero.copyWith(
-                  height: 1.0,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // ── Divider ──────────────────────────────────────────────────────
-          Container(height: 1, color: Colors.white.withValues(alpha: 0.12)),
-          const SizedBox(height: 16),
-
-          // ── Money in / out row ───────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: _BalanceFigure(
-                  label: 'Cash In',
-                  value: m(moneyInMinor),
-                  icon: Icons.arrow_downward_rounded,
-                  color: GallaColors.moneyInOnDark,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 36,
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
-              Expanded(
-                child: _BalanceFigure(
-                  label: 'Cash Out',
-                  value: m(moneyOutMinor),
-                  icon: Icons.arrow_upward_rounded,
-                  color: GallaColors.moneyOutOnDark,
-                  leftAlign: false,
-                ),
-              ),
-            ],
           ),
         ],
       ),

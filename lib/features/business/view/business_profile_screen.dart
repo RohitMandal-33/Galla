@@ -8,7 +8,6 @@ import '../../../core/l10n/strings.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../core/utils/url_utils.dart';
-import '../../../data/demo_seeder.dart';
 import '../../../data/galla_repository.dart';
 import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
@@ -189,57 +188,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   String get settingsLocale =>
       ref.read(settingsProvider).valueOrNull?.locale ?? 'en';
 
-  // ── Demo data ───────────────────────────────────────────────────────────────
 
-  Future<void> _loadDemo() async {
-    final txns = ref.read(transactionsProvider).valueOrNull ?? const <Txn>[];
-    if (txns.isNotEmpty) {
-      // Never mix demo rows into real books.
-      if (!mounted) return;
-      showGallaSnackBar(
-        ScaffoldMessenger.of(context),
-        'Demo data can only be loaded into an empty ledger so your real '
-        'records are never mixed with sample data',
-      );
-      return;
-    }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Load demo data?'),
-        content: const Text(
-          'Adds realistic Nepali retail sample data so you can explore Galla '
-          'before recording your own entries.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Load demo'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && mounted) {
-      setState(() => _loading = true);
-      await DemoSeeder.seedNepaliKirana(ref.read(repositoryProvider));
-      ref.invalidate(settingsProvider);
-      ref.invalidate(transactionsProvider);
-      ref.invalidate(partiesProvider);
-      ref.invalidate(inventoryProvider);
-      ref.invalidate(invoicesProvider);
-      ref.invalidate(branchesProvider);
-      ref.invalidate(staffMembersProvider);
-      ref.invalidate(reconciliationsProvider);
-      ref.invalidate(healthReportProvider);
-      setState(() => _loading = false);
-      if (mounted) context.go('/galla');
-    }
-  }
 
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
@@ -271,12 +220,54 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   Future<void> _switchAccount() async {
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const AppSettings();
+    final currentIdentity = settings.authEmail?.isNotEmpty == true
+        ? settings.authEmail!
+        : (settings.businessName.isNotEmpty
+            ? settings.businessName
+            : 'Active Account');
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Switch Account?'),
-        content: const Text(
-          'You will be taken to the sign-in screen to choose or enter another account.',
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: GallaColors.brandSoft,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.switch_account_outlined,
+                color: GallaColors.brand,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('Switch Account'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Currently signed in as:',
+              style: GallaType.captionSm,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              currentIdentity,
+              style: GallaType.bodyStrong,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'You will be taken to the sign-in screen to choose or log in with another merchant account.',
+              style: GallaType.body.copyWith(color: GallaColors.inkSecondary),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -285,7 +276,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Switch Account'),
+            style: FilledButton.styleFrom(
+              backgroundColor: GallaColors.brand,
+            ),
+            child: const Text('Proceed'),
           ),
         ],
       ),
@@ -633,7 +627,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Manage your shop and khata on a larger screen',
+                              'Manage your shop from any desktop or browser at $kGallaWebDomain',
                               style: GallaType.caption,
                             ),
                           ],
@@ -667,14 +661,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       ),
                       const SizedBox(width: 8),
                       IconButton.outlined(
-                        tooltip: 'Copy desktop link',
+                        tooltip: 'Copy link',
                         onPressed: () {
                           Clipboard.setData(
                             const ClipboardData(text: kGallaWebUrl),
                           );
                           showGallaSnackBar(
                             ScaffoldMessenger.of(context),
-                            'Desktop link copied to clipboard',
+                            'Link copied to clipboard',
                           );
                         },
                         icon: const Icon(Icons.copy_rounded, size: 18),
@@ -703,15 +697,22 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
-                          color: GallaColors.brand.withValues(alpha: 0.1),
+                          color: GallaColors.brandSoft,
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: GallaColors.brand.withValues(alpha: 0.15),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.account_circle_outlined,
-                          color: GallaColors.brand,
-                          size: 24,
+                        alignment: Alignment.center,
+                        child: Text(
+                          initials,
+                          style: GallaType.tileTitle.copyWith(
+                            color: GallaColors.brand,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -720,19 +721,50 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              settings.authEmail?.isNotEmpty == true
-                                  ? settings.authEmail!
-                                  : (settings.authIsDemo
-                                      ? 'Demo Account (Shree Ganesh Kirana)'
-                                      : 'Local Account'),
+                              settings.businessName.isNotEmpty
+                                  ? settings.businessName
+                                  : 'Galla Kirana Store',
                               style: GallaType.bodyStrong,
                               overflow: TextOverflow.ellipsis,
                             ),
+                            const SizedBox(height: 2),
                             Text(
-                              settings.authIsDemo
-                                  ? 'Local offline demo mode'
-                                  : 'Active Account',
+                              settings.authEmail?.isNotEmpty == true
+                                  ? settings.authEmail!
+                                  : 'Local Offline Account',
                               style: GallaType.captionSm,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: GallaColors.moneyInSoft,
+                          borderRadius: BorderRadius.circular(GallaRadius.pill),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: GallaColors.moneyIn,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Active',
+                              style: GallaType.captionSm.copyWith(
+                                color: GallaColors.moneyIn,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ],
                         ),
@@ -740,68 +772,91 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: GallaSpacing.base),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _loading ? null : _switchAccount,
-                          icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                          label: const Text('Switch Account'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: GallaColors.brand,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _loading ? null : _signOut,
-                          icon: const Icon(Icons.logout_rounded, size: 18),
-                          label: const Text('Sign out'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: GallaColors.moneyOut,
-                            foregroundColor: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: GallaSpacing.lg),
+                  const Divider(height: 1, color: GallaColors.lineSoft),
+                  const SizedBox(height: GallaSpacing.md),
 
-            GallaSectionHeader(
-              title: 'Try Galla with sample data',
-              topPadding: 0,
-            ),
-            Container(
-              padding: const EdgeInsets.all(GallaSpacing.base),
-              decoration: BoxDecoration(
-                color: GallaColors.surface,
-                borderRadius: BorderRadius.circular(GallaRadius.lg),
-                border: Border.all(color: GallaColors.line),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: _loading ? null : _loadDemo,
-                    icon: const Icon(
-                      Icons.auto_fix_high_rounded,
-                      color: GallaColors.goldDark,
-                    ),
-                    label: const Text('Load sample kirana store'),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: GallaColors.gold),
-                      foregroundColor: GallaColors.goldDark,
+                  // Switch Account Action — prominent, dedicated, clean affordance
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _loading ? null : _switchAccount,
+                      borderRadius: BorderRadius.circular(GallaRadius.md),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: GallaColors.canvas,
+                          borderRadius: BorderRadius.circular(GallaRadius.md),
+                          border: Border.all(color: GallaColors.line),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: GallaColors.brand.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.switch_account_outlined,
+                                color: GallaColors.brand,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Switch Account',
+                                    style: GallaType.subtitleSm.copyWith(
+                                      color: GallaColors.ink,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Log in or change to another merchant profile',
+                                    style: GallaType.captionSm.copyWith(
+                                      color: GallaColors.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: GallaColors.muted,
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: GallaSpacing.sm),
-                  Text(
-                    'Only available while your ledger is empty.',
-                    style: GallaType.captionSm,
-                    textAlign: TextAlign.center,
+
+                  // Sign out action — secondary, non-screaming, aligned with design principles
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _loading ? null : _signOut,
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        size: 16,
+                        color: GallaColors.moneyOut,
+                      ),
+                      label: Text(
+                        'Sign out of session',
+                        style: GallaType.caption.copyWith(
+                          color: GallaColors.moneyOut,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
