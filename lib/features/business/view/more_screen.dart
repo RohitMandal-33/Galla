@@ -61,7 +61,8 @@ class MoreScreen extends ConsumerWidget {
               children: [
                 Positioned.fill(
                   child: GallaNetworkImage(
-                    imageUrl: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=600&q=80',
+                    imageUrl:
+                        'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&w=600&q=80',
                     borderRadius: 0,
                     fit: BoxFit.cover,
                     cacheWidth: 600,
@@ -282,7 +283,7 @@ class MoreScreen extends ConsumerWidget {
     if (confirmed != true) return;
     await ref.read(repositoryProvider).logout();
     ref.invalidate(settingsProvider);
-    if (context.mounted) context.go('/login');
+    if (context.mounted) context.go('/explore');
   }
 
   void _showHelpDialog(BuildContext context) {

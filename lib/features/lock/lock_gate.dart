@@ -54,7 +54,8 @@ class _LockGateState extends ConsumerState<LockGate>
             state == AppLifecycleState.inactive) &&
         mounted) {
       final settings = ref.read(settingsProvider).valueOrNull;
-      if (settings?.lockEnabled == true &&
+      if (settings?.isLoggedIn == true &&
+          settings?.lockEnabled == true &&
           settings?.pinHash != null &&
           !_locked) {
         setState(() => _locked = true);
@@ -64,6 +65,7 @@ class _LockGateState extends ConsumerState<LockGate>
 
   Future<void> _maybeLock({bool initial = false}) async {
     final settings = await ref.read(repositoryProvider).loadSettings();
+    if (!settings.isLoggedIn) return;
     if (!settings.lockEnabled || settings.pinHash == null) return;
     setState(() => _locked = true);
     if (initial) await _tryBiometric();

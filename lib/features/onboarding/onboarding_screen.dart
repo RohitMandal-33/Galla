@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../../core/theme/galla_theme.dart';
 import '../../data/demo_seeder.dart';
 import '../../data/galla_repository.dart';
+import '../../data/supabase_sync_service.dart';
 import '../../domain/models.dart';
 import '../../shared/widgets/galla_components.dart';
 import '../../shared/widgets/galla_network_image.dart';
@@ -127,6 +128,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     }
 
     await applyAppLocale(_locale);
+    if (!loadDemo) {
+      final named = await repo.loadSettings();
+      if (named.businessName.trim().isNotEmpty) {
+        await repo.markBusinessUpdatedAt(DateTime.now().toUtc());
+      }
+      try {
+        await ref.read(syncServiceProvider).pushBusinessProfile();
+      } catch (_) {}
+    }
     ref.invalidate(settingsProvider);
     ref.invalidate(transactionsProvider);
     ref.invalidate(partiesProvider);

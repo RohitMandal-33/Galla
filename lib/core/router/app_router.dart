@@ -10,6 +10,7 @@ import '../../features/business/view/branches_screen.dart';
 import '../../features/business/view/business_profile_screen.dart';
 import '../../features/business/view/staff_screen.dart';
 import '../../features/business/view/more_screen.dart';
+import '../../features/explore/view/explore_screen.dart';
 import '../../features/galla/view/galla_screen.dart';
 import '../../features/inventory/view/inventory_screen.dart';
 import '../../features/invoicing/view/create_invoice_screen.dart';
@@ -20,6 +21,7 @@ import '../../features/ledger/view/party_detail_screen.dart';
 import '../../features/ledger/view/transaction_detail_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/reconciliation/view/reconciliation_screen.dart';
+import '../../features/splash/view/splash_screen.dart';
 import '../../features/reports/view/reports_screen.dart';
 import '../../features/shell/view/app_shell.dart';
 import '../providers.dart';
@@ -29,37 +31,56 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref.listen(settingsProvider, (_, _) => refresh.value++);
 
   return GoRouter(
-    initialLocation: '/galla',
+    initialLocation: '/explore',
     refreshListenable: refresh,
     observers: [GallaSnackBarClearObserver()],
     redirect: (context, state) {
       final settings = ref.read(settingsProvider).valueOrNull;
-      if (settings == null) return null;
       final loc = state.matchedLocation;
       final isLoginRoute = loc.startsWith('/login');
+      final isExploreRoute = loc.startsWith('/explore');
+      final isSplashRoute = loc.startsWith('/splash');
       final isOnboardingRoute = loc.startsWith('/onboarding');
+      final isPublicRoute = isLoginRoute || isExploreRoute || isSplashRoute;
 
-      // Auth gate — demo account required before anything else.
-      if (!settings.isLoggedIn && !isLoginRoute) return '/login';
-      if (settings.isLoggedIn && isLoginRoute) return '/galla';
+      if (settings == null) {
+        return isSplashRoute ? null : '/splash';
+      }
 
-      // Onboarding gate — demo login auto-completes onboarding, but keep for fresh installs.
-      if (settings.isLoggedIn &&
-          !settings.onboardingDone &&
-          !isOnboardingRoute &&
-          !isLoginRoute) {
+      if (!settings.isLoggedIn) {
+        if (isSplashRoute) return '/explore';
+        if (isPublicRoute) return null;
+        return '/explore';
+      }
+
+      if (isSplashRoute) {
+        return settings.onboardingDone ? '/galla' : '/onboarding';
+      }
+      if (!settings.onboardingDone && !isOnboardingRoute) {
         return '/onboarding';
       }
-      if (settings.isLoggedIn &&
-          settings.onboardingDone &&
-          isOnboardingRoute &&
-          loc == '/onboarding') {
+      if (settings.onboardingDone && isOnboardingRoute) {
         return '/galla';
       }
+      if (isLoginRoute || isExploreRoute) return '/galla';
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
+      GoRoute(path: '/explore', builder: (_, _) => const ExploreScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) {
+          final extra = state.extra;
+          String? from;
+          var signup = false;
+          if (extra is Map) {
+            from = extra['from'] as String?;
+            signup = extra['mode'] == 'signup';
+          }
+          return LoginScreen(from: from, initialSignUp: signup);
+        },
+      ),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/analytics', builder: (_, _) => const AnalyticsScreen()),
 

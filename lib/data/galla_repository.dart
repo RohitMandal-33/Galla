@@ -331,18 +331,20 @@ class GallaRepository {
   }
 
   Future<void> upsertPartyFromRemote(Party party) async {
-    await _db.into(_db.parties).insertOnConflictUpdate(
-      PartiesCompanion.insert(
-        id: party.id,
-        name: party.name,
-        phone: Value(party.phone),
-        createdAt: party.createdAt,
-        remindEnabled: Value(party.remindEnabled),
-        remindEveryDays: Value(party.remindEveryDays),
-        lastRemindedAt: Value(party.lastRemindedAt),
-        settledAt: Value(party.settledAt),
-      ),
-    );
+    await _db
+        .into(_db.parties)
+        .insertOnConflictUpdate(
+          PartiesCompanion.insert(
+            id: party.id,
+            name: party.name,
+            phone: Value(party.phone),
+            createdAt: party.createdAt,
+            remindEnabled: Value(party.remindEnabled),
+            remindEveryDays: Value(party.remindEveryDays),
+            lastRemindedAt: Value(party.lastRemindedAt),
+            settledAt: Value(party.settledAt),
+          ),
+        );
   }
 
   // ---------------------------------------------------------------------------
@@ -1348,16 +1350,20 @@ class GallaRepository {
 
   Future<void> logout() async {
     final s = await loadSettings();
-    await saveSettings(s.copyWith(
-      isLoggedIn: false,
-      authIsDemo: false,
-      authEmail: null,
-    ));
+    await saveSettings(
+      s.copyWith(isLoggedIn: false, authIsDemo: false, authEmail: null),
+    );
     try {
       if (Supabase.instance.client.auth.currentUser != null) {
         await Supabase.instance.client.auth.signOut();
       }
     } catch (_) {}
+  }
+
+  /// Marks onboarding incomplete so the tutorial can be replayed.
+  Future<void> resetOnboarding() async {
+    final s = await loadSettings();
+    await saveSettings(s.copyWith(onboardingDone: false));
   }
 
   /// Sets the app-lock PIN using the salted hash and enables the lock.
@@ -1430,6 +1436,261 @@ class GallaRepository {
     )..where((r) => r.key.equals(key))).getSingleOrNull();
     if (row == null) return defaultValue;
     return int.tryParse(row.value) ?? defaultValue;
+  }
+
+  Future<DateTime?> businessUpdatedAt() async {
+    final row = await (_db.select(
+      _db.settingsRows,
+    )..where((r) => r.key.equals('businessUpdatedAt'))).getSingleOrNull();
+    if (row == null) return null;
+    return DateTime.tryParse(row.value);
+  }
+
+  Future<void> markBusinessUpdatedAt(DateTime at) {
+    return _put('businessUpdatedAt', at.toUtc().toIso8601String());
+  }
+
+  Future<void> applyCloudBusinessProfile({
+    required String name,
+    required String currency,
+    required double taxRatePct,
+    String? locale,
+    int? lowCashThresholdMinor,
+    bool? notifyPaymentDue,
+    bool? notifyLowCash,
+    bool? notifyLowStock,
+    required DateTime updatedAt,
+  }) async {
+    final current = await loadSettings();
+    await saveSettings(
+      current.copyWith(
+        businessName: name,
+        currency: currency,
+        taxRatePct: taxRatePct,
+        locale: locale ?? current.locale,
+        lowCashThresholdMinor:
+            lowCashThresholdMinor ?? current.lowCashThresholdMinor,
+        notifyPaymentDue: notifyPaymentDue ?? current.notifyPaymentDue,
+        notifyLowCash: notifyLowCash ?? current.notifyLowCash,
+        notifyLowStock: notifyLowStock ?? current.notifyLowStock,
+      ),
+    );
+    await markBusinessUpdatedAt(updatedAt);
+  }
+
+  Future<List<({Txn txn, DateTime? deletedAt})>> transactionsForSync() async {
+    final parties = {
+      for (final p in await _db.select(_db.parties).get()) p.id: p.name,
+    };
+    final rows = await _db.select(_db.ledgerEntries).get();
+    return [
+      for (final row in rows)
+        (txn: _toTxn(row, parties[row.partyId]), deletedAt: row.deletedAt),
+    ];
+  }
+
+  Future<List<({InventoryItem item, DateTime? deletedAt})>>
+  inventoryForSync() async {
+    final rows = await _db.select(_db.inventoryItems).get();
+    return [
+      for (final row in rows)
+        (item: _toInventoryItem(row), deletedAt: row.deletedAt),
+    ];
+  }
+
+  Future<List<({Invoice invoice, DateTime? deletedAt})>>
+  invoicesForSync() async {
+    final rows = await _db.select(_db.invoices).get();
+    return [
+      for (final row in rows) (invoice: _toInvoice(row), deletedAt: row.deletedAt),
+    ];
+  }
+
+  Future<List<InvoiceItem>> allInvoiceItems() async {
+    final rows = await _db.select(_db.invoiceItems).get();
+    return [
+      for (final r in rows)
+        InvoiceItem(
+          id: r.id,
+          invoiceId: r.invoiceId,
+          description: r.description,
+          quantity: r.quantity,
+          unitPriceMinor: r.unitPriceMinor,
+          totalMinor: r.totalMinor,
+          inventoryItemId: r.inventoryItemId,
+        ),
+    ];
+  }
+
+  Future<void> upsertTxnFromRemote(Txn t, {DateTime? deletedAt}) async {
+    await _db
+        .into(_db.ledgerEntries)
+        .insertOnConflictUpdate(
+          LedgerEntriesCompanion.insert(
+            id: t.id,
+            occurredAt: t.occurredAt,
+            createdAt: t.createdAt,
+            direction: t.direction == Direction.moneyIn ? 'in' : 'out',
+            amountMinor: t.amountMinor,
+            partyId: Value(t.partyId),
+            category: Value(t.category),
+            note: Value(t.note),
+            isCredit: Value(t.isCredit),
+            isAdjustment: Value(t.isAdjustment),
+            isWriteOff: Value(t.isWriteOff),
+            photoPath: Value(t.photoPath),
+            nlRaw: Value(t.nlRaw),
+            aiInferred: Value(t.aiInferred),
+            syncStatus: const Value('synced'),
+            deletedAt: Value(deletedAt),
+            branchId: Value(t.branchId),
+            staffId: Value(t.staffId),
+            staffName: Value(t.staffName),
+            invoiceId: Value(t.invoiceId),
+            inventoryItemId: Value(t.inventoryItemId),
+          ),
+        );
+  }
+
+  Future<void> upsertInventoryFromRemote(
+    InventoryItem item, {
+    DateTime? deletedAt,
+  }) async {
+    await _db
+        .into(_db.inventoryItems)
+        .insertOnConflictUpdate(
+          InventoryItemsCompanion.insert(
+            id: item.id,
+            name: item.name,
+            sku: Value(item.sku),
+            unit: Value(item.unit),
+            currentQuantity: Value(item.currentQuantity),
+            lowStockThreshold: Value(item.lowStockThreshold),
+            costPriceMinor: Value(item.costPriceMinor),
+            salePriceMinor: Value(item.salePriceMinor),
+            branchId: Value(item.branchId),
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+            deletedAt: Value(deletedAt),
+          ),
+        );
+  }
+
+  Future<void> upsertInvoiceFromRemote(
+    Invoice invoice, {
+    DateTime? deletedAt,
+  }) async {
+    await _db
+        .into(_db.invoices)
+        .insertOnConflictUpdate(
+          InvoicesCompanion.insert(
+            id: invoice.id,
+            invoiceNumber: invoice.invoiceNumber,
+            partyId: Value(invoice.partyId),
+            partyName: Value(invoice.partyName),
+            issueDate: invoice.issueDate,
+            dueDate: Value(invoice.dueDate),
+            subtotalMinor: invoice.subtotalMinor,
+            taxRatePct: Value(invoice.taxRatePct),
+            taxMinor: Value(invoice.taxMinor),
+            totalMinor: invoice.totalMinor,
+            paidAmountMinor: Value(invoice.paidAmountMinor),
+            status: Value(_invoiceStatusToLocal(invoice.status)),
+            notes: Value(invoice.notes),
+            branchId: Value(invoice.branchId),
+            createdAt: invoice.createdAt,
+            deletedAt: Value(deletedAt),
+          ),
+        );
+  }
+
+  Future<void> replaceInvoiceItemsFromRemote(
+    String invoiceId,
+    List<InvoiceItem> items,
+  ) async {
+    await (_db.delete(
+      _db.invoiceItems,
+    )..where((i) => i.invoiceId.equals(invoiceId))).go();
+    for (final item in items) {
+      await _db
+          .into(_db.invoiceItems)
+          .insert(
+            InvoiceItemsCompanion.insert(
+              id: item.id,
+              invoiceId: item.invoiceId,
+              description: item.description,
+              quantity: Value(item.quantity),
+              unitPriceMinor: item.unitPriceMinor,
+              totalMinor: item.totalMinor,
+              inventoryItemId: Value(item.inventoryItemId),
+            ),
+          );
+    }
+  }
+
+  Future<void> upsertReconciliationFromRemote(ReconciliationRecord rec) async {
+    await _db
+        .into(_db.reconciliationLogs)
+        .insertOnConflictUpdate(
+          ReconciliationLogsCompanion.insert(
+            id: rec.id,
+            occurredAt: rec.occurredAt,
+            countedCashMinor: rec.countedCashMinor,
+            bankBalanceMinor: Value(rec.bankBalanceMinor),
+            expectedCashMinor: rec.expectedCashMinor,
+            discrepancyMinor: rec.discrepancyMinor,
+            note: Value(rec.note),
+            adjustmentTxnId: Value(rec.adjustmentTxnId),
+            branchId: Value(rec.branchId),
+          ),
+        );
+  }
+
+  Future<void> upsertBranchFromRemote(Branch branch) async {
+    await _db
+        .into(_db.branches)
+        .insertOnConflictUpdate(
+          BranchesCompanion.insert(
+            id: branch.id,
+            name: branch.name,
+            address: Value(branch.address),
+            phone: Value(branch.phone),
+            isDefault: Value(branch.isDefault),
+            createdAt: branch.createdAt,
+          ),
+        );
+  }
+
+  Future<void> upsertStaffFromRemote(StaffMember staff) async {
+    final existing = await (_db.select(
+      _db.staffMembers,
+    )..where((s) => s.id.equals(staff.id))).getSingleOrNull();
+    await _db
+        .into(_db.staffMembers)
+        .insertOnConflictUpdate(
+          StaffMembersCompanion.insert(
+            id: staff.id,
+            name: staff.name,
+            phone: Value(staff.phone),
+            role: Value(staff.role.key),
+            pinHash: Value(existing?.pinHash ?? staff.pinHash),
+            isActive: Value(staff.isActive),
+            createdAt: staff.createdAt,
+          ),
+        );
+  }
+
+  String _invoiceStatusToLocal(InvoiceStatus status) {
+    switch (status) {
+      case InvoiceStatus.partiallyPaid:
+        return 'partially_paid';
+      case InvoiceStatus.paid:
+        return 'paid';
+      case InvoiceStatus.cancelled:
+        return 'cancelled';
+      case InvoiceStatus.unpaid:
+        return 'unpaid';
+    }
   }
 
   Future<void> wipeAll() async {

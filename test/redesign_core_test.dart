@@ -340,6 +340,7 @@ void main() {
     testWidgets('PIN set → gate locks → correct PIN unlocks', (tester) async {
       final db = _db();
       final repo = GallaRepository(db);
+      await repo.loginDemo(); // isLoggedIn must be true; _maybeLock guards on it
       await repo.setAppPin('4321');
 
       await tester.pumpWidget(

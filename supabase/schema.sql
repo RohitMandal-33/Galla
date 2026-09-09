@@ -1,26 +1,36 @@
 -- ==============================================================================
--- GALLA SUPABASE / POSTGRESQL SCHEMA (IDEMPOTENT MIGRATION)
+-- GALLA SHARED DATABASE CONTRACT (MOBILE + WEB)
 -- Project URL: https://ydnplzkvbsvaxoixxqqv.supabase.co
--- Compatible with Flutter Mobile & Web frontends
--- Safe to re-run multiple times without errors (ERROR 42710 prevention)
+--
+-- Both Flutter and the web app MUST:
+--   1. Sign in with the same Supabase Auth account
+--   2. Set business_id = auth.uid() on every row (businesses.id = auth.uid())
+--   3. Generate UUIDs on the client, then upsert on id
+--   4. Store money as *_minor integers (paisa / cents), never floats
+--   5. Use UTC ISO-8601 timestamps and last-write-wins on updated_at
+--   6. Soft-delete with deleted_at (do not hard-delete synced rows)
+-- Device-only: app-lock PIN, demo flag, lastDirection. Do not sync those.
 -- ==============================================================================
 
--- 1. Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Businesses / Stores Table
--- id matches auth.users.id 1-to-1 so each signed up account owns their business
+-- 1. Businesses / Stores (id matches auth.users.id)
 CREATE TABLE IF NOT EXISTS public.businesses (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL DEFAULT 'My Store',
     currency TEXT NOT NULL DEFAULT 'NPR',
     tax_rate_pct NUMERIC(5, 2) NOT NULL DEFAULT 0.00,
+    locale TEXT NOT NULL DEFAULT 'en',
+    low_cash_threshold_minor BIGINT NOT NULL DEFAULT 0,
+    notify_payment_due BOOLEAN NOT NULL DEFAULT TRUE,
+    notify_low_cash BOOLEAN NOT NULL DEFAULT TRUE,
+    notify_low_stock BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 3. Parties (Customer & Supplier Khata)
+-- 2. Parties (Customer & Supplier Khata)
 CREATE TABLE IF NOT EXISTS public.parties (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
@@ -32,13 +42,41 @@ CREATE TABLE IF NOT EXISTS public.parties (
     last_reminded_at TIMESTAMPTZ,
     settled_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
 );
 
--- 4. Inventory Items
+-- 3. Branches
+CREATE TABLE IF NOT EXISTS public.branches (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    address TEXT,
+    phone TEXT,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
+-- 4. Staff (PIN hashes stay on-device; not stored here)
+CREATE TABLE IF NOT EXISTS public.staff_members (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    phone TEXT,
+    role TEXT NOT NULL DEFAULT 'staff',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMPTZ
+);
+
+-- 5. Inventory Items
 CREATE TABLE IF NOT EXISTS public.inventory_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
+    branch_id UUID,
     name TEXT NOT NULL,
     sku TEXT,
     unit TEXT NOT NULL DEFAULT 'pcs',
@@ -51,8 +89,7 @@ CREATE TABLE IF NOT EXISTS public.inventory_items (
     deleted_at TIMESTAMPTZ
 );
 
--- 5. Transactions (Daily Galla Cash & Credit Ledger)
--- Idempotent Enum: txn_direction
+-- 6. Transactions (Daily Galla Cash & Credit Ledger)
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -64,7 +101,6 @@ BEGIN
     END IF;
 END $$;
 
--- Ensure enum values exist if type was created previously
 ALTER TYPE public.txn_direction ADD VALUE IF NOT EXISTS 'money_in';
 ALTER TYPE public.txn_direction ADD VALUE IF NOT EXISTS 'money_out';
 
@@ -73,6 +109,10 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     party_id UUID REFERENCES public.parties(id) ON DELETE SET NULL,
     inventory_item_id UUID REFERENCES public.inventory_items(id) ON DELETE SET NULL,
+    invoice_id UUID,
+    branch_id UUID,
+    staff_id UUID,
+    staff_name TEXT,
     direction public.txn_direction NOT NULL,
     amount_minor BIGINT NOT NULL,
     category TEXT,
@@ -81,15 +121,15 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     is_adjustment BOOLEAN NOT NULL DEFAULT FALSE,
     is_write_off BOOLEAN NOT NULL DEFAULT FALSE,
     photo_url TEXT,
-    invoice_id UUID,
+    nl_raw TEXT,
+    ai_inferred BOOLEAN NOT NULL DEFAULT FALSE,
     occurred_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
 );
 
--- 6. Invoices & Invoice Items
--- Idempotent Enum: invoice_status
+-- 7. Invoices & Invoice Items
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -101,7 +141,6 @@ BEGIN
     END IF;
 END $$;
 
--- Ensure enum values exist if type was created previously
 ALTER TYPE public.invoice_status ADD VALUE IF NOT EXISTS 'unpaid';
 ALTER TYPE public.invoice_status ADD VALUE IF NOT EXISTS 'partially_paid';
 ALTER TYPE public.invoice_status ADD VALUE IF NOT EXISTS 'paid';
@@ -111,6 +150,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     party_id UUID REFERENCES public.parties(id) ON DELETE SET NULL,
+    party_name TEXT,
     invoice_number TEXT NOT NULL,
     issue_date DATE NOT NULL,
     due_date DATE,
@@ -121,6 +161,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
     paid_amount_minor BIGINT NOT NULL DEFAULT 0,
     status public.invoice_status NOT NULL DEFAULT 'unpaid',
     notes TEXT,
+    branch_id UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ
@@ -136,21 +177,55 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
     total_minor BIGINT NOT NULL
 );
 
--- 7. Cash Reconciliations
+-- 8. Cash Reconciliations
 CREATE TABLE IF NOT EXISTS public.reconciliations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     business_id UUID NOT NULL REFERENCES public.businesses(id) ON DELETE CASCADE,
     occurred_at TIMESTAMPTZ NOT NULL,
     counted_cash_minor BIGINT NOT NULL,
+    bank_balance_minor BIGINT,
     expected_cash_minor BIGINT NOT NULL,
     discrepancy_minor BIGINT NOT NULL,
     note TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    adjustment_txn_id UUID,
+    branch_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ==============================================================================
+-- IDEMPOTENT COLUMN ADDS (existing projects created from an older schema)
+-- ==============================================================================
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS locale TEXT NOT NULL DEFAULT 'en';
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS low_cash_threshold_minor BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS notify_payment_due BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS notify_low_cash BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE public.businesses ADD COLUMN IF NOT EXISTS notify_low_stock BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE public.parties ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+ALTER TABLE public.inventory_items ADD COLUMN IF NOT EXISTS branch_id UUID;
+
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS invoice_id UUID;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS branch_id UUID;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS staff_id UUID;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS staff_name TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS nl_raw TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS ai_inferred BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS party_name TEXT;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS branch_id UUID;
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE public.reconciliations ADD COLUMN IF NOT EXISTS bank_balance_minor BIGINT;
+ALTER TABLE public.reconciliations ADD COLUMN IF NOT EXISTS adjustment_txn_id UUID;
+ALTER TABLE public.reconciliations ADD COLUMN IF NOT EXISTS branch_id UUID;
+ALTER TABLE public.reconciliations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- ==============================================================================
 -- AUTOMATIC ONBOARDING TRIGGER (auth.users -> public.businesses)
--- When a user signs up on mobile or web, their business profile is created
+-- Copies signup metadata business_name when present.
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
@@ -159,7 +234,7 @@ BEGIN
     VALUES (
         NEW.id,
         COALESCE(NEW.email, ''),
-        COALESCE(NEW.raw_user_meta_data->>'business_name', 'My Business')
+        COALESCE(NULLIF(NEW.raw_user_meta_data->>'business_name', ''), 'My Business')
     )
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
@@ -172,53 +247,60 @@ CREATE TRIGGER on_auth_user_created
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ==============================================================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- Ensures each account can ONLY read and write their own business data
+-- ROW LEVEL SECURITY
 -- ==============================================================================
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.parties ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.branches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.staff_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.inventory_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.invoice_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reconciliations ENABLE ROW LEVEL SECURITY;
 
--- Businesses
 DROP POLICY IF EXISTS "Users can manage their own business" ON public.businesses;
 CREATE POLICY "Users can manage their own business"
     ON public.businesses FOR ALL
     USING (id = auth.uid())
     WITH CHECK (id = auth.uid());
 
--- Parties
 DROP POLICY IF EXISTS "Users can manage their own parties" ON public.parties;
 CREATE POLICY "Users can manage their own parties"
     ON public.parties FOR ALL
     USING (business_id = auth.uid())
     WITH CHECK (business_id = auth.uid());
 
--- Inventory Items
+DROP POLICY IF EXISTS "Users can manage their own branches" ON public.branches;
+CREATE POLICY "Users can manage their own branches"
+    ON public.branches FOR ALL
+    USING (business_id = auth.uid())
+    WITH CHECK (business_id = auth.uid());
+
+DROP POLICY IF EXISTS "Users can manage their own staff" ON public.staff_members;
+CREATE POLICY "Users can manage their own staff"
+    ON public.staff_members FOR ALL
+    USING (business_id = auth.uid())
+    WITH CHECK (business_id = auth.uid());
+
 DROP POLICY IF EXISTS "Users can manage their own inventory" ON public.inventory_items;
 CREATE POLICY "Users can manage their own inventory"
     ON public.inventory_items FOR ALL
     USING (business_id = auth.uid())
     WITH CHECK (business_id = auth.uid());
 
--- Transactions
 DROP POLICY IF EXISTS "Users can manage their own transactions" ON public.transactions;
 CREATE POLICY "Users can manage their own transactions"
     ON public.transactions FOR ALL
     USING (business_id = auth.uid())
     WITH CHECK (business_id = auth.uid());
 
--- Invoices
 DROP POLICY IF EXISTS "Users can manage their own invoices" ON public.invoices;
 CREATE POLICY "Users can manage their own invoices"
     ON public.invoices FOR ALL
     USING (business_id = auth.uid())
     WITH CHECK (business_id = auth.uid());
 
--- Invoice Items
 DROP POLICY IF EXISTS "Users can manage their own invoice items" ON public.invoice_items;
 CREATE POLICY "Users can manage their own invoice items"
     ON public.invoice_items FOR ALL
@@ -229,7 +311,6 @@ CREATE POLICY "Users can manage their own invoice items"
         invoice_id IN (SELECT id FROM public.invoices WHERE business_id = auth.uid())
     );
 
--- Reconciliations
 DROP POLICY IF EXISTS "Users can manage their own reconciliations" ON public.reconciliations;
 CREATE POLICY "Users can manage their own reconciliations"
     ON public.reconciliations FOR ALL
@@ -237,44 +318,31 @@ CREATE POLICY "Users can manage their own reconciliations"
     WITH CHECK (business_id = auth.uid());
 
 -- ==============================================================================
--- REALTIME SUBSCRIPTIONS
--- Idempotent check before adding tables to publication
+-- REALTIME
 -- ==============================================================================
 DO $$
+DECLARE
+    t TEXT;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' 
-        AND schemaname = 'public' 
-        AND tablename = 'transactions'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.transactions;
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' 
-        AND schemaname = 'public' 
-        AND tablename = 'parties'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.parties;
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' 
-        AND schemaname = 'public' 
-        AND tablename = 'inventory_items'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory_items;
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_publication_tables 
-        WHERE pubname = 'supabase_realtime' 
-        AND schemaname = 'public' 
-        AND tablename = 'invoices'
-    ) THEN
-        ALTER PUBLICATION supabase_realtime ADD TABLE public.invoices;
-    END IF;
+    FOREACH t IN ARRAY ARRAY[
+        'businesses',
+        'parties',
+        'branches',
+        'staff_members',
+        'inventory_items',
+        'transactions',
+        'invoices',
+        'invoice_items',
+        'reconciliations'
+    ]
+    LOOP
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_publication_tables
+            WHERE pubname = 'supabase_realtime'
+              AND schemaname = 'public'
+              AND tablename = t
+        ) THEN
+            EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', t);
+        END IF;
+    END LOOP;
 END $$;

@@ -12,7 +12,12 @@ import '../../../data/supabase_sync_service.dart';
 import '../../../shared/widgets/galla_network_image.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.from, this.initialSignUp = false});
+
+  /// Route to return to after a successful sign-in. Router still applies
+  /// onboarding / home redirects on top of this.
+  final String? from;
+  final bool initialSignUp;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -23,8 +28,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
-  bool _isSignUp = false;
+  late bool _isSignUp = widget.initialSignUp;
   String? _error;
+
+  void _goAfterAuth() {
+    final from = widget.from;
+    if (from != null && from.isNotEmpty && from != '/login') {
+      context.go(from);
+    } else {
+      context.go('/galla');
+    }
+  }
 
   @override
   void dispose() {
@@ -43,7 +57,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final pass = _passCtrl.text;
 
     // Check if using the local offline demo account
-    if (email == GallaRepository.demoEmail && pass == GallaRepository.demoPassword) {
+    if (email == GallaRepository.demoEmail &&
+        pass == GallaRepository.demoPassword) {
       final ok = await repo.loginWithPassword(email, pass);
       if (!ok) {
         if (!mounted) return;
@@ -67,7 +82,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _loading = false);
-      context.go('/galla');
+      _goAfterAuth();
       return;
     }
 
@@ -86,12 +101,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final user = supabase.auth.currentUser;
       if (user != null) {
         final current = await repo.loadSettings();
-        await repo.saveSettings(current.copyWith(
-          isLoggedIn: true,
-          authEmail: user.email ?? email,
-          authIsDemo: false,
-          onboardingDone: true,
-        ));
+        await repo.saveSettings(
+          current.copyWith(
+            isLoggedIn: true,
+            authEmail: user.email ?? email,
+            authIsDemo: false,
+            // New cloud sign-ups go through /onboarding. Returning users skip it.
+            onboardingDone: _isSignUp ? false : true,
+          ),
+        );
 
         // Start background sync
         ref.read(syncServiceProvider).init();
@@ -105,7 +123,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       setState(() => _loading = false);
-      context.go('/galla');
+      _goAfterAuth();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -129,233 +147,276 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Scaffold(
       backgroundColor: GallaColors.canvas,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(GallaSpacing.xl),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Brand header
-                  Column(
-                    children: [
-                      Container(
-                        height: 100,
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 16),
-                        child: GallaNetworkImage(
-                          imageUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
-                          borderRadius: GallaRadius.lg,
-                          fit: BoxFit.cover,
-                          cacheWidth: 600,
-                          overlayGradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              GallaColors.canvas.withValues(alpha: 0.85),
-                            ],
-                          ),
-                          fallbackIcon: Icons.storefront_rounded,
-                        ),
-                      ),
-                      Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: GallaColors.brandSoft,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        padding: const EdgeInsets.all(8),
-                        child: Image.asset(
-                          'assets/images/galla_logo.png',
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, _, _) => const Icon(
-                            Icons.storefront_rounded,
-                            size: 32,
-                            color: GallaColors.brand,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Welcome to Galla',
-                        style: GallaType.numberXl,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Your daily khata — cash, udhaar & stock',
-                        style: GallaType.body.copyWith(
-                          color: GallaColors.muted,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _loading ? null : () => context.go('/explore'),
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text('Continue Exploring'),
+                style: TextButton.styleFrom(
+                  foregroundColor: GallaColors.brand,
+                  textStyle: GallaType.caption.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 28),
-
-                  Container(
-                    padding: const EdgeInsets.all(GallaSpacing.base),
-                    decoration: BoxDecoration(
-                      color: GallaColors.surface,
-                      borderRadius: BorderRadius.circular(GallaRadius.lg),
-                      border: Border.all(color: GallaColors.line),
-                      boxShadow: GallaElevation.card,
-                    ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    GallaSpacing.xl,
+                    0,
+                    GallaSpacing.xl,
+                    GallaSpacing.xl,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Sign in', style: GallaType.cardTitle),
-                        const SizedBox(height: 14),
-                        TextField(
-                          controller: _emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            hintText: 'demo@galla.app',
-                            prefixIcon: Icon(Icons.mail_outline_rounded),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _passCtrl,
-                          obscureText: _obscure,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _login(),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscure
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                              ),
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
-                            ),
-                          ),
-                        ),
-                        if (_error != null) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: GallaColors.moneyOutSoft,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 18,
-                                  color: GallaColors.moneyOut,
+                        // Brand header
+                        Column(
+                          children: [
+                            Container(
+                              height: 100,
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              child: GallaNetworkImage(
+                                imageUrl:
+                                    'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=600&q=80',
+                                borderRadius: GallaRadius.lg,
+                                fit: BoxFit.cover,
+                                cacheWidth: 600,
+                                overlayGradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    GallaColors.canvas.withValues(alpha: 0.85),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _error!,
-                                    style: GallaType.caption.copyWith(
-                                      color: GallaColors.moneyOut,
+                                fallbackIcon: Icons.storefront_rounded,
+                              ),
+                            ),
+                            Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                color: GallaColors.brandSoft,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: Image.asset(
+                                'assets/images/galla_logo.png',
+                                fit: BoxFit.contain,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.storefront_rounded,
+                                  size: 32,
+                                  color: GallaColors.brand,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Welcome to Galla',
+                              style: GallaType.numberXl,
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Your daily khata — cash, udhaar & stock',
+                              style: GallaType.body.copyWith(
+                                color: GallaColors.muted,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+
+                        Container(
+                          padding: const EdgeInsets.all(GallaSpacing.base),
+                          decoration: BoxDecoration(
+                            color: GallaColors.surface,
+                            borderRadius: BorderRadius.circular(GallaRadius.lg),
+                            border: Border.all(color: GallaColors.line),
+                            boxShadow: GallaElevation.card,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                _isSignUp ? 'Create account' : 'Sign in',
+                                style: GallaType.cardTitle,
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: _emailCtrl,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  hintText: 'demo@galla.app',
+                                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              TextField(
+                                controller: _passCtrl,
+                                obscureText: _obscure,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _login(),
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscure
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
                                     ),
+                                    onPressed: () =>
+                                        setState(() => _obscure = !_obscure),
+                                  ),
+                                ),
+                              ),
+                              if (_error != null) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: GallaColors.moneyOutSoft,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline_rounded,
+                                        size: 18,
+                                        color: GallaColors.moneyOut,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          _error!,
+                                          style: GallaType.caption.copyWith(
+                                            color: GallaColors.moneyOut,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ],
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: _loading ? null : _login,
-                          child: _loading
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                              const SizedBox(height: 16),
+                              FilledButton(
+                                onPressed: _loading ? null : _login,
+                                child: _loading
+                                    ? const SizedBox(
+                                        height: 18,
+                                        width: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Text(
+                                        _isSignUp
+                                            ? 'Create Cloud Account'
+                                            : 'Sign in',
+                                      ),
+                              ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _loading
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _isSignUp = !_isSignUp;
+                                          _error = null;
+                                        });
+                                      },
+                                child: Text(
+                                  _isSignUp
+                                      ? 'Already have an account? Sign in'
+                                      : "Don't have an account? Sign up with email",
+                                  style: GallaType.caption.copyWith(
+                                    color: GallaColors.brand,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                )
-                              : Text(_isSignUp ? 'Create Cloud Account' : 'Sign in'),
-                        ),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _loading
-                              ? null
-                              : () {
-                                  setState(() {
-                                    _isSignUp = !_isSignUp;
-                                    _error = null;
-                                  });
-                                },
-                          child: Text(
-                            _isSignUp
-                                ? 'Already have an account? Sign in'
-                                : "Don't have an account? Sign up with email",
-                            style: GallaType.caption.copyWith(
-                              color: GallaColors.brand,
-                              fontWeight: FontWeight.w600,
-                            ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                onPressed: _loading ? null : _useDemo,
+                                icon: const Icon(Icons.bolt_rounded, size: 18),
+                                label: const Text('Take Demo'),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: GallaColors.gold,
+                                    width: 1.2,
+                                  ),
+                                  foregroundColor: GallaColors.goldDark,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      GallaRadius.md,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: _loading ? null : _useDemo,
-                          icon: const Icon(Icons.bolt_rounded, size: 18),
-                          label: const Text('Take Demo'),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(
-                              color: GallaColors.gold,
-                              width: 1.2,
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.shield_outlined,
+                              size: 14,
+                              color: GallaColors.muted,
                             ),
-                            foregroundColor: GallaColors.goldDark,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(GallaRadius.md),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Offline-first · PIN + biometrics after sign-in',
+                              style: GallaType.captionSm,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () => launchGallaWeb(),
+                            icon: const Icon(
+                              Icons.laptop_mac_rounded,
+                              size: 16,
+                            ),
+                            label: const Text(
+                              'Prefer a browser? Open Galla Desktop',
+                            ),
+                            style: TextButton.styleFrom(
+                              foregroundColor: GallaColors.brand,
+                              textStyle: GallaType.captionSm.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shield_outlined,
-                        size: 14,
-                        color: GallaColors.muted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Offline-first · PIN + biometrics after sign-in',
-                        style: GallaType.captionSm,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () => launchGallaWeb(),
-                      icon: const Icon(Icons.laptop_mac_rounded, size: 16),
-                      label: const Text('Prefer a browser? Open Galla Desktop'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: GallaColors.brand,
-                        textStyle: GallaType.captionSm.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

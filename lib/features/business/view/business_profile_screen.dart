@@ -9,6 +9,7 @@ import '../../../core/providers.dart';
 import '../../../core/theme/galla_theme.dart';
 import '../../../core/utils/url_utils.dart';
 import '../../../data/galla_repository.dart';
+import '../../../data/supabase_sync_service.dart';
 import '../../../domain/models.dart';
 import '../../../shared/widgets/galla_components.dart';
 
@@ -61,14 +62,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final taxRaw = double.tryParse(_taxCtrl.text.trim()) ?? 0.0;
     final threshold = (int.tryParse(_thresholdCtrl.text.trim()) ?? 0) * 100;
 
-    await repo.saveSettings(
-      current.copyWith(
-        businessName: _nameCtrl.text.trim(),
-        taxRatePct: taxRaw < 0 ? 0 : taxRaw,
-        lowCashThresholdMinor: threshold < 0 ? 0 : threshold,
-      ),
+    final next = current.copyWith(
+      businessName: _nameCtrl.text.trim(),
+      taxRatePct: taxRaw < 0 ? 0 : taxRaw,
+      lowCashThresholdMinor: threshold < 0 ? 0 : threshold,
     );
+    await repo.saveSettings(next);
+    await repo.markBusinessUpdatedAt(DateTime.now().toUtc());
+    await _pushBusinessToCloud();
 
+    if (!mounted) return;
     setState(() => _loading = false);
     showGallaSnackBar(messenger, 'Business profile updated');
     router.pop();
@@ -185,10 +188,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     await applyAppLocale(locale);
   }
 
+  Future<void> _pushBusinessToCloud() async {
+    try {
+      await ref.read(syncServiceProvider).pushBusinessProfile();
+    } catch (_) {}
+  }
+
   String get settingsLocale =>
       ref.read(settingsProvider).valueOrNull?.locale ?? 'en';
-
-
 
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
@@ -204,7 +211,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: GallaColors.moneyOut),
+            style: FilledButton.styleFrom(
+              backgroundColor: GallaColors.moneyOut,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Sign out'),
           ),
@@ -215,8 +224,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     if (confirmed == true && mounted) {
       await ref.read(repositoryProvider).logout();
       ref.invalidate(settingsProvider);
-      if (mounted) context.go('/login');
+      if (mounted) context.go('/explore');
     }
+  }
+
+  Future<void> _replayTutorial() async {
+    await ref.read(repositoryProvider).resetOnboarding();
+    ref.invalidate(settingsProvider);
+    if (mounted) context.go('/onboarding');
   }
 
   Future<void> _switchAccount() async {
@@ -225,8 +240,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final currentIdentity = settings.authEmail?.isNotEmpty == true
         ? settings.authEmail!
         : (settings.businessName.isNotEmpty
-            ? settings.businessName
-            : 'Active Account');
+              ? settings.businessName
+              : 'Active Account');
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -253,15 +268,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Currently signed in as:',
-              style: GallaType.captionSm,
-            ),
+            Text('Currently signed in as:', style: GallaType.captionSm),
             const SizedBox(height: 4),
-            Text(
-              currentIdentity,
-              style: GallaType.bodyStrong,
-            ),
+            Text(currentIdentity, style: GallaType.bodyStrong),
             const SizedBox(height: 12),
             Text(
               'You will be taken to the sign-in screen to choose or log in with another merchant account.',
@@ -276,9 +285,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: GallaColors.brand,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: GallaColors.brand),
             child: const Text('Proceed'),
           ),
         ],
@@ -427,12 +434,15 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         child: Text('USD — US Dollar (\$)'),
                       ),
                     ],
-                    onChanged: (v) {
-                      if (v != null) {
-                        ref
-                            .read(repositoryProvider)
-                            .saveSettings(settings.copyWith(currency: v));
-                      }
+                    onChanged: (v) async {
+                      if (v == null) return;
+                      await ref
+                          .read(repositoryProvider)
+                          .saveSettings(settings.copyWith(currency: v));
+                      await ref
+                          .read(repositoryProvider)
+                          .markBusinessUpdatedAt(DateTime.now().toUtc());
+                      await _pushBusinessToCloud();
                     },
                   ),
                   const SizedBox(height: GallaSpacing.md),
@@ -621,10 +631,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Galla Desktop',
-                              style: GallaType.bodyStrong,
-                            ),
+                            Text('Galla Desktop', style: GallaType.bodyStrong),
                             const SizedBox(height: 2),
                             Text(
                               'Manage your shop from any desktop or browser at $kGallaWebDomain',
@@ -680,10 +687,36 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             ),
             const SizedBox(height: GallaSpacing.lg),
 
-            GallaSectionHeader(
-              title: 'Account & Session',
-              topPadding: 0,
+            GallaSectionHeader(title: 'Help', topPadding: 0),
+            Container(
+              decoration: BoxDecoration(
+                color: GallaColors.surface,
+                borderRadius: BorderRadius.circular(GallaRadius.lg),
+                border: Border.all(color: GallaColors.line),
+              ),
+              child: Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.school_outlined,
+                    color: GallaColors.brand,
+                  ),
+                  title: Text('Replay Tutorial', style: GallaType.bodyStrong),
+                  subtitle: Text(
+                    'Walk through welcome, shop type, and opening cash again',
+                    style: GallaType.caption,
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: GallaColors.muted,
+                  ),
+                  onTap: _loading ? null : _replayTutorial,
+                ),
+              ),
             ),
+            const SizedBox(height: GallaSpacing.lg),
+
+            GallaSectionHeader(title: 'Account & Session', topPadding: 0),
             Container(
               padding: const EdgeInsets.all(GallaSpacing.base),
               decoration: BoxDecoration(
@@ -797,7 +830,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                               width: 32,
                               height: 32,
                               decoration: BoxDecoration(
-                                color: GallaColors.brand.withValues(alpha: 0.10),
+                                color: GallaColors.brand.withValues(
+                                  alpha: 0.10,
+                                ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
