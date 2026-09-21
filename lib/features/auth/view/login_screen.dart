@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../core/providers.dart';
 import '../../../core/supabase/supabase_provider.dart';
 import '../../../core/theme/galla_theme.dart';

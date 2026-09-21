@@ -9,6 +9,7 @@ import 'core/router/app_router.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/theme/galla_theme.dart';
 import 'data/galla_repository.dart';
+import 'data/supabase_sync_service.dart';
 import 'features/lock/lock_gate.dart';
 
 Future<void> main() async {
@@ -39,10 +40,35 @@ class _GallaAppState extends ConsumerState<GallaApp> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final repo = ref.read(repositoryProvider);
-      final settings = await repo.loadSettings();
-      await repo.saveSettings(settings);
-      // Dates and number formatting follow the chosen language immediately.
+      var settings = await repo.loadSettings();
       await applyAppLocale(settings.locale);
+
+      // ── Supabase session reconciliation ──────────────────────────────────
+      // On a new install (or after the local DB is wiped) the local
+      // `isLoggedIn` flag starts as false even though Supabase may hold a
+      // valid session token for a previously-authenticated user.  Recover it
+      // here so the router never incorrectly redirects them to /explore.
+      final supabaseUser = Supabase.instance.client.auth.currentUser;
+      if (supabaseUser != null && !settings.isLoggedIn) {
+        settings = settings.copyWith(
+          isLoggedIn: true,
+          authEmail: supabaseUser.email ?? settings.authEmail,
+          authIsDemo: false,
+          // Returning users have already completed onboarding.
+          onboardingDone: true,
+        );
+        await repo.saveSettings(settings);
+      }
+
+      // ── Background sync for cloud users ──────────────────────────────────
+      // Pull the latest Supabase data on every cold start so real data
+      // appears immediately rather than only after an explicit action.
+      if (settings.isLoggedIn && !settings.authIsDemo) {
+        ref.read(syncServiceProvider).init();
+      }
+
+      // ── Reminder evaluation ───────────────────────────────────────────────
+      await repo.saveSettings(settings);
       final engine = ReminderEngine(repo);
       await engine.evaluate();
     });

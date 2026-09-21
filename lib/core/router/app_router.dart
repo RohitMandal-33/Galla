@@ -25,10 +25,13 @@ import '../../features/splash/view/splash_screen.dart';
 import '../../features/reports/view/reports_screen.dart';
 import '../../features/shell/view/app_shell.dart';
 import '../providers.dart';
+import '../supabase/supabase_provider.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(settingsProvider, (_, _) => refresh.value++);
+  // Re-evaluate routes on Supabase auth changes (OAuth callback, sign-out).
+  ref.listen(authStateChangesProvider, (_, _) => refresh.value++);
 
   return GoRouter(
     initialLocation: '/explore',
@@ -36,6 +39,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: [GallaSnackBarClearObserver()],
     redirect: (context, state) {
       final settings = ref.read(settingsProvider).valueOrNull;
+      final supabaseUser = ref.read(currentAuthUserProvider);
       final loc = state.matchedLocation;
       final isLoginRoute = loc.startsWith('/login');
       final isExploreRoute = loc.startsWith('/explore');
@@ -47,7 +51,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isSplashRoute ? null : '/splash';
       }
 
-      if (!settings.isLoggedIn) {
+      // A live Supabase session counts as logged in even before the local
+      // DB flag is updated by startup reconciliation in main.dart.
+      final isLoggedIn = settings.isLoggedIn || supabaseUser != null;
+
+      if (!isLoggedIn) {
         if (isSplashRoute) return '/explore';
         if (isPublicRoute) return null;
         return '/explore';
