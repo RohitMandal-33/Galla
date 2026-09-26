@@ -211,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               child: Image.asset(
                                 'assets/images/galla_logo.png',
                                 fit: BoxFit.contain,
-                                errorBuilder: (_, _, _) => const Icon(
+                                errorBuilder: (_, _, _) => Icon(
                                   Icons.storefront_rounded,
                                   size: 32,
                                   color: GallaColors.brand,
@@ -294,7 +294,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Icons.error_outline_rounded,
                                         size: 18,
                                         color: GallaColors.moneyOut,
@@ -356,7 +356,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 icon: const Icon(Icons.bolt_rounded, size: 18),
                                 label: const Text('Take Demo'),
                                 style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
+                                  side: BorderSide(
                                     color: GallaColors.gold,
                                     width: 1.2,
                                   ),

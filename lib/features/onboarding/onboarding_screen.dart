@@ -500,7 +500,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: GallaColors.moneyInSoft,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_outline_rounded,
               size: 40,
               color: GallaColors.moneyIn,
@@ -520,7 +520,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 24),
           OutlinedButton.icon(
             onPressed: () => _completeOnboarding(loadDemo: true),
-            icon: const Icon(
+            icon: Icon(
               Icons.auto_fix_high_rounded,
               color: GallaColors.gold,
             ),

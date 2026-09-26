@@ -102,9 +102,9 @@ class QuickAddSheet extends ConsumerWidget {
         ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(GallaRadius.bottomSheet),
         ),
       ),
@@ -138,7 +138,7 @@ class QuickAddSheet extends ConsumerWidget {
               Text('Add transaction', style: GallaType.numberMd),
               IconButton(
                 tooltip: 'Close',
-                icon: const Icon(
+                icon: Icon(
                   Icons.close_rounded,
                   size: 20,
                   color: GallaColors.muted,
@@ -496,9 +496,9 @@ class _VoiceEntrySheetState extends ConsumerState<VoiceEntrySheet>
         ref.watch(settingsProvider).valueOrNull ?? const AppSettings();
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: GallaColors.surface,
-        borderRadius: BorderRadius.vertical(
+        borderRadius: const BorderRadius.vertical(
           top: Radius.circular(GallaRadius.bottomSheet),
         ),
       ),
@@ -839,9 +839,9 @@ class _EntrySheetState extends ConsumerState<EntrySheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: GallaColors.surface,
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(GallaRadius.bottomSheet),
           ),
         ),

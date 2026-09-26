@@ -365,7 +365,7 @@ class _InvoiceDetailScreenState extends ConsumerState<InvoiceDetailScreen> {
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: GallaColors.surface,
           border: Border(top: BorderSide(color: GallaColors.line)),
         ),
@@ -554,9 +554,9 @@ class _PaymentSheetState extends ConsumerState<_PaymentSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: GallaColors.surface,
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(GallaRadius.bottomSheet),
           ),
         ),

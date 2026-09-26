@@ -185,7 +185,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                   ),
                 ),
                 tileColor: GallaColors.surface,
-                leading: const Icon(
+                leading: Icon(
                   Icons.apps_rounded,
                   color: GallaColors.brand,
                 ),
@@ -225,7 +225,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'No additional branches added yet.',
                           style: TextStyle(color: GallaColors.muted),
                         ),
@@ -263,7 +263,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                       ),
                     ),
                     tileColor: GallaColors.surface,
-                    leading: const Icon(
+                    leading: Icon(
                       Icons.storefront_outlined,
                       color: GallaColors.brand,
                     ),
@@ -276,7 +276,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isSelected)
-                          const Icon(
+                          Icon(
                             Icons.check_circle,
                             color: GallaColors.brand,
                           ),

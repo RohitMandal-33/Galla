@@ -229,10 +229,10 @@ class _CalendarLedgerScreenState extends ConsumerState<CalendarLedgerScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             sliver: dayTxns.isEmpty
-                ? const SliverToBoxAdapter(
+                ? SliverToBoxAdapter(
                     child: Center(
                       child: Padding(
-                        padding: EdgeInsets.all(40),
+                        padding: const EdgeInsets.all(40),
                         child: Text(
                           'No transactions on this day.',
                           style: TextStyle(color: GallaColors.muted),

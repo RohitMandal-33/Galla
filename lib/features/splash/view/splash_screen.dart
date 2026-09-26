@@ -27,7 +27,7 @@ class SplashScreen extends StatelessWidget {
                 child: Image.asset(
                   'assets/images/galla_logo.png',
                   fit: BoxFit.contain,
-                  errorBuilder: (_, _, _) => const Icon(
+                  errorBuilder: (_, _, _) => Icon(
                     Icons.storefront_rounded,
                     size: 40,
                     color: GallaColors.brand,
@@ -42,7 +42,7 @@ class SplashScreen extends StatelessWidget {
                 style: GallaType.body.copyWith(color: GallaColors.muted),
               ),
               const SizedBox(height: GallaSpacing.xxl),
-              const SizedBox(
+              SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(

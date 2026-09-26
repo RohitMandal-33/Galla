@@ -504,7 +504,7 @@ class GallaUdhaarCard extends StatelessWidget {
                 color: GallaColors.udhaarSoft,
                 borderRadius: BorderRadius.circular(GallaRadius.md),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.people_outline_rounded,
                 color: GallaColors.udhaar,
                 size: 20,
@@ -745,7 +745,7 @@ class GallaFilterChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.selectedColor = GallaColors.brand,
+    this.selectedColor,
     this.fullWidth = false,
   });
 
@@ -755,13 +755,14 @@ class GallaFilterChip extends StatelessWidget {
 
   /// Accent used when selected. Defaults to brand; pass a semantic color
   /// (e.g. moneyOut for "Low Stock") when the filter carries meaning.
-  final Color selectedColor;
+  final Color? selectedColor;
 
   /// Stretch to fill available width (for Expanded / evenly-split rows).
   final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = selectedColor ?? GallaColors.brand;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -770,10 +771,10 @@ class GallaFilterChip extends StatelessWidget {
         alignment: fullWidth ? Alignment.center : null,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? selectedColor : GallaColors.surface,
+          color: selected ? effectiveColor : GallaColors.surface,
           borderRadius: BorderRadius.circular(GallaRadius.pill),
           border: Border.all(
-            color: selected ? selectedColor : GallaColors.line,
+            color: selected ? effectiveColor : GallaColors.line,
           ),
         ),
         child: Text(
@@ -952,8 +953,8 @@ class GallaAttentionRow extends StatelessWidget {
     required this.onAction,
     this.subtitle,
     this.icon = Icons.bolt_rounded,
-    this.iconColor = GallaColors.brand,
-    this.iconBgColor = GallaColors.brandSoft,
+    this.iconColor,
+    this.iconBgColor,
     this.onTap,
   });
 
@@ -963,11 +964,13 @@ class GallaAttentionRow extends StatelessWidget {
   final VoidCallback onAction;
   final VoidCallback? onTap;
   final IconData icon;
-  final Color iconColor;
-  final Color iconBgColor;
+  final Color? iconColor;
+  final Color? iconBgColor;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveIconColor = iconColor ?? GallaColors.brand;
+    final effectiveIconBgColor = iconBgColor ?? GallaColors.brandSoft;
     return InkWell(
       onTap: onTap ?? onAction,
       borderRadius: BorderRadius.circular(GallaRadius.sm),
@@ -979,11 +982,11 @@ class GallaAttentionRow extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: iconBgColor,
+                color: effectiveIconBgColor,
                 borderRadius: BorderRadius.circular(GallaRadius.sm),
               ),
               alignment: Alignment.center,
-              child: Icon(icon, size: 18, color: iconColor),
+              child: Icon(icon, size: 18, color: effectiveIconColor),
             ),
             const SizedBox(width: GallaSpacing.md),
             Expanded(

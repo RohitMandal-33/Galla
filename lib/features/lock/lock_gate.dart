@@ -168,7 +168,7 @@ class _LockGateState extends ConsumerState<LockGate>
                     color: GallaColors.brandSoft,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.lock_rounded,
                     size: 36,
                     color: GallaColors.brand,

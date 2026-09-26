@@ -209,7 +209,7 @@ class _QuickAddFabState extends State<_QuickAddFab>
                       height: 62,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: const LinearGradient(
+                        gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
@@ -221,7 +221,7 @@ class _QuickAddFabState extends State<_QuickAddFab>
                       ),
                       padding: const EdgeInsets.all(3),
                       child: Container(
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,

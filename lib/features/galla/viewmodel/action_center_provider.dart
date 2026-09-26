@@ -11,7 +11,7 @@ enum ActionType { paymentDue, lowStock, lowCash, reconciliationNeeded }
 /// A single actionable, data-derived attention item. Every item shown here
 /// must correspond to real application state — no filler insights.
 class ActionItem {
-  const ActionItem({
+  ActionItem({
     required this.id,
     required this.type,
     required this.title,
@@ -19,9 +19,10 @@ class ActionItem {
     required this.actionLabel,
     required this.actionRoute,
     this.icon = Icons.bolt_rounded,
-    this.iconColor = GallaColors.brand,
-    this.iconBgColor = GallaColors.brandSoft,
-  });
+    Color? iconColor,
+    Color? iconBgColor,
+  })  : iconColor = iconColor ?? GallaColors.brand,
+        iconBgColor = iconBgColor ?? GallaColors.brandSoft;
 
   final String id;
   final ActionType type;
@@ -94,7 +95,7 @@ final actionCenterProvider = Provider<List<ActionItem>>((ref) {
   // entries exist today.
   if (DateTime.now().hour >= 17 && _hasCashActivityToday(txns)) {
     items.add(
-      const ActionItem(
+      ActionItem(
         id: 'reconciliation_eod',
         type: ActionType.reconciliationNeeded,
         title: 'Count the till before closing',

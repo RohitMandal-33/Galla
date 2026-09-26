@@ -256,7 +256,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   child: Center(
                     child: Column(
                       children: [
-                        const Text(
+                        Text(
                           'Add staff members so they can record sales on this till without seeing your full reports.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: GallaColors.muted),
@@ -293,7 +293,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                       backgroundColor: GallaColors.brandSoft,
                       child: Text(
                         m.name.isNotEmpty ? m.name[0].toUpperCase() : 'S',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: GallaColors.brand,
                         ),

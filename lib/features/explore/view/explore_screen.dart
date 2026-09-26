@@ -153,7 +153,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             child: Image.asset(
               'assets/images/galla_logo.png',
               fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const Icon(
+              errorBuilder: (_, _, _) => Icon(
                 Icons.storefront_rounded,
                 size: 20,
                 color: GallaColors.brand,

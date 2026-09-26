@@ -262,7 +262,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 color: GallaColors.brandSoft,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.switch_account_outlined,
                 color: GallaColors.brand,
                 size: 20,
@@ -673,7 +673,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           color: GallaColors.brandSoft,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.laptop_mac_rounded,
                           color: GallaColors.brand,
                           size: 24,
@@ -750,7 +750,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               child: Material(
                 type: MaterialType.transparency,
                 child: ListTile(
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.school_outlined,
                     color: GallaColors.brand,
                   ),
@@ -759,7 +759,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     'Walk through welcome, shop type, and opening cash again',
                     style: GallaType.caption,
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
                     color: GallaColors.muted,
                   ),
@@ -839,7 +839,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: GallaColors.moneyIn,
                                 shape: BoxShape.circle,
                               ),
@@ -888,7 +888,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                                 ),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.switch_account_outlined,
                                 color: GallaColors.brand,
                                 size: 18,
@@ -915,7 +915,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                                 ],
                               ),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.chevron_right_rounded,
                               size: 18,
                               color: GallaColors.muted,
@@ -932,7 +932,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
                       onPressed: _loading ? null : _signOut,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.logout_rounded,
                         size: 16,
                         color: GallaColors.moneyOut,

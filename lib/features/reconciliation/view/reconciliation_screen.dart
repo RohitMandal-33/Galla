@@ -111,7 +111,7 @@ class _ReconciliationScreenState extends ConsumerState<ReconciliationScreen> {
                     color: GallaColors.brand.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(GallaRadius.md),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.account_balance_wallet_outlined,
                     color: GallaColors.brand,
                     size: 22,

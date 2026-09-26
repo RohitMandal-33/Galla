@@ -157,7 +157,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                                 ),
                                 if (lowStockItems.isNotEmpty) ...[
                                   const SizedBox(width: 4),
-                                  const Icon(
+                                  Icon(
                                     Icons.warning_amber_rounded,
                                     size: 14,
                                     color: GallaColors.moneyOut,

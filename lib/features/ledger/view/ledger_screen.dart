@@ -48,9 +48,9 @@ class _LedgerScreenState extends ConsumerState<LedgerScreen> {
     final currency = settings.currency;
 
     return ledgerAsync.when(
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: GallaColors.canvas,
-        body: Center(child: CircularProgressIndicator()),
+        body: const Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: GallaColors.canvas,
@@ -422,9 +422,9 @@ class _AddPartySheetState extends ConsumerState<_AddPartySheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: GallaColors.surface,
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(GallaRadius.bottomSheet),
           ),
         ),

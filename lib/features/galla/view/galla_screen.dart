@@ -148,7 +148,7 @@ class GallaScreen extends ConsumerWidget {
                                   color: GallaColors.brandSoft,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.insights_rounded,
                                   size: 18,
                                   color: GallaColors.brand,
@@ -170,7 +170,7 @@ class GallaScreen extends ConsumerWidget {
                                   ],
                                 ),
                               ),
-                              const Icon(
+                              Icon(
                                 Icons.arrow_forward_ios_rounded,
                                 size: 14,
                                 color: GallaColors.muted,
@@ -332,7 +332,7 @@ class _Header extends StatelessWidget {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: GallaColors.brand,
                     shape: BoxShape.circle,
                   ),
@@ -385,7 +385,7 @@ class _MetricsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const divider = SizedBox(
+    final divider = SizedBox(
       width: 1,
       height: 34,
       child: ColoredBox(color: GallaColors.line),

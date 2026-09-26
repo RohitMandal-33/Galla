@@ -391,7 +391,7 @@ class _PartyActionBar extends StatelessWidget {
         GallaSpacing.base,
         GallaSpacing.md,
       ),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: GallaColors.surface,
         border: Border(top: BorderSide(color: GallaColors.line)),
       ),
@@ -428,7 +428,7 @@ class _PartyActionBar extends StatelessWidget {
                     key: const ValueKey('party-udhaar'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: GallaColors.udhaar,
-                      side: const BorderSide(
+                      side: BorderSide(
                         color: GallaColors.udhaar,
                         width: 1.4,
                       ),
@@ -520,9 +520,9 @@ class _EditPartySheetState extends ConsumerState<_EditPartySheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: GallaColors.surface,
-          borderRadius: BorderRadius.vertical(
+          borderRadius: const BorderRadius.vertical(
             top: Radius.circular(GallaRadius.bottomSheet),
           ),
         ),

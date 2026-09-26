@@ -32,7 +32,7 @@ class InvoicesScreen extends ConsumerWidget {
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: GallaColors.brand,
                 shape: BoxShape.circle,
               ),

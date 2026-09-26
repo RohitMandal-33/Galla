@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/l10n/locale.dart';
 import 'core/notifications/reminder_engine.dart';
+import 'core/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/supabase/supabase_config.dart';
 import 'core/theme/galla_theme.dart';
