@@ -1243,6 +1243,7 @@ class GallaRepository {
     final map = {for (final r in rows) r.key: r.value};
     return AppSettings(
       locale: map['locale'] ?? 'en',
+      themeMode: AppThemeMode.fromKey(map['themeMode']),
       currency: map['currency'] ?? 'NPR',
       businessName: map['businessName'] ?? '',
       taxRatePct: double.tryParse(map['taxRatePct'] ?? '0') ?? 0,
@@ -1269,6 +1270,7 @@ class GallaRepository {
 
   Future<void> saveSettings(AppSettings s) async {
     await _put('locale', s.locale);
+    await _put('themeMode', s.themeMode.key);
     await _put('currency', s.currency);
     await _put('businessName', s.businessName);
     await _put('taxRatePct', '${s.taxRatePct}');

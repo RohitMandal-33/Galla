@@ -10,6 +10,7 @@ import 'core/supabase/supabase_config.dart';
 import 'core/theme/galla_theme.dart';
 import 'data/galla_repository.dart';
 import 'data/supabase_sync_service.dart';
+import 'domain/models.dart';
 import 'features/lock/lock_gate.dart';
 
 Future<void> main() async {
@@ -77,13 +78,24 @@ class _GallaAppState extends ConsumerState<GallaApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final settings = ref.watch(settingsProvider).valueOrNull;
+    final themeMode = switch (settings?.themeMode) {
+      AppThemeMode.dark => ThemeMode.dark,
+      AppThemeMode.light => ThemeMode.light,
+      _ => ThemeMode.system,
+    };
+
     return MaterialApp.router(
       title: 'Galla',
       debugShowCheckedModeBanner: false,
-      theme: buildGallaTheme(),
+      theme: buildGallaLightTheme(),
+      darkTheme: buildGallaDarkTheme(),
+      themeMode: themeMode,
       routerConfig: router,
-      builder: (context, child) =>
-          LockGate(child: child ?? const SizedBox.shrink()),
+      builder: (context, child) {
+        GallaColors.currentBrightness = Theme.of(context).brightness;
+        return LockGate(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }

@@ -177,7 +177,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     await ref.read(repositoryProvider).removeAppPin();
   }
 
-  // ── Language ────────────────────────────────────────────────────────────────
+  // ── Language & Appearance ──────────────────────────────────────────────────
 
   Future<void> _changeLanguage(String locale) async {
     if (locale == settingsLocale) return;
@@ -186,6 +186,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     await repo.saveSettings(current.copyWith(locale: locale));
     // Dates and any intl formatters follow immediately.
     await applyAppLocale(locale);
+  }
+
+  Future<void> _changeThemeMode(AppThemeMode mode) async {
+    final repo = ref.read(repositoryProvider);
+    final current = await repo.loadSettings();
+    if (current.themeMode == mode) return;
+    await repo.saveSettings(current.copyWith(themeMode: mode));
+    ref.invalidate(settingsProvider);
   }
 
   Future<void> _pushBusinessToCloud() async {
@@ -353,6 +361,51 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         color: Colors.white,
                         size: 32,
                       ),
+              ),
+            ),
+            const SizedBox(height: GallaSpacing.lg),
+
+            // ── Appearance ───────────────────────────────────────────────
+            GallaSectionHeader(title: s.appearance, topPadding: 0),
+            Container(
+              padding: const EdgeInsets.all(GallaSpacing.base),
+              decoration: BoxDecoration(
+                color: GallaColors.surface,
+                borderRadius: BorderRadius.circular(GallaRadius.lg),
+                border: Border.all(color: GallaColors.line),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GallaFilterChip(
+                      key: const ValueKey('theme-system'),
+                      label: s.themeSystem,
+                      selected: settings.themeMode == AppThemeMode.system,
+                      onTap: () => _changeThemeMode(AppThemeMode.system),
+                      fullWidth: true,
+                    ),
+                  ),
+                  const SizedBox(width: GallaSpacing.sm),
+                  Expanded(
+                    child: GallaFilterChip(
+                      key: const ValueKey('theme-light'),
+                      label: s.themeLight,
+                      selected: settings.themeMode == AppThemeMode.light,
+                      onTap: () => _changeThemeMode(AppThemeMode.light),
+                      fullWidth: true,
+                    ),
+                  ),
+                  const SizedBox(width: GallaSpacing.sm),
+                  Expanded(
+                    child: GallaFilterChip(
+                      key: const ValueKey('theme-dark'),
+                      label: s.themeDark,
+                      selected: settings.themeMode == AppThemeMode.dark,
+                      onTap: () => _changeThemeMode(AppThemeMode.dark),
+                      fullWidth: true,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: GallaSpacing.lg),
@@ -805,7 +858,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: GallaSpacing.base),
-                  const Divider(height: 1, color: GallaColors.lineSoft),
+                  Divider(height: 1, color: GallaColors.lineSoft),
                   const SizedBox(height: GallaSpacing.md),
 
                   // Switch Account Action — prominent, dedicated, clean affordance

@@ -526,7 +526,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             label: const Text('Load Demo Store (Explore features)'),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: GallaColors.gold),
+              side: BorderSide(color: GallaColors.gold),
               foregroundColor: GallaColors.gold,
               padding: const EdgeInsets.symmetric(vertical: 14),
               minimumSize: const Size.fromHeight(50),

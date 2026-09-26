@@ -195,7 +195,7 @@ class _BranchesScreenState extends ConsumerState<BranchesScreen> {
                 ),
                 subtitle: const Text('Combined view across all locations'),
                 trailing: activeBranchId == null
-                    ? const Icon(Icons.check_circle, color: GallaColors.brand)
+                    ? Icon(Icons.check_circle, color: GallaColors.brand)
                     : null,
                 onTap: () {
                   ref.read(selectedBranchIdProvider.notifier).state = null;

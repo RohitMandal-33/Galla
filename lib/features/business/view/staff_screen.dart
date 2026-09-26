@@ -286,7 +286,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
-                      side: const BorderSide(color: GallaColors.line),
+                      side: BorderSide(color: GallaColors.line),
                     ),
                     tileColor: GallaColors.surface,
                     leading: CircleAvatar(

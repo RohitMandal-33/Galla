@@ -358,9 +358,26 @@ class SimpleReport {
   int get leftMinor => moneyInMinor - moneyOutMinor;
 }
 
+enum AppThemeMode {
+  system,
+  light,
+  dark;
+
+  static AppThemeMode fromKey(String? key) {
+    return switch (key) {
+      'light' => AppThemeMode.light,
+      'dark' => AppThemeMode.dark,
+      _ => AppThemeMode.system,
+    };
+  }
+
+  String get key => name;
+}
+
 class AppSettings {
   const AppSettings({
     this.locale = 'en',
+    this.themeMode = AppThemeMode.system,
     this.currency = 'NPR',
     this.businessName = '',
     this.taxRatePct = 0,
@@ -382,6 +399,7 @@ class AppSettings {
   });
 
   final String locale;
+  final AppThemeMode themeMode;
   final String currency;
   final String businessName;
   final double taxRatePct;
@@ -405,6 +423,7 @@ class AppSettings {
 
   AppSettings copyWith({
     String? locale,
+    AppThemeMode? themeMode,
     String? currency,
     String? businessName,
     double? taxRatePct,
@@ -426,6 +445,7 @@ class AppSettings {
   }) {
     return AppSettings(
       locale: locale ?? this.locale,
+      themeMode: themeMode ?? this.themeMode,
       currency: currency ?? this.currency,
       businessName: businessName ?? this.businessName,
       taxRatePct: taxRatePct ?? this.taxRatePct,

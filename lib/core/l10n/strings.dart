@@ -171,4 +171,11 @@ class S {
   String get lowCashThresholdLabel =>
       isNe ? 'न्यूनतम नगद सीमा (ऐच्छिक)' : 'Minimum cash threshold (optional)';
   String get profileUpdated => isNe ? 'प्रोफाइल अपडेट भयो' : 'Profile updated';
+
+  // ── Appearance & Theme ─────────────────────────────────────────────────────
+  String get appearance => isNe ? 'थिम र रंग' : 'Appearance';
+  String get themeSystem => isNe ? 'सिस्टम' : 'System';
+  String get themeLight => isNe ? 'लाइट' : 'Light';
+  String get themeDark => isNe ? 'डार्क' : 'Dark';
 }
+
